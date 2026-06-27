@@ -1,0 +1,15 @@
+# dart_quic test configuration
+
+timeout: 2m
+
+tags:
+  unit:
+  integration:
+  interop:
+  fuzz:
+  performance:
+
+platforms:
+  - vm
+
+concurrency: 4

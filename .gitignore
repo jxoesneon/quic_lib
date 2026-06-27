@@ -2,3 +2,22 @@
 
 # Ciel local domain
 .ciel/
+.windsurf/
+
+# Dart / Pub
+.dart_tool/
+.packages
+build/
+doc/api/
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Coverage
+coverage/
+
+# Uncomment for application packages; keep commented for library packages.
+# pubspec.lock
+

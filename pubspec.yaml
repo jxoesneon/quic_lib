@@ -1,0 +1,32 @@
+name: dart_quic
+description: >-
+  A pure-Dart QUIC, HTTP/3, WebTransport, and libp2p transport stack.
+version: 0.1.0-alpha.1
+repository: https://github.com/joseerojas/dart_quic
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  asn1lib: ^1.5.0
+  cryptography: ^2.5.0
+  pointycastle: ^3.7.0
+  x509: ^0.2.3
+
+dev_dependencies:
+  benchmark: ^0.3.0
+  coverage: ^1.6.0
+  lints: ^4.0.0
+  mocktail: ^1.0.0
+  test: ^1.24.0
+
+platforms:
+  android:
+  ios:
+  linux:
+  macos:
+  windows:
+  web:
+
+  # WebAssembly support is experimental and tracked separately.
+  # wasm:

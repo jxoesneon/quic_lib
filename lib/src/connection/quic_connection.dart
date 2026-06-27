@@ -16,6 +16,7 @@ import '../recovery/loss_detector.dart';
 import '../recovery/pto_scheduler.dart';
 import '../recovery/congestion_controller.dart';
 import '../recovery/recovery_manager.dart';
+import '../recovery/pacing_calculator.dart';
 import '../recovery/sent_packet_tracker.dart';
 import '../security/anti_amplification_limit.dart';
 import '../wire/frame.dart';
@@ -63,6 +64,7 @@ class QuicConnection {
   final StreamIdAllocator _streamIdAllocator;
   final SentPacketTracker _sentPacketTracker = SentPacketTracker();
   final AntiAmplificationLimit _antiAmpLimit = AntiAmplificationLimit();
+  final PacingCalculator _pacingCalculator = PacingCalculator();
   final MigrationHelper _migrationHelper = _QuicMigrationHelper();
   PathChallengeFrame? _lastPendingChallenge;
   late final RecoveryManager _recoveryManager;
@@ -127,6 +129,15 @@ class QuicConnection {
   LossDetector get lossDetector => _lossDetector;
   PtoScheduler get ptoScheduler => _ptoScheduler;
   CongestionController get congestionController => _congestionController;
+  PacingCalculator get pacingCalculator => _pacingCalculator;
+
+  /// The current pacing delay in microseconds, or null if pacing is not
+  /// currently needed.
+  int? get pacingDelayUs =>
+      _pacingCalculator.shouldPace ? _pacingCalculator.pacingIntervalUs : null;
+
+  /// Whether the connection should pace outgoing packets.
+  bool get shouldPacePackets => _pacingCalculator.shouldPace;
 
   /// Open a new client-initiated bidirectional stream.
   int openBidirectionalStream() => _streamIdAllocator.allocateClientBidi();
@@ -158,6 +169,8 @@ class QuicConnection {
       0, // ackedBytes placeholder until full integration
       ranges: ranges,
     );
+    _pacingCalculator.updateRtt(_rttEstimator.smoothedRtt);
+    _pacingCalculator.updateCongestionWindow(_congestionController.congestionWindow);
   }
 
   /// Register a sent packet with the recovery manager.
@@ -276,6 +289,16 @@ class QuicConnection {
           break;
         case MaxStreamsFrame _:
           // TODO: Update stream limit.
+          break;
+        case NewConnectionIdFrame f:
+          _cidManager.registerId(
+            connectionId: f.connectionId,
+            sequenceNumber: f.sequenceNumber,
+            statelessResetToken: f.statelessResetToken,
+          );
+          break;
+        case RetireConnectionIdFrame f:
+          _cidManager.retireId(f.sequenceNumber);
           break;
         case StreamFrame f:
           _streamManager.onStreamFrame(f);
@@ -428,7 +451,8 @@ class QuicConnection {
     // For the scaffold, we assume: firstByte(1) + version(4) + dcidLen(1) +
     // dcid(8) + scidLen(1) + scid(0) + tokenLen(1) + token(0) +
     // lengthVarint(1) + PN(1) = ~18 bytes.
-    const headerLen = 18;
+    // SECURITY: Clamp to packet length to avoid out-of-bounds on small packets.
+    final headerLen = packet.length >= 18 ? 18 : packet.length;
     return (packet.sublist(0, headerLen), packet.sublist(headerLen));
   }
 
@@ -537,4 +561,47 @@ class QuicConnection {
 
   /// Current anti-amplification send budget.
   int get sendBudget => _antiAmpLimit.sendBudget;
+
+  // -----------------------------------------------------------------------
+  // 0-RTT early data
+  // -----------------------------------------------------------------------
+
+  /// True if 0-RTT keys are available and early data can be sent.
+  bool get canSendZeroRtt =>
+      _keyManager?.hasKeysFor(PacketNumberSpace.zeroRtt) ?? false;
+
+  /// Build and track an encrypted 0-RTT packet containing [frames].
+  ///
+  /// Throws [StateError] if no 0-RTT keys are installed.
+  Future<Uint8List> buildZeroRttPacket({
+    required List<Frame> frames,
+    required List<int> dcid,
+  }) async {
+    if (!canSendZeroRtt) {
+      throw StateError('No 0-RTT keys available');
+    }
+    return buildEncryptedPacket(
+      space: PacketNumberSpace.zeroRtt,
+      frames: frames,
+      dcid: dcid,
+    );
+  }
+
+  // -----------------------------------------------------------------------
+  // Connection ID rotation
+  // -----------------------------------------------------------------------
+
+  /// Issue a new connection ID and return a [NewConnectionIdFrame].
+  Frame generateNewConnectionIdFrame() {
+    final record = _cidManager.issueNewId();
+    return NewConnectionIdFrame(
+      sequenceNumber: record.sequenceNumber,
+      retirePriorTo: 0,
+      connectionId: record.connectionId,
+      statelessResetToken: record.statelessResetToken,
+    );
+  }
+
+  /// Number of currently active connection IDs.
+  int get activeConnectionIdCount => _cidManager.activeIds.length;
 }

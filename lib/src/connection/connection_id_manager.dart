@@ -95,6 +95,28 @@ class ConnectionIdManager {
     _retired[sequenceNumber] = entry;
   }
 
+  /// Register an externally received connection ID.
+  ///
+  /// Used when a peer sends us a NEW_CONNECTION_ID frame.
+  void registerId({
+    required List<int> connectionId,
+    required int sequenceNumber,
+    required List<int> statelessResetToken,
+  }) {
+    if (_active.length >= maxActiveIds) {
+      throw StateError(
+        'Cannot register connection ID: maxActiveIds ($maxActiveIds) reached.',
+      );
+    }
+    final entry = _ConnectionIdEntry(
+      connectionId: List<int>.from(connectionId),
+      sequenceNumber: sequenceNumber,
+      statelessResetToken: List<int>.from(statelessResetToken),
+    );
+    _active[sequenceNumber] = entry;
+    _cidToSequence[_encodeKey(connectionId)] = sequenceNumber;
+  }
+
   /// Returns `true` if [connectionId] is currently in the active set.
   bool isValidId(List<int> connectionId) {
     final seq = lookupSequenceNumber(connectionId);

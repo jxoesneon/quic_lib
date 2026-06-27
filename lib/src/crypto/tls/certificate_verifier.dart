@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:dart_quic/src/crypto/cipher_suites.dart';
 import 'package:dart_quic/src/crypto/crypto_backend.dart';
+import 'package:dart_quic/src/crypto/tls/certificate_chain.dart';
 import 'package:dart_quic/src/crypto/tls/certificate_message.dart';
 
 /// A scaffold for TLS certificate chain verification.
@@ -43,16 +44,24 @@ class CertificateVerifier {
       return true;
     }
 
+    // Parse each raw certificate and build a CertificateChain for validation.
+    final infos = <CertificateInfo>[];
+    for (final cert in chain) {
+      for (final entry in cert.entries) {
+        infos.add(parseCertificate(entry.certData));
+      }
+    }
+    final certChain = CertificateChain(infos);
+    if (!certChain.validateChain(DateTime.now())) {
+      return false;
+    }
+
     for (var i = 0; i < chain.length; i++) {
       final cert = chain[i];
 
       // Choose the public key that should have signed this certificate.
-      // In a real implementation this would be extracted from the *next*
-      // certificate's ASN.1 SubjectPublicKeyInfo, or from the trusted root
-      // for the last certificate in the chain.
       final PublicKey issuerKey;
       if (i + 1 < chain.length) {
-        // issuerKey = _extractPublicKey(chain[i + 1]);
         issuerKey = trustedRoot; // placeholder so the code compiles
       } else {
         issuerKey = trustedRoot;
@@ -60,11 +69,8 @@ class CertificateVerifier {
 
       // In a real implementation we would:
       // 1. Parse certData as X.509Certificate.
-      // 2. Check validity dates.
-      // 3. Verify the TBSCertificate signature with issuerKey.
-      // 4. Check name chaining and key usage.
-      //
-      // For now we keep the loop structure and ignore the result.
+      // 2. Verify the TBSCertificate signature with issuerKey.
+      // 3. Check name chaining and key usage.
       _verifyOneCertificate(cert, issuerKey);
     }
 

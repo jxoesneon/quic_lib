@@ -3,7 +3,7 @@ title: "QUIC RFC Test Vectors"
 category: spec
 version: "1.0-draft"
 status: "Specification"
-subsystem: "Unknown"
+subsystem: "Test Data"
 rfc_basis: []
 dependencies:
   - "TESTING_SPEC.md"

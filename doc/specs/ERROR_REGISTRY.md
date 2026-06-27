@@ -3,7 +3,7 @@ title: "Unified Error Code Registry"
 category: spec
 version: "1.0-draft"
 status: "Specification"
-subsystem: "Unknown"
+subsystem: "Error Handling"
 rfc_basis: []
 dependencies:
   - "TESTING_SPEC.md"

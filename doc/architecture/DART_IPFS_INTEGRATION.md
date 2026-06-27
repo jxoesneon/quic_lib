@@ -2,7 +2,8 @@
 title: "DART-IPFS Integration Contract"
 category: architecture
 version: "1.0-draft"
-subsystem: "Unknown"
+status: "Draft"
+subsystem: "Integration Contract"
 ---
 
 # DART-IPFS Integration Contract
@@ -26,45 +27,21 @@ dart_ipfs is the primary downstream consumer of dart_quic, yet a generic QUIC li
 
 ### 2.2 Required API Surface
 
-The contract is four public Dart classes consumed by `dart_ipfs` and implemented by `dart_quic`.
+The contract is four public Dart classes consumed by `dart_ipfs` and implemented by `dart_quic`. The authoritative API definitions are in [DART_API_SPEC.md §2.8](../specs/DART_API_SPEC.md#28-libp2p-api). The following summarizes their roles in the integration:
 
-```dart
-abstract class Libp2pQuicTransport {
-  Future<void> listen(Multiaddr localAddress);
-  Future<Libp2pConnection> dial(Multiaddr remoteAddress, PeerId remotePeer);
-  Stream<Libp2pConnection> get incomingConnections;
-  Stream<Libp2pEvent> get events;
-  Future<void> close();
-}
-```
+- `Libp2pQuicTransport`: Entry point for listen/dial operations.
+- `Libp2pConnection`: Represents an established peer connection.
+- `Libp2pStream`: A bidirectional protocol stream within a connection.
+- `PeerId`: libp2p peer identity (multihash public key fingerprint).
 
-```dart
-abstract class Libp2pConnection {
-  PeerId get remotePeer;
-  Multiaddr get remoteAddress;
-  Future<Libp2pStream> openStream(String protocol);
-  Stream<Libp2pStream> get incomingStreams;
-  Future<void> close();
-}
-```
+#### Integration-specific additions
 
-```dart
-abstract class Libp2pStream {
-  String get protocol;
-  Stream<List<int>> get inbound;
-  StreamSink<List<int>> get outbound;
-  Future<void> close();
-}
-```
+`dart_ipfs` expects the following behaviors beyond the base API:
 
-```dart
-abstract class PeerId {
-  List<int> get bytes;
-  String get base58;
-  factory PeerId.fromBase58(String base58);
-  Future<bool> verify(List<int> message, List<int> signature);
-}
-```
+- `listen()` must accept `/ip4/.../udp/.../quic-v1` and `/ip6/.../udp/.../quic-v1` multiaddrs.
+- `dial()` must perform peer authentication via the libp2p TLS 1.3 extension.
+- `openStream()` must internally negotiate the protocol via multistream-select.
+- `close()` on the transport must gracefully close all active connections.
 
 
 ### 2.3 Protocol Negotiation

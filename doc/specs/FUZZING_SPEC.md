@@ -3,7 +3,7 @@ title: "Fuzzing Specification"
 category: spec
 version: "1.0-draft"
 status: "Specification"
-subsystem: "Unknown"
+subsystem: "Fuzz Testing"
 rfc_basis: []
 dependencies:
   - "TESTING_SPEC.md"

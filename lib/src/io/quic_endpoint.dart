@@ -90,6 +90,32 @@ class QuicEndpoint {
     _remotePorts[conn] = newPort;
   }
 
+  /// Check whether the stored remote address for [conn] differs from [addr]:[port].
+  bool isRemoteAddressChanged(QuicConnection conn, InternetAddress addr, int port) {
+    final currentAddr = _remoteAddresses[conn];
+    final currentPort = _remotePorts[conn];
+    if (currentAddr == null || currentPort == null) return true;
+    return currentAddr.address != addr.address || currentPort != port;
+  }
+
+  /// Perform a real connection migration by probing the new path and updating
+  /// the stored remote address upon successful validation.
+  ///
+  /// Sends a PATH_CHALLENGE to [newAddress]:[newPort] via the underlying UDP
+  /// socket. When a matching PATH_RESPONSE is received, the remote address
+  /// is updated.
+  Future<void> changeConnectionAddress(QuicConnection conn, InternetAddress newAddress, int newPort) async {
+    const dcid = <int>[];
+    final future = conn.probeNewPath(dcid);
+    final packet = conn.lastProbePacket;
+    if (packet != null) {
+      _udpSocket.send(packet, newAddress, newPort);
+    }
+    await future;
+    _remoteAddresses[conn] = newAddress;
+    _remotePorts[conn] = newPort;
+  }
+
   /// Close the endpoint and all associated connections.
   void close() {
     for (final conn in _connections) {

@@ -28,6 +28,12 @@ class Http3PushPromiseFrame {
     return result;
   }
 
+  /// Alias for [serializePayload].
+  Uint8List serialize() => serializePayload();
+
+  /// Alias for [parsePayload].
+  static Http3PushPromiseFrame parse(Uint8List bytes) => parsePayload(bytes);
+
   /// Parse payload.
   static Http3PushPromiseFrame parsePayload(Uint8List payload) {
     if (payload.isEmpty) {

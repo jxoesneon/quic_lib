@@ -18,6 +18,12 @@ class Http3CancelPushFrame {
     return VarInt.encode(pushId);
   }
 
+  /// Alias for [serializePayload].
+  Uint8List serialize() => serializePayload();
+
+  /// Alias for [parsePayload].
+  static Http3CancelPushFrame parse(Uint8List bytes) => parsePayload(bytes);
+
   /// Parse payload.
   static Http3CancelPushFrame parsePayload(Uint8List payload) {
     if (payload.isEmpty) {

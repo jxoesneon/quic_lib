@@ -246,16 +246,36 @@ See `SECURITY_FIXES.md` for the complete list.
 | Fuzz harness scaffold | **DONE** — `test/fuzz/fuzz_harness.dart` |
 | Benchmark harness scaffold | **DONE** — `test/benchmark/benchmark_harness.dart` |
 
+### Completed in v1.0.0
+
+| Gap | Status |
+|-----|--------|
+| PeerId encoding fully wired | **DONE** — `fromBase58()`/`toBase58()`/`toBase36()` delegate to implemented encode/decode; no `UnimplementedError` stubs remain |
+| HTTP/3 server push | **DONE** — `Http3PushPromiseFrame`, `Http3CancelPushFrame`, `registerPushPromise()`/`hasPushPromise()` in `Http3Connection` |
+| WebTransport bidirectional streams | **DONE** — `StreamCapsule` (bi/uni), `CapsuleType.registerBidirectionalStream`/`registerUnidirectionalStream`, `WebTransportSession` tracks registered streams |
+| Real TLS handshake | **DONE** — `HandshakeCoordinator` wires `HandshakeKeyExchange` into CRYPTO-frame pipeline; generates keys, processes ClientHello, derives handshake/application secrets; `CryptoFrameHandler` uses coordinator |
+| Connection migration with real address change | **DONE** — `QuicEndpoint.changeConnectionAddress()` performs full PATH_CHALLENGE/PATH_RESPONSE over UDP; `QuicConnection.probeNewPath()`/`isProbingPath`/`lastProbePacket` |
+| QUIC v2 support | **DONE** — `QuicVersions` v1/v2 constants, `PacketReceiver` accepts v2, `VersionNegotiation` includes v2 |
+
+### Completed in v0.5.0
+
+| Gap | Status |
+|-----|--------|
+| Flow control frame handlers | **DONE** — `MAX_DATA`, `MAX_STREAM_DATA`, `MAX_STREAMS` wired in `_dispatchFrames`; `connectionFlowController` getter |
+| HTTP/3 SETTINGS | **DONE** — `Http3Connection.sendSettings()` returns default `Http3SettingsFrame`; `pendingSettings` getter |
+| PeerId encoding | **DONE** — `PeerId.encodeBase58()`/`decodeBase58()` and `encodeBase36()`/`decodeBase36()` |
+| Coverage gap closure | **DONE** — 57 coverage tests + 17 hardening tests for FrameCodec, PN spaces, streams, recovery, CID manager, anti-amplification |
+
 ### Remaining
 
 | Gap | Impact | ETA |
 |-----|--------|-----|
-| Real ASN.1/X.509 certificate parsing | `CertificateChain` is a scaffold; needs BER/DER parser for production use | v1.0.0 |
-| Real TLS handshake over network | `CryptoFrameHandler` parses types but no real network handshake | v1.0.0 |
-| HTTP/3 server push | Not implemented | v1.0.0 |
-| WebTransport bidirectional streams | Capsule routing exists but full WebTransport spec not complete | v1.0.0 |
-| Connection migration with address change | `migrateConnection()` updates tracking but no real address switch | v1.0.0 |
-| QUIC v2 support | Version negotiation exists but v2 features not wired | v1.0.0 |
+| Real ASN.1/X.509 certificate parsing | `CertificateChain` is a scaffold; needs BER/DER parser for production use | Post-v1.0 |
+| Full TLS handshake over production network | `HandshakeCoordinator` scaffold needs transcript hash, cert verification, Finished messages | Post-v1.0 |
+| HTTP/3 server push over network | Scaffold exists but no actual network transmission | Post-v1.0 |
+| Complete WebTransport spec compliance | Bidirectional capsule types added; remaining spec features | Post-v1.0 |
+| Production connection migration | PATH_CHALLENGE/RESPONSE wired; needs real network address switching | Post-v1.0 |
+| QUIC v2 full feature set | Version recognized; v2-specific frames and behaviors not yet wired | Post-v1.0 |
 
 ---
 

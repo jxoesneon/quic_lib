@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:dart_quic/src/crypto/tls/crypto_frame_assembler.dart';
 import 'package:dart_quic/src/crypto/tls/crypto_message_parser.dart';
+import 'package:dart_quic/src/crypto/tls/handshake_coordinator.dart';
 import 'package:dart_quic/src/crypto/tls/handshake_state_machine.dart';
+import 'package:dart_quic/src/crypto/tls/tls_handshake_types.dart';
 import 'package:dart_quic/src/wire/frame.dart';
 
 /// Receives CRYPTO frames, assembles them, and forwards parsed TLS handshake
@@ -8,12 +12,16 @@ import 'package:dart_quic/src/wire/frame.dart';
 class CryptoFrameHandler {
   final CryptoFrameAssembler _assembler;
   final HandshakeStateMachine _handshakeMachine;
+  HandshakeCoordinator? _coordinator;
 
   CryptoFrameHandler({
     required CryptoFrameAssembler assembler,
     required HandshakeStateMachine handshakeMachine,
   })  : _assembler = assembler,
         _handshakeMachine = handshakeMachine;
+
+  /// Attach a [HandshakeCoordinator] to receive parsed ClientHello frames.
+  set coordinator(HandshakeCoordinator c) => _coordinator = c;
 
   /// Deliver a [CryptoFrame] to the assembler and, for each contiguous
   /// assembled message, parse its TLS handshake type and notify the state
@@ -35,6 +43,9 @@ class CryptoFrameHandler {
         } on StateError {
           // Invalid transition — mark handshake as failed.
           _handshakeMachine.fail();
+        }
+        if (_coordinator != null && type == TlsHandshakeType.clientHello) {
+          unawaited(_coordinator!.processClientHello(frame));
         }
       }
     }

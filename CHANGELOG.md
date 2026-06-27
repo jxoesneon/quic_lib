@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.0] — 2026-06-27
+
+### Added
+- **PeerId encoding fully wired** — `fromBase58()`, `toBase58()`, `toBase36()` now delegate to the implemented `encodeBase58`/`decodeBase58`/`encodeBase36` methods; no remaining `UnimplementedError` stubs in PeerId
+- **HTTP/3 server push scaffold** — `Http3PushPromiseFrame` and `Http3CancelPushFrame` with serialize/parse; `Http3Connection` registers push promises via `registerPushPromise()`/`hasPushPromise()`; `_dispatchFrames` handles pushPromise/cancelPush
+- **WebTransport bidirectional streams** — `CapsuleType.registerBidirectionalStream` (0x41) and `registerUnidirectionalStream` (0x42); `StreamCapsule` with serialize/parse; `WebTransportSession` tracks registered bi/uni streams
+- **Real TLS handshake coordinator** — `HandshakeCoordinator` wires `HandshakeKeyExchange` into the CRYPTO-frame pipeline: generates ephemeral keys, processes ClientHello key_share, computes shared secret, derives handshake/application traffic secrets; `CryptoFrameHandler` uses coordinator on ClientHello reception
+- **Real connection migration** — `QuicEndpoint.changeConnectionAddress()` performs full PATH_CHALLENGE/PATH_RESPONSE protocol over UDP; `QuicConnection.probeNewPath()` generates probe packets and tracks validation via `Completer`; `isProbingPath`/`lastProbePacket` getters
+- **QUIC v2 support scaffold** — `QuicVersions` with v1 (0x00000001) and v2 (0x6b3343cf); `PacketReceiver` accepts v2 packets; `VersionNegotiation` includes v2 in supported versions
+- **HTTP/3 close scaffold** — `Http3Connection.close()` sets `_isClosing = true`
+- Integration tests: `test/libp2p/peer_id_roundtrip_test.dart` (3 tests), `test/http3/push_promise_test.dart` (6 tests), `test/webtransport/stream_capsule_test.dart` (4 tests), `test/crypto/tls/handshake_coordinator_test.dart` (4 tests), `test/connection/path_probing_test.dart` (4 tests), `test/wire/quic_versions_test.dart` (6 tests), `test/integration/v100_features_test.dart` (11 tests)
+
+### Fixed
+- `test/libp2p/deep_coverage_test.dart` — updated PeerId Base58/Base36 tests to verify round-trip behavior instead of expecting `UnimplementedError`
+
+---
+
 ## [0.5.0] — 2026-06-27
 
 ### Added

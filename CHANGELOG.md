@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.0] — 2026-06-27
+
+### Added
+- **TLS certificate chain verification** — `CertificateInfo`, `CertificateChain`, `parseCertificate()` with validity date checks and algorithm filtering; `CertificateVerifier.verifyCertificateChain()` now delegates to `CertificateChain.validateChain()`
+- **DCUtR full NAT traversal tests** — `test/libp2p/dcutr_nat_traversal_test.dart` completes a full two-peer UDP hole punch over loopback within 5 seconds; `test/libp2p/dcutr_full_handshake_test.dart` validates Initial → Retry → Initial-with-token packet flow
+- **0-RTT early data transmission** — `QuicConnection.canSendZeroRtt`, `buildZeroRttPacket()` builds encrypted 0-RTT packets using derived keys
+- **Connection ID rotation** — `QuicConnection.generateNewConnectionIdFrame()`, `activeConnectionIdCount`; `_dispatchFrames` wires `NewConnectionIdFrame` registration and `RetireConnectionIdFrame` retirement via `ConnectionIdManager`
+- **Flow control integration** — `StreamManager` creates per-stream `FlowController` instances on first `STREAM` frame; `canSendOnStream()`, `updateSendWindow()`, `getSendFlowController()`, `getReceiveFlowController()`
+- **Congestion control pacing integration** — `QuicConnection.pacingCalculator`, `pacingDelayUs`, `shouldPacePackets`; RTT and congestion window updates flow from `onAckReceived()` to `PacingCalculator`
+- Integration tests: `test/crypto/tls/certificate_chain_test.dart` (6 tests), `test/libp2p/dcutr_nat_traversal_test.dart` (1 test), `test/libp2p/dcutr_full_handshake_test.dart` (1 test), `test/connection/zero_rtt_transmission_test.dart` (4 tests), `test/connection/connection_id_rotation_test.dart` (3 tests), `test/streams/stream_manager_flow_control_test.dart` (5 tests), `test/recovery/pacing_integration_test.dart` (3 tests), `test/integration/v040_features_test.dart` (5 tests)
+
+### Changed
+- `ConnectionIdManager` gained `registerId()` for peer-issued connection IDs
+- `_splitHeaderPayload` clamps long-header length to packet size to avoid out-of-bounds on small packets
+
+---
+
 ## [0.3.0] — 2026-06-27
 
 ### Added

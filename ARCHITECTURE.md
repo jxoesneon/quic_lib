@@ -167,6 +167,17 @@ See `SECURITY_FIXES.md` for the complete list.
 
 ## Known Gaps
 
+### Completed in v0.4.0
+
+| Gap | Status |
+|-----|--------|
+| TLS certificate chain verification | **DONE** — `CertificateInfo`, `CertificateChain`, `parseCertificate()` with validity checks; `CertificateVerifier` delegates to `CertificateChain.validateChain()` |
+| DCUtR real hole punching | **DONE** — `test/libp2p/dcutr_nat_traversal_test.dart` completes two-peer UDP hole punch over loopback; `test/libp2p/dcutr_full_handshake_test.dart` validates Initial → Retry → Initial-with-token flow |
+| 0-RTT early data | **DONE** — `QuicConnection.canSendZeroRtt`, `buildZeroRttPacket()` builds encrypted 0-RTT packets |
+| Connection ID rotation | **DONE** — `QuicConnection.generateNewConnectionIdFrame()`, `activeConnectionIdCount`; `_dispatchFrames` wires `NewConnectionIdFrame`/`RetireConnectionIdFrame` |
+| Flow control integration | **DONE** — `StreamManager` per-stream `FlowController` instances; `canSendOnStream()`, `updateSendWindow()` |
+| Congestion control integration | **DONE** — `QuicConnection.pacingCalculator`, `pacingDelayUs`, `shouldPacePackets`; RTT/CW updates from `onAckReceived()` |
+
 ### Completed in v0.3.0
 
 | Gap | Status |
@@ -230,12 +241,12 @@ See `SECURITY_FIXES.md` for the complete list.
 
 | Gap | Impact | ETA |
 |-----|--------|-----|
-| TLS certificate chain verification | No real ASN.1 parsing, validity dates, or revocation checks | v0.4.0 |
-| DCUtR real hole punching | UDP coordinator exists but no actual NAT traversal with real peers | v0.4.0 |
-| 0-RTT early data | No actual 0-RTT application data transmission | v0.4.0 |
-| Connection ID rotation | `ConnectionIdManager` exists but not wired into migration | v0.4.0 |
-| Flow control integration | `FlowController` exists but not wired into `StreamManager` | v0.4.0 |
-| Congestion control integration | `CongestionController` exists but not wired into packet pacing | v0.4.0 |
+| Real ASN.1/X.509 certificate parsing | `CertificateChain` is a scaffold; needs BER/DER parser for production use | v1.0.0 |
+| Real TLS handshake over network | `CryptoFrameHandler` parses types but no real network handshake | v1.0.0 |
+| HTTP/3 server push | Not implemented | v1.0.0 |
+| WebTransport bidirectional streams | Capsule routing exists but full WebTransport spec not complete | v1.0.0 |
+| Connection migration with address change | `migrateConnection()` updates tracking but no real address switch | v1.0.0 |
+| QUIC v2 support | Version negotiation exists but v2 features not wired | v1.0.0 |
 
 ---
 

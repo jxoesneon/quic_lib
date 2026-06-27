@@ -302,9 +302,9 @@ class WebTransportCloseInfo {
 
 ## 12. Dependencies
 
-- HTTP/3 layer (HTTP3_SPEC.md): Extended CONNECT, SETTINGS, stream management.
+- HTTP/3 layer ([HTTP3_SPEC.md](./HTTP3_SPEC.md)): Extended CONNECT, SETTINGS, stream management.
 - QUIC Datagrams (RFC 9221): DATAGRAM frame support in QUIC transport.
-- QUIC Streams (QUIC_STREAMS_SPEC.md): Bidirectional and unidirectional streams.
+- QUIC Streams ([QUIC_STREAMS_SPEC.md](./QUIC_STREAMS_SPEC.md)): Bidirectional and unidirectional streams.
 - Capsule Protocol (RFC 9297): For session control messages.
 
 ---

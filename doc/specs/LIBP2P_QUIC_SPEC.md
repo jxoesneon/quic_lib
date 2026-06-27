@@ -375,7 +375,7 @@ abstract class Libp2pStream {
 
 ## 14. Dependencies
 
-- QUIC Transport (QUIC_STREAMS_SPEC.md, QUIC_CRYPTO_SPEC.md): Core QUIC connection and streams.
+- QUIC Transport ([QUIC_STREAMS_SPEC.md](./QUIC_STREAMS_SPEC.md), [QUIC_CRYPTO_SPEC.md](./QUIC_CRYPTO_SPEC.md)): Core QUIC connection and streams.
 - Crypto (package:cryptography): Ed25519, ECDSA, X25519.
 - Protobuf: For encoding/decoding the public key in the extension.
 - X.509: Certificate generation and parsing.

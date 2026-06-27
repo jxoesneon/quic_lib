@@ -281,7 +281,7 @@ retry_integrity_tag = AES-128-GCM-Encrypt(retry_key, retry_nonce, pseudo_retry, 
 
 - `package:cryptography` (preferred): AES-GCM, ChaCha20-Poly1305, HKDF, SHA-256/384.
 - `package:pointycastle` (fallback): AES-ECB for header protection, HKDF.
-- Wire codec (QUIC_WIRE_SPEC.md): Packet parsing/serialization.
+- Wire codec ([QUIC_WIRE_SPEC.md](./QUIC_WIRE_SPEC.md)): Packet parsing/serialization.
 
 ---
 

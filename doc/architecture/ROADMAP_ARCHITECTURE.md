@@ -348,7 +348,7 @@ Each milestone is complete when:
 
 ## References
 
-- ROADMAP.md (timeline and phase descriptions)
-- MODULE_OVERVIEW.md (module architecture)
-- TESTING_SPEC.md (testing strategy)
-- DATA_FLOW.md (processing pipelines)
+- [ROADMAP.md](../specs/ROADMAP.md) (timeline and phase descriptions)
+- [MODULE_OVERVIEW.md](./MODULE_OVERVIEW.md) (module architecture)
+- [TESTING_SPEC.md](../specs/TESTING_SPEC.md) (testing strategy)
+- [DATA_FLOW.md](./DATA_FLOW.md) (processing pipelines)

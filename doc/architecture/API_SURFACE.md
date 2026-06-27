@@ -486,7 +486,7 @@ await for (final block in stream.inbound) {
 
 ## References
 
-- DART_API_SPEC.md (full API specification with all fields)
-- MODULE_OVERVIEW.md (internal module architecture)
+- [DART_API_SPEC.md](../specs/DART_API_SPEC.md) (full API specification with all fields)
+- [MODULE_OVERVIEW.md](./MODULE_OVERVIEW.md) (internal module architecture)
 - Dart IO Library API: https://api.dart.dev/stable/dart-io/dart-io-library.html
 - Effective Dart API Design: https://dart.dev/effective-dart/design

@@ -304,7 +304,7 @@ The implementation SHOULD support priority hints from the application layer (HTT
 
 ## 11. Dependencies
 
-- Wire codec (QUIC_WIRE_SPEC.md): STREAM, flow control, and RESET frame parsing.
+- Wire codec ([QUIC_WIRE_SPEC.md](./QUIC_WIRE_SPEC.md)): STREAM, flow control, and RESET frame parsing.
 - Connection manager: Transport parameters provide initial flow control limits.
 
 ---

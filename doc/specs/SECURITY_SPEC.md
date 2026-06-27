@@ -79,7 +79,7 @@ The implementation SHOULD support:
 
 ### 4.2 libp2p Mode
 
-- Both peers present self-signed certificates (Section 4 of LIBP2P_QUIC_SPEC.md).
+- Both peers present self-signed certificates (Section 4 of [LIBP2P_QUIC_SPEC.md](./LIBP2P_QUIC_SPEC.md)).
 - Validation is against the libp2p Public Key Extension, not CA chains.
 - Peer ID is the trust anchor.
 

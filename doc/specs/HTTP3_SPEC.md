@@ -326,9 +326,9 @@ abstract class Http3Server {
 
 ## 11. Dependencies
 
-- QUIC Streams (QUIC_STREAMS_SPEC.md): Bidirectional and unidirectional streams.
-- QPACK codec: Header compression/decompression (from RFC_9204_NOTES.md research).
-- Wire codec (QUIC_WIRE_SPEC.md): Variable-length integer encoding.
+- QUIC Streams ([QUIC_STREAMS_SPEC.md](./QUIC_STREAMS_SPEC.md)): Bidirectional and unidirectional streams.
+- QPACK codec: Header compression/decompression (from [RFC_9204_NOTES.md](../research/RFC_9204_NOTES.md)).
+- Wire codec ([QUIC_WIRE_SPEC.md](./QUIC_WIRE_SPEC.md)): Variable-length integer encoding.
 
 ---
 

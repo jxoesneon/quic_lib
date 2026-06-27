@@ -335,13 +335,13 @@ abstract class Http3Client {
 
 ## 8. WebTransport API
 
-See WEBTRANSPORT_SPEC.md Section 9 for the full API definition.
+See [WEBTRANSPORT_SPEC.md](./WEBTRANSPORT_SPEC.md) Section 9 for the full API definition.
 
 ---
 
 ## 9. libp2p API
 
-See LIBP2P_QUIC_SPEC.md Section 11 for the full API definition.
+See [LIBP2P_QUIC_SPEC.md](./LIBP2P_QUIC_SPEC.md) Section 11 for the full API definition.
 
 ---
 

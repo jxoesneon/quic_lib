@@ -309,6 +309,6 @@ All module behavior is configurable at construction time — no global state.
 
 ## References
 
-- QUIC_WIRE_SPEC.md, QUIC_CRYPTO_SPEC.md, QUIC_STREAMS_SPEC.md, QUIC_RECOVERY_SPEC.md
-- HTTP3_SPEC.md, WEBTRANSPORT_SPEC.md, LIBP2P_QUIC_SPEC.md
-- DART_API_SPEC.md (public API surface)
+- [QUIC_WIRE_SPEC.md](../specs/QUIC_WIRE_SPEC.md), [QUIC_CRYPTO_SPEC.md](../specs/QUIC_CRYPTO_SPEC.md), [QUIC_STREAMS_SPEC.md](../specs/QUIC_STREAMS_SPEC.md), [QUIC_RECOVERY_SPEC.md](../specs/QUIC_RECOVERY_SPEC.md)
+- [HTTP3_SPEC.md](../specs/HTTP3_SPEC.md), [WEBTRANSPORT_SPEC.md](../specs/WEBTRANSPORT_SPEC.md), [LIBP2P_QUIC_SPEC.md](../specs/LIBP2P_QUIC_SPEC.md)
+- [DART_API_SPEC.md](../specs/DART_API_SPEC.md) (public API surface)

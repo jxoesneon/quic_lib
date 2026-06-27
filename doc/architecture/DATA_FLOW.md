@@ -58,107 +58,35 @@ This document describes the data flow through `dart_quic`: the packet receive pa
 
 ### 3.1 Step-by-Step
 
+| Step | Operation | Output |
+|------|-----------|--------|
+| 1. UDP Receive | `RawDatagramSocket.receive()` | raw bytes + source address |
+| 2. Coalesced Split | Long Header → split by Length field; Short Header → last in datagram | `List<RawPacket>` |
+| 3. Connection Lookup | Extract DCID → registry lookup; if Initial → new connection (server); else discard/stateless-reset | `(RawPacket, Connection)` |
+| 4. Header Protection Removal | Determine encryption level; unmask first byte + PN bytes using `hp_key` | cleartext header |
+| 5. PN Reconstruction | Truncated PN + `largest_acked` → closest full value in range | full packet number |
+| 6. AEAD Decryption | `nonce = iv XOR pad_left(pn, 12)`; `AEAD-Decrypt(key, nonce, header, ciphertext)`; fail → discard silently | decrypted payload |
+| 7. Frame Parsing | Parse frames by type varint from payload | `List<Frame>` |
+| 8. Frame Dispatch | Route to handlers (see dispatch table below) | events to subsystems |
+
+**Frame Dispatch Table:**
+
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 1: UDP Receive                                              │
-│                                                                  │
-│ RawDatagramSocket.receive() → Datagram(bytes, address, port)    │
-│                                                                  │
-│ Output: raw bytes + source address                              │
-└─────────────────────────────────────┬───────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 2: Packet Splitting (Coalesced Packets)                     │
-│                                                                  │
-│ A UDP datagram may contain multiple QUIC packets.               │
-│ Split by: Long Header → use Length field                        │
-│           Short Header → must be last (consumes remainder)      │
-│                                                                  │
-│ Output: List<RawPacket>                                         │
-└─────────────────────────────────────┬───────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 3: Connection Lookup                                        │
-│                                                                  │
-│ Extract DCID from packet header.                                │
-│ Lookup connection by DCID in connection registry.               │
-│ If not found: check if Initial → create new connection (server) │
-│              otherwise discard (or stateless reset)             │
-│                                                                  │
-│ Output: (RawPacket, Connection)                                 │
-└─────────────────────────────────────┬───────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 4: Header Protection Removal                                │
-│                                                                  │
-│ Determine encryption level from packet type.                    │
-│ Use appropriate hp_key to unmask:                               │
-│   - First byte (flags/packet number length)                     │
-│   - Packet number bytes                                         │
-│                                                                  │
-│ Output: Packet with cleartext header                            │
-└─────────────────────────────────────┬───────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 5: Packet Number Reconstruction                             │
-│                                                                  │
-│ From truncated PN + largest_acked, reconstruct full PN.         │
-│ Algorithm: find closest value to largest_acked in the           │
-│ truncated range.                                                │
-│                                                                  │
-│ Output: Full packet number                                      │
-└─────────────────────────────────────┬───────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 6: AEAD Decryption                                          │
-│                                                                  │
-│ nonce = iv XOR pad_left(full_pn, 12)                           │
-│ aad = header bytes (up to and including PN)                     │
-│ plaintext = AEAD-Decrypt(key, nonce, aad, ciphertext)          │
-│                                                                  │
-│ If fails → discard packet silently                             │
-│ Output: Decrypted payload (frames)                              │
-└─────────────────────────────────────┬───────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 7: Frame Parsing                                            │
-│                                                                  │
-│ Parse all frames from decrypted payload.                        │
-│ Each frame identified by type varint.                           │
-│                                                                  │
-│ Output: List<Frame>                                             │
-└─────────────────────────────────────┬───────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 8: Frame Dispatch                                           │
-│                                                                  │
-│ Route each frame to the appropriate handler:                    │
-│                                                                  │
-│ ACK           → Recovery.onAckReceived()                       │
-│ CRYPTO        → TLS.onHandshakeData()                          │
-│ STREAM        → StreamManager.onStreamFrame()                  │
-│ MAX_DATA      → FlowController.onMaxData()                     │
-│ MAX_STREAM_*  → FlowController.onMaxStreamData()               │
-│ RESET_STREAM  → StreamManager.onResetStream()                  │
-│ STOP_SENDING  → StreamManager.onStopSending()                  │
-│ PING          → (mark as ack-eliciting)                        │
-│ PATH_*        → MigrationHandler.onPathFrame()                 │
-│ CONN_CLOSE    → ConnectionManager.onClose()                    │
-│ HANDSHAKE_DONE→ ConnectionManager.onHandshakeDone()            │
-│ NEW_CONN_ID   → ConnectionIdManager.onNewId()                  │
-│ RETIRE_CONN_ID→ ConnectionIdManager.onRetire()                 │
-│ NEW_TOKEN     → TokenStore.onNewToken()                        │
-│ DATAGRAM      → DatagramHandler.onDatagram()                   │
-│                                                                  │
-│ Output: Events dispatched to subsystems                         │
-└─────────────────────────────────────────────────────────────────┘
+ACK           → Recovery.onAckReceived()
+CRYPTO        → TLS.onHandshakeData()
+STREAM        → StreamManager.onStreamFrame()
+MAX_DATA      → FlowController.onMaxData()
+MAX_STREAM_*  → FlowController.onMaxStreamData()
+RESET_STREAM  → StreamManager.onResetStream()
+STOP_SENDING  → StreamManager.onStopSending()
+PING          → (mark as ack-eliciting)
+PATH_*        → MigrationHandler.onPathFrame()
+CONN_CLOSE    → ConnectionManager.onClose()
+HANDSHAKE_DONE→ ConnectionManager.onHandshakeDone()
+NEW_CONN_ID   → ConnectionIdManager.onNewId()
+RETIRE_CONN_ID→ ConnectionIdManager.onRetire()
+NEW_TOKEN     → TokenStore.onNewToken()
+DATAGRAM      → DatagramHandler.onDatagram()
 ```
 
 ---
@@ -176,89 +104,15 @@ Sending is triggered by:
 
 ### 4.2 Step-by-Step
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 1: Send Opportunity Check                                   │
-│                                                                  │
-│ CongestionController.canSend(packetSize)?                       │
-│ Pacer.canSendNow()?                                            │
-│ AntiAmplification.canSend()?                                    │
-│                                                                  │
-│ If no → schedule timer for next opportunity                    │
-│ If yes → proceed                                               │
-└─────────────────────────────────────┬───────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 2: Frame Assembly                                           │
-│                                                                  │
-│ Priority: ACK > CRYPTO > flow control > STREAM data            │
-│                                                                  │
-│ 1. If ACK needed: build ACK frame                              │
-│ 2. If handshake data: build CRYPTO frame                       │
-│ 3. If flow control updates pending: build MAX_* frames         │
-│ 4. Fill remaining space with STREAM data (from scheduler)      │
-│ 5. If Initial packet and size < 1200: add PADDING             │
-│                                                                  │
-│ Output: List<Frame> fitting in one packet                       │
-└─────────────────────────────────────┬───────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 3: Packet Construction                                      │
-│                                                                  │
-│ Choose encryption level based on frame types.                   │
-│ Assign next packet number for that space.                       │
-│ Build header (long or short).                                   │
-│ Serialize frames into payload.                                  │
-│                                                                  │
-│ Output: (header_bytes, payload_bytes, packet_number)            │
-└─────────────────────────────────────┬───────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 4: AEAD Encryption                                          │
-│                                                                  │
-│ nonce = iv XOR pad_left(packet_number, 12)                     │
-│ aad = header_bytes                                             │
-│ ciphertext = AEAD-Encrypt(key, nonce, aad, payload_bytes)      │
-│                                                                  │
-│ Output: header_bytes + ciphertext                               │
-└─────────────────────────────────────┬───────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 5: Header Protection                                        │
-│                                                                  │
-│ Sample 16 bytes from ciphertext.                                │
-│ Generate 5-byte mask (AES-ECB or ChaCha20).                    │
-│ XOR mask onto first byte and packet number bytes.              │
-│                                                                  │
-│ Output: Protected packet bytes                                  │
-└─────────────────────────────────────┬───────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 6: Packet Coalescing (Optional)                             │
-│                                                                  │
-│ If multiple packets at different levels can be sent:            │
-│ Coalesce into single UDP datagram.                             │
-│ (e.g., Initial + Handshake in one datagram)                    │
-│                                                                  │
-│ Output: One or more UDP datagram payloads                       │
-└─────────────────────────────────────┬───────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Step 7: UDP Send + Tracking                                      │
-│                                                                  │
-│ RawDatagramSocket.send(bytes, address, port)                    │
-│ SentPacketTracker.onSent(packetNumber, now, size, frames)       │
-│ CongestionController.onPacketSent(size)                         │
-│                                                                  │
-│ Output: Packet on the wire + tracking metadata recorded         │
-└─────────────────────────────────────────────────────────────────┘
-```
+| Step | Operation | Output |
+|------|-----------|--------|
+| 1. Send Opportunity | `CongestionController.canSend()` && `Pacer.canSendNow()` && `AntiAmplification.canSend()`; if no → schedule timer | permission to send |
+| 2. Frame Assembly | Priority: ACK > CRYPTO > flow control > STREAM data; pad Initial to ≥1200 bytes | `List<Frame>` fitting in one packet |
+| 3. Packet Construction | Choose encryption level; assign next PN; build header; serialize frames | `(header_bytes, payload_bytes, pn)` |
+| 4. AEAD Encryption | `nonce = iv XOR pad_left(pn, 12)`; `AEAD-Encrypt(key, nonce, header, payload)` | `header + ciphertext` |
+| 5. Header Protection | Sample 16 bytes from ciphertext → 5-byte mask (AES-ECB/ChaCha20); XOR onto first byte + PN bytes | protected packet bytes |
+| 6. Coalescing (opt.) | If multiple encryption levels ready: concatenate into one UDP datagram (e.g., Initial + Handshake) | UDP payload(s) |
+| 7. UDP Send + Track | `RawDatagramSocket.send()`; `SentPacketTracker.onSent(pn, now, size, frames)`; `CongestionController.onPacketSent(size)` | packet on wire + metadata |
 
 ---
 
@@ -413,8 +267,8 @@ streamController.stream.listen((data) {
 
 ## References
 
-- MODULE_OVERVIEW.md (module responsibilities)
-- QUIC_WIRE_SPEC.md (frame/packet formats)
-- QUIC_CRYPTO_SPEC.md (encryption details)
-- QUIC_RECOVERY_SPEC.md (loss detection logic)
-- QUIC_STREAMS_SPEC.md (flow control and reassembly)
+- [MODULE_OVERVIEW.md](./MODULE_OVERVIEW.md) (module responsibilities)
+- [QUIC_WIRE_SPEC.md](../specs/QUIC_WIRE_SPEC.md) (frame/packet formats)
+- [QUIC_CRYPTO_SPEC.md](../specs/QUIC_CRYPTO_SPEC.md) (encryption details)
+- [QUIC_RECOVERY_SPEC.md](../specs/QUIC_RECOVERY_SPEC.md) (loss detection logic)
+- [QUIC_STREAMS_SPEC.md](../specs/QUIC_STREAMS_SPEC.md) (flow control and reassembly)

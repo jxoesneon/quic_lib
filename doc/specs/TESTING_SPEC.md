@@ -1,18 +1,24 @@
+---
+title: "Testing Specification"
+category: spec
+version: "1.0-draft"
+status: "Specification"
+subsystem: "Quality Assurance & Conformance"
+rfc_basis: []
+dependencies:
+  - "ROADMAP.md"
+---
+
 # Testing Specification
 
-**Version**: 1.0-draft  
-**Status**: Specification  
-**Subsystem**: Quality Assurance & Conformance
 
----
 
 ## 1. Purpose
 
-This document specifies the testing strategy for `dart_quic`: conformance testing against RFC examples, interoperability testing against established QUIC implementations, fuzz testing, and the CI plan.
+Specification without verification is just prose. dart_quic needs a multi-layer testing strategy-unit, integration, interop, fuzz-to catch regressions before they reach downstream consumers. This document defines the test levels, target implementations, and CI plan that hold the stack accountable to its own specs.
 
----
-
-## 2. Testing Levels
+## 2. Detailed Specification
+### 2.1 Testing Levels
 
 ```
 ┌────────────────────────────────────────────┐
@@ -30,9 +36,10 @@ This document specifies the testing strategy for `dart_quic`: conformance testin
 
 ---
 
-## 3. Unit Testing
 
-### 3.1 Wire Format (QUIC_WIRE_SPEC.md)
+### 2.2 Unit Testing
+
+#### 2.2.1 Wire Format ([QUIC_WIRE_SPEC.md](./QUIC_WIRE_SPEC.md))
 
 | Test | Description |
 |------|-------------|
@@ -44,7 +51,7 @@ This document specifies the testing strategy for `dart_quic`: conformance testin
 | `packet_number_reconstruct` | From truncated to full |
 | `coalesced_split` | Multiple packets in one datagram |
 
-### 3.2 Crypto (QUIC_CRYPTO_SPEC.md)
+#### 2.2.2 Crypto ([QUIC_CRYPTO_SPEC.md](./QUIC_CRYPTO_SPEC.md))
 
 | Test | Description |
 |------|-------------|
@@ -56,7 +63,7 @@ This document specifies the testing strategy for `dart_quic`: conformance testin
 | `key_update_derivation` | Verify next-generation secrets |
 | `retry_integrity_tag` | Verify against known Retry packet |
 
-### 3.3 Streams (QUIC_STREAMS_SPEC.md)
+#### 2.2.3 Streams ([QUIC_STREAMS_SPEC.md](./QUIC_STREAMS_SPEC.md))
 
 | Test | Description |
 |------|-------------|
@@ -68,7 +75,7 @@ This document specifies the testing strategy for `dart_quic`: conformance testin
 | `reassembly_overlap` | Overlapping byte ranges |
 | `reset_stream_handling` | Proper state transitions |
 
-### 3.4 Recovery (QUIC_RECOVERY_SPEC.md)
+#### 2.2.4 Recovery ([QUIC_RECOVERY_SPEC.md](./QUIC_RECOVERY_SPEC.md))
 
 | Test | Description |
 |------|-------------|
@@ -84,9 +91,10 @@ This document specifies the testing strategy for `dart_quic`: conformance testin
 
 ---
 
-## 4. Integration Testing
 
-### 4.1 Handshake Tests
+### 2.3 Integration Testing
+
+#### 2.3.1 Handshake Tests
 
 | Test | Description |
 |------|-------------|
@@ -98,7 +106,7 @@ This document specifies the testing strategy for `dart_quic`: conformance testin
 | `alpn_negotiation` | Correct ALPN selection |
 | `mutual_tls` | Both sides present certificates |
 
-### 4.2 Data Transfer Tests
+#### 2.3.2 Data Transfer Tests
 
 | Test | Description |
 |------|-------------|
@@ -111,7 +119,7 @@ This document specifies the testing strategy for `dart_quic`: conformance testin
 | `connection_close_graceful` | Clean shutdown |
 | `connection_close_abrupt` | Immediate close with error |
 
-### 4.3 Flow Control Tests
+#### 2.3.3 Flow Control Tests
 
 | Test | Description |
 |------|-------------|
@@ -120,7 +128,7 @@ This document specifies the testing strategy for `dart_quic`: conformance testin
 | `stream_count_limit` | Cannot exceed MAX_STREAMS |
 | `flow_control_update` | Receiver sends updates after consuming |
 
-### 4.4 Recovery Tests
+#### 2.3.4 Recovery Tests
 
 | Test | Description |
 |------|-------------|
@@ -131,9 +139,10 @@ This document specifies the testing strategy for `dart_quic`: conformance testin
 
 ---
 
-## 5. Interoperability Testing
 
-### 5.1 Target Implementations
+### 2.4 Interoperability Testing
+
+#### 2.4.1 Target Implementations
 
 | Implementation | Language | Test Mode |
 |---------------|----------|-----------|
@@ -142,7 +151,7 @@ This document specifies the testing strategy for `dart_quic`: conformance testin
 | ngtcp2 + nghttp3 | C | Client + Server |
 | Chromium | C++ | Server only (via WebTransport) |
 
-### 5.2 QUIC Interop Runner
+#### 2.4.2 QUIC Interop Runner
 
 Participate in the QUIC Interop Runner (https://interop.seemann.io/):
 
@@ -164,7 +173,7 @@ Participate in the QUIC Interop Runner (https://interop.seemann.io/):
 | `ecn` | ECN marking and response |
 | `datagram` | QUIC Datagram frames |
 
-### 5.3 Interop Test Infrastructure
+#### 2.4.3 Interop Test Infrastructure
 
 ```
 ┌─────────────────┐         ┌─────────────────┐
@@ -182,9 +191,10 @@ Participate in the QUIC Interop Runner (https://interop.seemann.io/):
 
 ---
 
-## 6. Fuzz Testing
 
-### 6.1 Targets
+### 2.5 Fuzz Testing ([FUZZING_SPEC.md](./FUZZING_SPEC.md))
+
+#### 2.5.1 Targets
 
 | Target | Input | Expected |
 |--------|-------|----------|
@@ -194,17 +204,37 @@ Participate in the QUIC Interop Runner (https://interop.seemann.io/):
 | Varint decoder | Random bytes | No crash; return error or valid integer |
 | Reassembly buffer | Random (offset, data) pairs | No crash; maintain invariants |
 
-### 6.2 Approach
+#### 2.5.2 Approach
 
 - Use Dart's built-in test framework with random data generators.
 - Run for extended periods in CI (minimum 10 minutes per target).
 - Track coverage: ensure fuzz tests exercise error paths.
 
+#### 2.5.3 Fuzz Testing Coverage Map
+
+| Fuzz Target | Spec Reference | Coverage Goal | Seed Corpus |
+|---|---|---|---|
+| VarIntEncoder | [QUIC_WIRE_SPEC.md §2](#) | All 4 encoding modes | RFC 9000 Appendix A |
+| PacketBuilder | [QUIC_WIRE_SPEC.md §3](#) | All 4 long-header types + short header | Generated valid frames |
+| FrameParser | [QUIC_WIRE_SPEC.md §4](#) | All 22 frame types | RFC 9000 test vectors |
+| StreamStateMachine | [QUIC_STREAMS_SPEC.md §3](#) | All 7 states + transitions | State transition graph |
+| RecoveryEngine | [QUIC_RECOVERY_SPEC.md §2](#) | Loss detection + congestion control | Packet loss patterns |
+| CryptoHandshake | [QUIC_CRYPTO_SPEC.md §3](#) | Initial + handshake + 0-RTT | RFC 9001 test vectors |
+| Http3FrameParser | [HTTP3_SPEC.md §2](#) | All 6 frame types | RFC 9114 test vectors |
+| QpackDecoder | [HTTP3_SPEC.md §2.4](#) | Dynamic table + blocking | RFC 9204 test vectors |
+| WebTransportStream | [WEBTRANSPORT_SPEC.md §2](#) | Session + bidirectional + unidirectional | Generated sessions |
+| DatagramRouter | [QUIC_DATAGRAM_SPEC.md §2](#) | Datagram frame encoding | RFC 9221 test vectors |
+| DcutrCoordinator | [DCUTR_SPEC.md §2](#) | Relay + direct transition | Simulated NAT tables |
+| Libp2pTls | [LIBP2P_QUIC_SPEC.md §2](#) | Certificate validation + ALPN | Test certificate chains |
+
+> **Note:** Each fuzz target must achieve ≥90% coverage of its corresponding spec section before implementation phase.
+
 ---
 
-## 7. Performance Testing
 
-### 7.1 Benchmarks
+### 2.6 Performance Testing ([PERFORMANCE_BENCHMARKING.md](./PERFORMANCE_BENCHMARKING.md))
+
+#### 2.6.1 Benchmarks
 
 | Benchmark | Metric | Target |
 |-----------|--------|--------|
@@ -215,7 +245,7 @@ Participate in the QUIC Interop Runner (https://interop.seemann.io/):
 | `varint_encode_decode` | Operations/second | > 10M |
 | `qpack_encode_decode` | Headers/second | > 100k |
 
-### 7.2 Memory Profiling
+#### 2.6.2 Memory Profiling
 
 - Track allocations per packet processed.
 - Identify GC pressure from stream buffering.
@@ -223,9 +253,10 @@ Participate in the QUIC Interop Runner (https://interop.seemann.io/):
 
 ---
 
-## 8. HTTP/3 Specific Tests
 
-### 8.1 Conformance (h3spec)
+### 2.7 HTTP/3 Specific Tests
+
+#### 2.7.1 Conformance (h3spec)
 
 Run h3spec (https://github.com/kazu-yamamoto/h3spec) test suite:
 
@@ -237,7 +268,7 @@ Run h3spec (https://github.com/kazu-yamamoto/h3spec) test suite:
 | QPACK | Static table, dynamic table, blocking |
 | Stream handling | Concurrency, cancellation, push |
 
-### 8.2 dart_quic HTTP/3 Tests
+#### 2.7.2 dart_quic HTTP/3 Tests
 
 | Test | Description |
 |------|-------------|
@@ -250,9 +281,10 @@ Run h3spec (https://github.com/kazu-yamamoto/h3spec) test suite:
 
 ---
 
-## 9. CI Plan
 
-### 9.1 Pipeline Stages
+### 2.8 CI Plan
+
+#### 2.8.1 Pipeline Stages
 
 ```
 ┌─────────┐   ┌─────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐
@@ -267,7 +299,7 @@ Run h3spec (https://github.com/kazu-yamamoto/h3spec) test suite:
                                                            └──────────┘
 ```
 
-### 9.2 CI Configuration
+#### 2.8.2 CI Configuration
 
 | Stage | Trigger | Duration |
 |-------|---------|----------|
@@ -279,7 +311,7 @@ Run h3spec (https://github.com/kazu-yamamoto/h3spec) test suite:
 | Fuzz tests | Nightly | 10 min per target |
 | Performance benchmarks | Weekly + release | < 20 min |
 
-### 9.3 Required Tools
+#### 2.8.3 Required Tools
 
 - Dart SDK (latest stable)
 - Docker (for interop test containers: quic-go, aioquic, ngtcp2)
@@ -288,7 +320,8 @@ Run h3spec (https://github.com/kazu-yamamoto/h3spec) test suite:
 
 ---
 
-## 10. Coverage Requirements
+
+### 2.9 Coverage Requirements
 
 | Module | Minimum Coverage |
 |--------|-----------------|
@@ -302,7 +335,9 @@ Run h3spec (https://github.com/kazu-yamamoto/h3spec) test suite:
 
 ---
 
-## 11. Acceptance Criteria
+
+
+## 3. Acceptance Criteria
 
 - [ ] All unit tests pass (100% pass rate required for merge).
 - [ ] Integration tests pass for basic handshake and data transfer.
@@ -314,7 +349,8 @@ Run h3spec (https://github.com/kazu-yamamoto/h3spec) test suite:
 
 ---
 
-## 12. Security Considerations
+
+## 4. Security Considerations
 
 - Fuzz test all network-facing parsers to prevent crashes from malformed input.
 - Test TLS certificate validation (accept valid, reject invalid).
@@ -323,7 +359,8 @@ Run h3spec (https://github.com/kazu-yamamoto/h3spec) test suite:
 
 ---
 
-## 13. Dependencies
+
+## 5. Dependencies
 
 - `package:test` (Dart test framework)
 - `package:mockito` or `package:mocktail` (mocking)
@@ -333,7 +370,13 @@ Run h3spec (https://github.com/kazu-yamamoto/h3spec) test suite:
 
 ---
 
-## References
+
+
+
+## Used By
+
+- [ROADMAP.md](ROADMAP.md) — Lists TESTING_SPEC as a formal specification deliverable.
+## 6. References
 
 - QUIC Interop Runner: https://interop.seemann.io/
 - h3spec: https://github.com/kazu-yamamoto/h3spec

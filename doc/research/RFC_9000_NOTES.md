@@ -1,20 +1,28 @@
-# RFC 9000 Notes: QUIC: A UDP-Based Multiplexed and Secure Transport
-
-**RFC**: 9000  
-**Authors**: J. Iyengar (Ed.), M. Thomson (Ed.)  
-**Published**: May 2021  
-**Status**: Standards Track  
-**Companion RFCs**: 9001 (TLS), 9002 (Recovery), 8999 (Invariants)
-
+---
+title: "RFC 9000 Notes: QUIC: A UDP-Based Multiplexed and Secure Transport"
+category: research
+authors: "J. Iyengar (Ed.), M. Thomson (Ed.)"
+published: "May 2021"
+companion_rfcs:
+  - "9001 (TLS), 9002 (Recovery), 8999 (Invariants)"
 ---
 
-## Abstract
+# RFC 9000 Notes: QUIC: A UDP-Based Multiplexed and Secure Transport
+
+
+
+## 1. Purpose
+
+RFC 9000 is a dense, 150-page specification that every implementer must internalize. These notes distill the core concepts-packet structure, stream types, connection lifecycle, migration, and transport parameters-into a quick-reference format that keeps the dart_quic team aligned without requiring constant re-reading of the full RFC.
+
+## 2. Abstract
 
 RFC 9000 defines the core QUIC transport protocol. QUIC provides applications with flow-controlled streams for structured communication, low-latency connection establishment, and network path migration. It includes security measures ensuring confidentiality, integrity, and availability.
 
 ---
 
-## Key Design Principles
+
+## 3. Key Design Principles
 
 1. **UDP substrate**: QUIC packets are carried in UDP datagrams to facilitate deployment through existing NATs and middleboxes.
 2. **Encryption by default**: The entirety of each packet is authenticated; nearly all content is encrypted. Only the invariant header fields (flags, version, connection IDs) are visible to on-path elements.
@@ -24,7 +32,8 @@ RFC 9000 defines the core QUIC transport protocol. QUIC provides applications wi
 
 ---
 
-## Packet Structure
+
+## 4. Packet Structure
 
 ### Header Types
 
@@ -35,54 +44,23 @@ RFC 9000 defines the core QUIC transport protocol. QUIC provides applications wi
 
 ### Variable-Length Integer Encoding (Section 16)
 
-QUIC uses a variable-length integer encoding for most numeric values:
-
-| 2-MSB | Length | Usable Bits | Maximum Value |
-|-------|--------|-------------|---------------|
-| 00    | 1 byte | 6           | 63            |
-| 01    | 2 bytes| 14          | 16383         |
-| 10    | 4 bytes| 30          | 1073741823    |
-| 11    | 8 bytes| 62          | 4611686018427387903 |
+QUIC uses a variable-length integer encoding for most numeric values. See [QUIC_WIRE_SPEC.md §2](../specs/QUIC_WIRE_SPEC.md#2-variable-length-integer-encoding-rfc-9000-section-16) for the canonical encoding table.
 
 ### Packet Types (Long Header)
 
-| Type Value | Packet Type | Encryption Level |
-|-----------|-------------|------------------|
-| 0x00      | Initial     | Initial secrets (derived from DCID) |
-| 0x01      | 0-RTT       | Early data keys |
-| 0x02      | Handshake   | Handshake keys |
-| 0x03      | Retry       | None (integrity-tagged) |
+See [QUIC_WIRE_SPEC.md §3](../specs/QUIC_WIRE_SPEC.md#3-packet-types-and-headers-rfc-9000-section-17) for the complete packet type reference. The four long-header types are Initial, 0-RTT, Handshake, and Retry.
 
 ---
 
-## Frame Types (Section 12.4)
 
-| Type | Name | Description |
-|------|------|-------------|
-| 0x00 | PADDING | No-op; used to increase packet size |
-| 0x01 | PING | Keepalive / ack-eliciting |
-| 0x02-0x03 | ACK | Acknowledge received packets |
-| 0x04 | RESET_STREAM | Abruptly terminate sending on a stream |
-| 0x05 | STOP_SENDING | Request peer stop sending on a stream |
-| 0x06 | CRYPTO | Carry TLS handshake messages |
-| 0x07 | NEW_TOKEN | Provide token for future connection attempts |
-| 0x08-0x09 | STREAM | Carry application data |
-| 0x10 | MAX_DATA | Connection-level flow control |
-| 0x11 | MAX_STREAM_DATA | Stream-level flow control |
-| 0x12-0x13 | MAX_STREAMS | Limit peer's stream creation |
-| 0x14 | DATA_BLOCKED | Signal flow control limit reached |
-| 0x15 | STREAM_DATA_BLOCKED | Signal stream flow control limit |
-| 0x16-0x17 | STREAMS_BLOCKED | Signal stream creation limit |
-| 0x18 | NEW_CONNECTION_ID | Provide new CID to peer |
-| 0x19 | RETIRE_CONNECTION_ID | Retire a CID |
-| 0x1a | PATH_CHALLENGE | Path validation probe |
-| 0x1b | PATH_RESPONSE | Path validation response |
-| 0x1c-0x1d | CONNECTION_CLOSE | Terminate connection |
-| 0x1e | HANDSHAKE_DONE | Server signals handshake completion |
+## 5. Frame Types (Section 12.4)
+
+RFC 9000 defines 19 frame types for connection management, flow control, stream data, and path validation. See [QUIC_WIRE_SPEC.md §4](../specs/QUIC_WIRE_SPEC.md#4-frame-types-and-formats-rfc-9000-section-19) for the complete frame type reference and wire encoding details. |
 
 ---
 
-## Connection Lifecycle
+
+## 6. Connection Lifecycle
 
 ### Handshake (Section 7)
 
@@ -115,7 +93,8 @@ Client                                    Server
 
 ---
 
-## Streams (Sections 2-3)
+
+## 7. Streams (Sections 2-3)
 
 ### Stream Types
 
@@ -130,6 +109,8 @@ The two least-significant bits of a stream ID encode the type.
 
 ### Stream State Machine
 
+See [QUIC_STREAMS_SPEC.md §3](../specs/QUIC_STREAMS_SPEC.md#3-stream-states-rfc-9000-section-3) for the complete state machine. Briefly:
+
 **Sending states**: Ready → Send → Data Sent → Data Recvd (terminal) / Reset Sent → Reset Recvd (terminal)
 
 **Receiving states**: Recv → Size Known → Data Recvd (terminal) / Reset Recvd → Data Read (terminal) / Reset Read (terminal)
@@ -143,7 +124,8 @@ The two least-significant bits of a stream ID encode the type.
 
 ---
 
-## Connection Migration (Section 9)
+
+## 8. Connection Migration (Section 9)
 
 - Only the client initiates migration.
 - Path validation via PATH_CHALLENGE / PATH_RESPONSE.
@@ -153,7 +135,8 @@ The two least-significant bits of a stream ID encode the type.
 
 ---
 
-## Transport Parameters (Section 18)
+
+## 9. Transport Parameters (Section 18)
 
 Exchanged during handshake via TLS extensions. Key parameters:
 
@@ -172,7 +155,8 @@ Exchanged during handshake via TLS extensions. Key parameters:
 
 ---
 
-## Security Considerations (Section 21)
+
+## 10. Security Considerations (Section 21)
 
 - **Handshake denial-of-service**: Initial packet must be >= 1200 bytes (amplification limit); Retry token mechanism for address validation.
 - **Amplification attacks**: Before address validation, server limited to 3x data received.
@@ -182,7 +166,8 @@ Exchanged during handshake via TLS extensions. Key parameters:
 
 ---
 
-## Relevance to dart_quic
+
+## 11. Relevance to dart_quic
 
 1. **Variable-length integer encoding** must be a foundational codec in Dart.
 2. **Packet parsing** must handle both long and short headers with zero-copy where possible.
@@ -194,7 +179,8 @@ Exchanged during handshake via TLS extensions. Key parameters:
 
 ---
 
-## References
+
+## 12. References
 
 - RFC 9000: https://www.rfc-editor.org/rfc/rfc9000
 - RFC 8999 (QUIC Invariants): https://www.rfc-editor.org/rfc/rfc8999

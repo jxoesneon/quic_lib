@@ -1,20 +1,27 @@
+---
+title: "RFC 9114 Notes: HTTP/3"
+category: research
+published: "June 2022"
+companion_rfcs: []
+---
+
 # RFC 9114 Notes: HTTP/3
 
-**RFC**: 9114  
-**Author**: M. Bishop (Ed.)  
-**Published**: June 2022  
-**Status**: Standards Track  
-**Depends on**: RFC 9000, RFC 9204 (QPACK)
 
 ---
 
-## Abstract
+## 1. Purpose
+
+HTTP/3 over QUIC is not simply HTTP/2 over UDP; it replaces HPACK with QPACK, redefines stream roles, and eliminates TCP head-of-line blocking. These notes capture the mapping between QUIC streams and HTTP semantics so that the HTTP/3 layer is built on a correct understanding of RFC 9114.
+
+## 2. Abstract
 
 RFC 9114 defines HTTP/3, the mapping of HTTP semantics over the QUIC transport protocol. It replaces TCP+TLS+HTTP/2 with QUIC, eliminating head-of-line blocking at the transport layer while preserving HTTP's request-response semantics.
 
 ---
 
-## Key Differences from HTTP/2
+
+## 3. Key Differences from HTTP/2
 
 | Feature | HTTP/2 | HTTP/3 |
 |---------|--------|--------|
@@ -28,7 +35,8 @@ RFC 9114 defines HTTP/3, the mapping of HTTP semantics over the QUIC transport p
 
 ---
 
-## Stream Mapping (Section 6)
+
+## 4. Stream Mapping (Section 6)
 
 ### Stream Types
 
@@ -48,7 +56,8 @@ Each endpoint MUST create exactly:
 
 ---
 
-## Frame Types (Section 7)
+
+## 5. Frame Types (Section 7)
 
 | Type | Name | Sent On | Description |
 |------|------|---------|-------------|
@@ -74,7 +83,8 @@ Note: HTTP/3 frames are **not** the same as QUIC frames. HTTP/3 frames are carri
 
 ---
 
-## Request/Response Exchange (Section 4)
+
+## 6. Request/Response Exchange (Section 4)
 
 ### Request on a Bidirectional Stream
 
@@ -99,7 +109,8 @@ Client                              Server
 
 ---
 
-## SETTINGS Frame (Section 7.2.4)
+
+## 7. SETTINGS Frame (Section 7.2.4)
 
 Sent on the control stream immediately after stream creation:
 
@@ -113,7 +124,8 @@ HTTP/2 settings (like SETTINGS_ENABLE_PUSH) are **not** valid in HTTP/3 and MUST
 
 ---
 
-## Connection Shutdown (Section 5.2)
+
+## 8. Connection Shutdown (Section 5.2)
 
 - **GOAWAY frame**: Contains a Stream ID or Push ID indicating the last one the sender will process.
 - Receiver should not initiate new requests on streams with IDs >= the indicated value.
@@ -121,7 +133,8 @@ HTTP/2 settings (like SETTINGS_ENABLE_PUSH) are **not** valid in HTTP/3 and MUST
 
 ---
 
-## Error Handling (Section 8)
+
+## 9. Error Handling (Section 8)
 
 ### Error Codes
 
@@ -147,7 +160,8 @@ HTTP/2 settings (like SETTINGS_ENABLE_PUSH) are **not** valid in HTTP/3 and MUST
 
 ---
 
-## Server Push (Section 4.6)
+
+## 10. Server Push (Section 4.6)
 
 1. Server sends PUSH_PROMISE on a request stream (contains push ID + request headers).
 2. Server sends MAX_PUSH_ID on control stream to expand push ID space.
@@ -157,7 +171,8 @@ HTTP/2 settings (like SETTINGS_ENABLE_PUSH) are **not** valid in HTTP/3 and MUST
 
 ---
 
-## Security Considerations (Section 10)
+
+## 11. Security Considerations (Section 10)
 
 - All HTTP/3 communication is encrypted (inherits from QUIC).
 - Server push must be carefully validated; clients should not blindly cache pushed responses.
@@ -166,7 +181,8 @@ HTTP/2 settings (like SETTINGS_ENABLE_PUSH) are **not** valid in HTTP/3 and MUST
 
 ---
 
-## Relevance to dart_quic
+
+## 12. Relevance to dart_quic
 
 1. **Stream type detection**: First bytes of unidirectional streams indicate their type — need a dispatcher.
 2. **QPACK integration**: Separate encoder/decoder streams must be managed alongside request streams.
@@ -178,7 +194,8 @@ HTTP/2 settings (like SETTINGS_ENABLE_PUSH) are **not** valid in HTTP/3 and MUST
 
 ---
 
-## References
+
+## 13. References
 
 - RFC 9114: https://www.rfc-editor.org/rfc/rfc9114
 - RFC 9204 (QPACK): https://www.rfc-editor.org/rfc/rfc9204

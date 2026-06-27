@@ -1,21 +1,29 @@
+---
+title: "QUIC Streams Specification"
+category: spec
+version: "1.0-draft"
+status: "Specification"
+subsystem: "Stream Multiplexing & Flow Control"
+rfc_basis:
+  - "RFC 9000 Sections 2, 3, 4"
+dependencies:
+  - "ERROR_REGISTRY.md"
+  - "QUIC_DATAGRAM_SPEC.md"
+  - "ROADMAP.md"
+---
+
 # QUIC Streams Specification
 
-**Version**: 1.0-draft  
-**Status**: Specification  
-**RFC Basis**: RFC 9000 Sections 2, 3, 4  
-**Subsystem**: Stream Multiplexing & Flow Control
 
----
 
 ## 1. Purpose
 
-This document specifies the stream abstraction for `dart_quic`: stream identification, state machines, flow control (connection-level and stream-level), stream creation limits, and the mapping to Dart's async primitives.
+Applications need to multiplex many independent byte streams over a single QUIC connection, each with its own flow control and lifecycle. Without a precise stream specification, implementations risk deadlocks, buffer bloat, or protocol violations. This spec defines the state machines and credit-based flow control that let HTTP/3, WebTransport, and libp2p coexist on one connection.
 
----
+## 2. Detailed Specification
+### 2.1 Stream Identification (RFC 9000 Section 2.1)
 
-## 2. Stream Identification (RFC 9000 Section 2.1)
-
-### 2.1 Stream ID Encoding
+#### 2.1.1 Stream ID Encoding
 
 Stream IDs are 62-bit integers (variable-length encoded). The two least-significant bits determine the stream type:
 
@@ -26,7 +34,7 @@ Stream IDs are 62-bit integers (variable-length encoded). The two least-signific
 | 0b10 | Client | Unidirectional |
 | 0b11 | Server | Unidirectional |
 
-### 2.2 Stream ID Sequence
+#### 2.1.2 Stream ID Sequence
 
 - Client-initiated bidi: 0, 4, 8, 12, ...
 - Server-initiated bidi: 1, 5, 9, 13, ...
@@ -37,9 +45,10 @@ Formula: `stream_id = type_bits + 4 * sequence_number`
 
 ---
 
-## 3. Stream State Machine
 
-### 3.1 Sending States (RFC 9000 Section 3.1)
+### 2.2 Stream State Machine
+
+#### 2.2.1 Sending States (RFC 9000 Section 3.1)
 
 ```
           ┌──────────┐
@@ -72,7 +81,7 @@ At any point before Data Recvd, RESET_STREAM transitions to:
           └───────────┘
 ```
 
-### 3.2 Receiving States (RFC 9000 Section 3.2)
+#### 2.2.2 Receiving States (RFC 9000 Section 3.2)
 
 ```
           ┌──────────┐
@@ -107,31 +116,32 @@ At any point, RESET_STREAM received transitions to:
 
 ---
 
-## 4. Flow Control (RFC 9000 Section 4)
 
-### 4.1 Credit-Based Model
+### 2.3 Flow Control (RFC 9000 Section 4)
+
+#### 2.3.1 Credit-Based Model
 
 Flow control is credit-based: the receiver advertises the maximum offset (for streams) or maximum total data (for connection) the sender may use. The sender MUST NOT exceed these limits.
 
-### 4.2 Connection-Level Flow Control
+#### 2.3.2 Connection-Level Flow Control
 
 - **MAX_DATA frame**: Receiver advertises the maximum total bytes across all streams.
 - **DATA_BLOCKED frame**: Sender signals it has data to send but is blocked by the connection limit.
 - Limit applies to the sum of data sent on all streams.
 
-### 4.3 Stream-Level Flow Control
+#### 2.3.3 Stream-Level Flow Control
 
 - **MAX_STREAM_DATA frame**: Receiver advertises the maximum offset on a specific stream.
 - **STREAM_DATA_BLOCKED frame**: Sender signals it is blocked on a stream limit.
 - Each stream has an independent limit.
 
-### 4.4 Stream Count Limits
+#### 2.3.4 Stream Count Limits
 
 - **MAX_STREAMS frame**: Limits the cumulative number of streams the peer can open (by type: bidi or uni).
 - **STREAMS_BLOCKED frame**: Sender signals it wants to open more streams but is at the limit.
 - Limits are cumulative (not concurrent) — once a stream ID is used, it counts even after close.
 
-### 4.5 Initial Limits
+#### 2.3.5 Initial Limits
 
 Set via transport parameters during handshake:
 
@@ -144,7 +154,7 @@ Set via transport parameters during handshake:
 | `initial_max_streams_bidi` | Cumulative bidi stream limit |
 | `initial_max_streams_uni` | Cumulative uni stream limit |
 
-### 4.6 Flow Control Update Strategy
+#### 2.3.6 Flow Control Update Strategy
 
 The receiver SHOULD send flow control updates when:
 - The application has consumed significant buffered data.
@@ -154,15 +164,16 @@ A common strategy: send MAX_STREAM_DATA when the application has consumed half t
 
 ---
 
-## 5. Stream Operations
 
-### 5.1 Opening a Stream
+### 2.4 Stream Operations
+
+#### 2.4.1 Opening a Stream
 
 - Allocate the next stream ID of the appropriate type.
 - Check against MAX_STREAMS limit; if at limit, either wait or signal STREAMS_BLOCKED.
 - Initialize send and receive state machines.
 
-### 5.2 Sending Data
+#### 2.4.2 Sending Data
 
 - Buffer data from the application.
 - Segment into STREAM frames respecting:
@@ -172,85 +183,36 @@ A common strategy: send MAX_STREAM_DATA when the application has consumed half t
   - Congestion window.
 - Set FIN bit on the last STREAM frame.
 
-### 5.3 Receiving Data
+#### 2.4.3 Receiving Data
 
 - Reassemble STREAM frames in order (handle gaps due to reordering).
 - Deliver to application in order.
 - Send MAX_STREAM_DATA as application consumes data.
 - On FIN: mark stream as complete.
 
-### 5.4 Resetting a Stream
+#### 2.4.4 Resetting a Stream
 
 - Sender: Send RESET_STREAM with final size and error code.
 - Receiver: On RESET_STREAM, discard buffered data, signal error to application.
 
-### 5.5 Stopping a Stream
+#### 2.4.5 Stopping a Stream
 
 - Receiver: Send STOP_SENDING to request sender stop.
 - Sender: On STOP_SENDING, SHOULD send RESET_STREAM.
 
 ---
 
-## 6. Dart API Mapping
 
-### 6.1 Bidirectional Stream
+### 2.5 Dart API Mapping
 
-```dart
-abstract class QuicStream {
-  int get streamId;
-  bool get isLocallyInitiated;
-  
-  // Reading
-  Stream<List<int>> get inbound;  // ordered byte stream
-  
-  // Writing
-  StreamSink<List<int>> get outbound;
-  Future<void> close();  // sends FIN
-  
-  // Error handling
-  Future<void> reset(int errorCode);
-  Future<void> stopSending(int errorCode);
-  
-  // State
-  StreamState get sendState;
-  StreamState get receiveState;
-}
-```
-
-### 6.2 Unidirectional Stream
-
-```dart
-abstract class QuicSendStream {
-  int get streamId;
-  StreamSink<List<int>> get outbound;
-  Future<void> close();
-  Future<void> reset(int errorCode);
-}
-
-abstract class QuicReceiveStream {
-  int get streamId;
-  Stream<List<int>> get inbound;
-  Future<void> stopSending(int errorCode);
-}
-```
-
-### 6.3 Stream Acceptance
-
-```dart
-abstract class QuicConnection {
-  Stream<QuicStream> get incomingBidirectionalStreams;
-  Stream<QuicReceiveStream> get incomingUnidirectionalStreams;
-  
-  Future<QuicStream> openBidirectionalStream();
-  Future<QuicSendStream> openUnidirectionalStream();
-}
-```
+The QUIC stream and connection APIs are defined in [DART_API_SPEC.md §2.3](DART_API_SPEC.md#23-quic-streams-and-connections). The following subsections describe the stream state machine and flow control semantics.
 
 ---
 
-## 7. Reassembly Buffer
 
-### 7.1 Design
+### 2.6 Reassembly Buffer
+
+#### 2.6.1 Design
 
 Incoming STREAM frames may arrive out of order. The reassembly buffer:
 - Stores (offset, data) pairs.
@@ -258,13 +220,14 @@ Incoming STREAM frames may arrive out of order. The reassembly buffer:
 - Delivers to application only contiguous prefix.
 - Enforces MAX_STREAM_DATA (total buffered <= limit).
 
-### 7.2 Overlap Handling
+#### 2.6.2 Overlap Handling
 
 If two STREAM frames overlap (same offset range), the data MUST be identical (RFC 9000 Section 2.2). If data differs, close connection with PROTOCOL_VIOLATION.
 
 ---
 
-## 8. Priority and Scheduling
+
+### 2.7 Priority and Scheduling
 
 RFC 9000 does not mandate a specific scheduling algorithm. Options:
 
@@ -278,7 +241,9 @@ The implementation SHOULD support priority hints from the application layer (HTT
 
 ---
 
-## 9. Acceptance Criteria
+
+
+## 3. Acceptance Criteria
 
 - [ ] Stream IDs are correctly generated for all four types.
 - [ ] State machine transitions match RFC 9000 Section 3 for all paths.
@@ -293,7 +258,8 @@ The implementation SHOULD support priority hints from the application layer (HTT
 
 ---
 
-## 10. Security Considerations
+
+## 4. Security Considerations
 
 - **Resource exhaustion**: Limit maximum buffered data per stream and per connection.
 - **Stream ID validation**: Reject frames referencing stream IDs beyond MAX_STREAMS.
@@ -302,14 +268,23 @@ The implementation SHOULD support priority hints from the application layer (HTT
 
 ---
 
-## 11. Dependencies
+
+## 5. Dependencies
 
 - Wire codec (QUIC_WIRE_SPEC.md): STREAM, flow control, and RESET frame parsing.
 - Connection manager: Transport parameters provide initial flow control limits.
 
 ---
 
-## 12. Testing Strategy
+
+
+
+## Used By
+
+- [ERROR_REGISTRY.md](ERROR_REGISTRY.md) — Defines stream reset and STOP_SENDING semantics.
+- [QUIC_DATAGRAM_SPEC.md](QUIC_DATAGRAM_SPEC.md) — Contrasts datagram semantics with stream semantics.
+- [ROADMAP.md](ROADMAP.md) — Lists QUIC_STREAMS_SPEC as a formal specification deliverable.
+## 6. Testing Strategy
 
 - State machine testing: Verify all valid transitions and reject invalid ones.
 - Flow control: Verify sender respects limits; verify receiver sends updates.
@@ -319,7 +294,8 @@ The implementation SHOULD support priority hints from the application layer (HTT
 
 ---
 
-## References
+
+## 7. References
 
 - RFC 9000 Section 2 (Streams): https://www.rfc-editor.org/rfc/rfc9000#section-2
 - RFC 9000 Section 3 (Stream States): https://www.rfc-editor.org/rfc/rfc9000#section-3

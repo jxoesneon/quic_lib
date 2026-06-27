@@ -1,19 +1,26 @@
+---
+title: "libp2p QUIC Specification Notes"
+category: research
+companion_rfcs: []
+---
+
 # libp2p QUIC Specification Notes
 
-**Source**: libp2p/specs (GitHub)  
-**Documents**: `quic/README.md`, `tls/tls.md`, `addressing/README.md`  
-**Status**: Stable specification  
-**Depends on**: RFC 9000, RFC 8446 (TLS 1.3), libp2p Peer ID spec
 
 ---
 
-## Abstract
+## 1. Purpose
+
+libp2p QUIC transport has subtle differences from standard QUIC-self-signed certificates, peer ID derivation, mandatory mutual TLS, and /quic-v1 multiaddrs. Building dart_quic without internalizing these differences would produce a stack that speaks RFC 9000 but cannot join the IPFS network. These notes capture the libp2p-specific requirements that shape the adapter design.
+
+## 2. Abstract
 
 libp2p uses QUIC as a transport that combines encryption, authentication, and stream multiplexing into a single protocol. The libp2p QUIC transport eliminates the need for a separate security handshake (Noise) and stream multiplexer (mplex/yamux) — QUIC provides both natively.
 
 ---
 
-## Architecture: libp2p over QUIC
+
+## 3. Architecture: libp2p over QUIC
 
 ```
 ┌─────────────────────────┐
@@ -33,7 +40,8 @@ Key insight: libp2p streams map **directly** to QUIC bidirectional streams. No a
 
 ---
 
-## Multiaddr Format
+
+## 4. Multiaddr Format
 
 ### Standard QUIC v1
 
@@ -64,7 +72,8 @@ The `quic` code point refers to draft-29; `quic-v1` refers to RFC 9000. Implemen
 
 ---
 
-## TLS 1.3 with Peer Authentication (tls/tls.md)
+
+## 5. TLS 1.3 with Peer Authentication (tls/tls.md)
 
 ### Overview
 
@@ -131,7 +140,8 @@ Client                                    Server
 
 ---
 
-## ALPN (Application-Layer Protocol Negotiation)
+
+## 6. ALPN (Application-Layer Protocol Negotiation)
 
 libp2p QUIC uses the ALPN token: `"libp2p"`
 
@@ -139,7 +149,8 @@ This is sent during the TLS handshake to identify the connection as a libp2p con
 
 ---
 
-## Stream Mapping
+
+## 7. Stream Mapping
 
 | libp2p Concept | QUIC Mechanism |
 |----------------|---------------|
@@ -164,7 +175,8 @@ Server: /ipfs/bitswap/1.2.0\n
 
 ---
 
-## NAT Traversal Considerations
+
+## 8. NAT Traversal Considerations
 
 - **UDP hole punching**: libp2p defines a hole-punching protocol (Circuit Relay v2 + DCUtR) that works with QUIC.
 - **Connection migration**: QUIC's connection migration can maintain connections across NAT rebinding.
@@ -172,7 +184,8 @@ Server: /ipfs/bitswap/1.2.0\n
 
 ---
 
-## Differences from Standard QUIC/TLS Usage
+
+## 9. Differences from Standard QUIC/TLS Usage
 
 | Aspect | Standard QUIC | libp2p QUIC |
 |--------|---------------|-------------|
@@ -185,7 +198,8 @@ Server: /ipfs/bitswap/1.2.0\n
 
 ---
 
-## Relevance to dart_quic
+
+## 10. Relevance to dart_quic
 
 1. **Custom TLS verifier**: Must implement a TLS certificate verifier that:
    - Accepts self-signed certificates.
@@ -202,7 +216,8 @@ Server: /ipfs/bitswap/1.2.0\n
 
 ---
 
-## References
+
+## 11. References
 
 - libp2p TLS spec: https://github.com/libp2p/specs/blob/master/tls/tls.md
 - libp2p QUIC: https://libp2p.io/docs/quic/

@@ -1,19 +1,28 @@
+---
+title: "QUIC Loss Detection and Recovery Specification"
+category: spec
+version: "1.0-draft"
+status: "Specification"
+subsystem: "Loss Detection & Congestion Control"
+rfc_basis:
+  - "RFC 9002"
+dependencies:
+  - "CUBIC_SPEC.md"
+  - "DART_API_SPEC.md"
+  - "QUIC_DATAGRAM_SPEC.md"
+  - "ROADMAP.md"
+---
+
 # QUIC Loss Detection and Recovery Specification
 
-**Version**: 1.0-draft  
-**Status**: Specification  
-**RFC Basis**: RFC 9002  
-**Subsystem**: Loss Detection & Congestion Control
 
----
 
 ## 1. Purpose
 
-This document specifies the loss detection and congestion control mechanisms for `dart_quic`: RTT estimation, packet loss detection, probe timeout (PTO), and the NewReno congestion control algorithm.
+Packet loss is inevitable on the Internet; without a specified recovery layer, dart_quic would either stall on every dropped packet or overwhelm the network with retransmissions. This document defines the loss detector, RTT estimator, probe timeout, and congestion controller that keep the transport both responsive and network-friendly.
 
----
-
-## 2. Architecture
+## 2. Detailed Specification
+### 2.1 Architecture
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -33,23 +42,19 @@ This document specifies the loss detection and congestion control mechanisms for
 
 ---
 
-## 3. RTT Estimation (RFC 9002 Section 5)
 
-### 3.1 State Variables
+### 2.2 RTT Estimation (RFC 9002 Section 5)
 
-```dart
-class RttEstimator {
-  Duration? smoothedRtt;
-  Duration? rttvar;
-  Duration minRtt = Duration.zero;
-  Duration latestRtt = Duration.zero;
-  
-  // From transport parameters
-  Duration maxAckDelay;  // peer's max_ack_delay
-}
-```
+#### 2.2.1 State Variables
 
-### 3.2 On First RTT Sample
+The RTT estimator maintains the following state variables:
+- `smoothedRtt`: weighted moving average of RTT samples.
+- `rttvar`: smoothed RTT variance.
+- `minRtt`: minimum observed RTT (never smoothed).
+- `latestRtt`: most recent RTT sample.
+- `maxAckDelay`: peer's `max_ack_delay` transport parameter.
+
+#### 2.2.2 On First RTT Sample
 
 ```
 smoothed_rtt = latest_rtt
@@ -57,7 +62,7 @@ rttvar = latest_rtt / 2
 min_rtt = latest_rtt
 ```
 
-### 3.3 On Subsequent Samples
+#### 2.2.3 On Subsequent Samples
 
 ```
 min_rtt = min(min_rtt, latest_rtt)
@@ -72,7 +77,7 @@ rttvar = 3/4 * rttvar + 1/4 * abs(smoothed_rtt - adjusted_rtt)
 smoothed_rtt = 7/8 * smoothed_rtt + 1/8 * adjusted_rtt
 ```
 
-### 3.4 Constraints
+#### 2.2.4 Constraints
 
 - min_rtt is NEVER smoothed (always the raw minimum).
 - ack_delay is NOT subtracted when the sample equals min_rtt (avoids underestimation).
@@ -80,23 +85,21 @@ smoothed_rtt = 7/8 * smoothed_rtt + 1/8 * adjusted_rtt
 
 ---
 
-## 4. Sent Packet Tracking
 
-### 4.1 Per-Packet Metadata
+### 2.3 Sent Packet Tracking
 
-```dart
-class SentPacket {
-  final int packetNumber;
-  final DateTime timeSent;
-  final int sentBytes;        // size in bytes (0 for non-ack-eliciting)
-  final bool ackEliciting;    // contains ack-eliciting frames?
-  final bool inFlight;        // counts toward bytes_in_flight?
-  final List<Frame> frames;   // for potential retransmission
-  PacketNumberSpace space;
-}
-```
+#### 2.3.1 Per-Packet Metadata
 
-### 4.2 Packet Number Spaces
+Each sent packet is tracked with:
+- `packetNumber`: the packet's number in its space.
+- `timeSent`: when the packet was transmitted.
+- `sentBytes`: total packet size in bytes (zero for non-ack-eliciting packets).
+- `ackEliciting`: whether the packet contains frames that elicit an ACK.
+- `inFlight`: whether the packet counts toward `bytes_in_flight`.
+- `frames`: list of frames carried, retained for retransmission or loss recovery.
+- `space`: the packet number space (`Initial`, `Handshake`, or `ApplicationData`).
+
+#### 2.3.2 Packet Number Spaces
 
 Separate tracking for:
 - **Initial**: Packets at Initial encryption level.
@@ -105,9 +108,10 @@ Separate tracking for:
 
 ---
 
-## 5. Loss Detection (RFC 9002 Section 6)
 
-### 5.1 On ACK Received
+### 2.4 Loss Detection (RFC 9002 Section 6)
+
+#### 2.4.1 On ACK Received
 
 ```
 function on_ack_received(ack, space, now):
@@ -132,7 +136,7 @@ function on_ack_received(ack, space, now):
   reset_pto_timer()
 ```
 
-### 5.2 Packet Threshold Loss Detection
+#### 2.4.2 Packet Threshold Loss Detection
 
 ```
 function detect_lost_packets(space, now):
@@ -155,7 +159,7 @@ function detect_lost_packets(space, now):
   return lost
 ```
 
-### 5.3 Constants
+#### 2.4.3 Constants
 
 ```
 kPacketThreshold = 3
@@ -165,9 +169,10 @@ kGranularity = 1ms    (timer granularity)
 
 ---
 
-## 6. Probe Timeout (PTO) (RFC 9002 Section 6.2)
 
-### 6.1 Computation
+### 2.5 Probe Timeout (PTO) (RFC 9002 Section 6.2)
+
+#### 2.5.1 Computation
 
 ```
 function compute_pto(space):
@@ -182,7 +187,7 @@ function compute_pto(space):
   return pto * (2 ^ pto_count)  // exponential backoff
 ```
 
-### 6.2 On PTO Expiry
+#### 2.5.2 On PTO Expiry
 
 ```
 function on_pto_timeout():
@@ -196,7 +201,7 @@ function on_pto_timeout():
   set_pto_timer()
 ```
 
-### 6.3 PTO Reset
+#### 2.5.3 PTO Reset
 
 PTO count resets to 0 when:
 - An ACK is received that acknowledges new packets.
@@ -204,25 +209,21 @@ PTO count resets to 0 when:
 
 ---
 
-## 7. Congestion Control (RFC 9002 Section 7)
 
-### 7.1 State Variables
+### 2.6 Congestion Control (RFC 9002 Section 7)
 
-```dart
-class CongestionController {
-  int cwnd;                    // congestion window (bytes)
-  int ssthresh = int.maxValue; // slow start threshold
-  int bytesInFlight = 0;       // unacknowledged bytes
-  DateTime? congestionRecoveryStartTime;
-  
-  // Constants
-  int maxDatagramSize = 1200;
-  int get initialWindow => min(10 * maxDatagramSize, max(14720, 2 * maxDatagramSize));
-  int get minimumWindow => 2 * maxDatagramSize;
-}
-```
+#### 2.6.1 State Variables
 
-### 7.2 States
+The congestion controller maintains:
+- `cwnd`: current congestion window in bytes.
+- `ssthresh`: slow-start threshold (initialized to maximum integer value).
+- `bytesInFlight`: total unacknowledged bytes.
+- `congestionRecoveryStartTime`: timestamp when the most recent congestion event began (null if not recovering).
+- `maxDatagramSize`: typically 1200 bytes.
+- `initialWindow`: `min(10 * maxDatagramSize, max(14720, 2 * maxDatagramSize))`.
+- `minimumWindow`: `2 * maxDatagramSize`.
+
+#### 2.6.2 States
 
 | State | Condition | cwnd Growth |
 |-------|-----------|-------------|
@@ -230,7 +231,7 @@ class CongestionController {
 | Congestion Avoidance | cwnd >= ssthresh | += max_datagram_size * bytes_acked / cwnd |
 | Recovery | After loss event | No growth; cwnd held until recovery ends |
 
-### 7.3 On Packet Acknowledged
+#### 2.6.3 On Packet Acknowledged
 
 ```
 function on_packet_acked(packet):
@@ -250,7 +251,7 @@ function on_packet_acked(packet):
     cwnd += max_datagram_size * packet.sent_bytes / cwnd
 ```
 
-### 7.4 On Loss Detected
+#### 2.6.4 On Loss Detected
 
 ```
 function on_packets_lost(lost_packets):
@@ -266,7 +267,7 @@ function on_packets_lost(lost_packets):
     cwnd = max(ssthresh, kMinimumWindow)
 ```
 
-### 7.5 Persistent Congestion
+#### 2.6.5 Persistent Congestion
 
 ```
 function check_persistent_congestion(lost_packets):
@@ -279,7 +280,7 @@ function check_persistent_congestion(lost_packets):
     congestion_recovery_start_time = None
 ```
 
-### 7.6 ECN Response
+#### 2.6.6 ECN Response
 
 ```
 function on_ecn_ce_increase():
@@ -292,15 +293,16 @@ function on_ecn_ce_increase():
 
 ---
 
-## 8. Pacing (RFC 9002 Section 7.7)
 
-### 8.1 Interval Calculation
+### 2.7 Pacing (RFC 9002 Section 7.7)
+
+#### 2.7.1 Interval Calculation
 
 ```
 pacing_interval = smoothed_rtt * max_datagram_size / cwnd
 ```
 
-### 8.2 Implementation
+#### 2.7.2 Implementation
 
 Use a token bucket that fills at the pacing rate:
 - Bucket capacity: `cwnd` (allows burst up to cwnd).
@@ -309,7 +311,8 @@ Use a token bucket that fills at the pacing rate:
 
 ---
 
-## 9. Anti-Amplification (RFC 9000 Section 8.1)
+
+### 2.8 Anti-Amplification (RFC 9000 Section 8.1)
 
 Before address validation:
 ```
@@ -320,25 +323,16 @@ This limits amplification attacks. After address validation (receiving a handsha
 
 ---
 
-## 10. Dart API
 
-```dart
-abstract class CongestionControl {
-  bool canSend(int packetSize);
-  void onPacketSent(SentPacket packet);
-  void onPacketAcked(SentPacket packet);
-  void onPacketLost(SentPacket packet);
-  void onEcnCeCount(int newCeCount);
-  Duration get pacingDelay;
-}
+### 2.9 Dart API
 
-class NewRenoCongestionControl implements CongestionControl { ... }
-class CubicCongestionControl implements CongestionControl { ... }  // future
-```
+The congestion control interface is defined in [DART_API_SPEC.md §2.4](DART_API_SPEC.md#24-recovery-and-congestion-control). The following subsections describe the CUBIC algorithm implementation details.
 
 ---
 
-## 11. Acceptance Criteria
+
+
+## 3. Acceptance Criteria
 
 - [ ] RTT estimation matches expected values for known scenarios.
 - [ ] Packet threshold loss detection declares loss at exactly kPacketThreshold gap.
@@ -354,7 +348,8 @@ class CubicCongestionControl implements CongestionControl { ... }  // future
 
 ---
 
-## 12. Security Considerations
+
+## 4. Security Considerations
 
 - **ACK manipulation**: A compromised peer could send false ACKs to inflate cwnd. The protocol relies on packet protection to prevent this.
 - **Amplification**: Anti-amplification limits (3x) MUST be enforced before address validation.
@@ -362,7 +357,8 @@ class CubicCongestionControl implements CongestionControl { ... }  // future
 
 ---
 
-## 13. Dependencies
+
+## 5. Dependencies
 
 - RTT samples from ACK processing.
 - Wire codec (ACK frame parsing).
@@ -371,7 +367,16 @@ class CubicCongestionControl implements CongestionControl { ... }  // future
 
 ---
 
-## 14. Testing Strategy
+
+
+
+## Used By
+
+- [CUBIC_SPEC.md](CUBIC_SPEC.md) — Loss detection and RTT estimation are reused by CUBIC.
+- [DART_API_SPEC.md](DART_API_SPEC.md) — References SentPacket type and congestion control interface.
+- [QUIC_DATAGRAM_SPEC.md](QUIC_DATAGRAM_SPEC.md) — Congestion control and bytes_in_flight accounting for datagrams.
+- [ROADMAP.md](ROADMAP.md) — Lists QUIC_RECOVERY_SPEC as a formal specification deliverable.
+## 6. Testing Strategy
 
 - Simulation: Drive loss detector with synthetic ACK sequences.
 - Congestion control: Verify cwnd evolution under various loss patterns.
@@ -381,7 +386,8 @@ class CubicCongestionControl implements CongestionControl { ... }  // future
 
 ---
 
-## References
+
+## 7. References
 
 - RFC 9002: https://www.rfc-editor.org/rfc/rfc9002
 - RFC 6582 (NewReno): https://www.rfc-editor.org/rfc/rfc6582

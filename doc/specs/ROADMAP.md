@@ -1,18 +1,24 @@
+---
+title: "Implementation Roadmap"
+category: spec
+version: "1.0-draft"
+status: "Specification"
+subsystem: "Project Planning"
+rfc_basis: []
+dependencies:
+  - "ROADMAP_ARCHITECTURE.md"
+  - "VERSIONING_POLICY.md"
+---
+
 # Implementation Roadmap
 
-**Version**: 1.0-draft  
-**Status**: Specification  
-**Subsystem**: Project Planning
 
----
 
 ## 1. Purpose
+A transport stack as large as dart_quic cannot be built in a single sprint; without a phased plan, contributors duplicate effort, integrate prematurely, and lose sight of the path to production. This roadmap sequences specification, core transport, HTTP/3, WebTransport, libp2p integration, and hardening so that each phase delivers a testable milestone.
 
-This document defines the phased implementation plan for `dart_quic`: from specification through reference implementation to optimization, libp2p integration, and eventual consumption by `dart_ipfs`.
-
----
-
-## 2. Phases Overview
+## 2. Phases
+### 2.1 Phases Overview
 
 ```
 Phase 0: Specification           ← CURRENT PHASE
@@ -26,20 +32,20 @@ Phase 6: dart_ipfs Integration
 
 ---
 
-## 3. Phase 0: Specification (Current)
+### 2.2 Phase 0: Specification (Current)
 
 **Goal**: Complete, research-backed specification of all subsystems.
 
-### Deliverables
+#### Deliverables
 
 - [x] Project charter and scope (README.md)
-- [ ] Research notes (9 documents in `doc/research/`)
-- [ ] Formal specifications (11 documents in `doc/specs/`)
-- [ ] Architecture documents (4 documents in `doc/architecture/`)
-- [ ] Internal consistency review
+- [x] Research notes (9 documents in `doc/research/`)
+- [x] Formal specifications (18 documents in `doc/specs/`)
+- [x] Architecture documents (6 documents in `doc/architecture/`)
+- [x] Internal consistency review
 - [ ] External review (domain experts)
 
-### Exit Criteria
+#### Exit Criteria
 
 - All spec documents exist and cross-reference each other.
 - Acceptance criteria defined for every subsystem.
@@ -47,11 +53,11 @@ Phase 6: dart_ipfs Integration
 
 ---
 
-## 4. Phase 1: Core QUIC Transport
+### 2.3 Phase 1: Core QUIC Transport
 
 **Goal**: RFC 9000-compliant QUIC implementation capable of establishing connections, transferring data, and recovering from loss.
 
-### Milestones
+#### Milestones
 
 | Milestone | Description | Dependencies |
 |-----------|-------------|--------------|
@@ -64,7 +70,7 @@ Phase 6: dart_ipfs Integration
 | 1.7 | Connection migration | 1.6 |
 | 1.8 | 0-RTT support | 1.3, 1.6 |
 
-### Exit Criteria
+#### Exit Criteria
 
 - Passes QUIC Interop Runner handshake + transfer tests.
 - Successfully communicates with quic-go client and server.
@@ -72,11 +78,11 @@ Phase 6: dart_ipfs Integration
 
 ---
 
-## 5. Phase 2: HTTP/3
+### 2.4 Phase 2: HTTP/3
 
 **Goal**: RFC 9114-compliant HTTP/3 layer on top of QUIC.
 
-### Milestones
+#### Milestones
 
 | Milestone | Description | Dependencies |
 |-----------|-------------|--------------|
@@ -88,7 +94,7 @@ Phase 6: dart_ipfs Integration
 | 2.6 | Server push | 2.4 |
 | 2.7 | GOAWAY and graceful shutdown | 2.4 |
 
-### Exit Criteria
+#### Exit Criteria
 
 - Passes h3spec conformance suite.
 - `Http3Client` can communicate with nginx/caddy HTTP/3 servers.
@@ -96,11 +102,11 @@ Phase 6: dart_ipfs Integration
 
 ---
 
-## 6. Phase 3: WebTransport
+### 2.5 Phase 3: WebTransport
 
 **Goal**: WebTransport over HTTP/3 support.
 
-### Milestones
+#### Milestones
 
 | Milestone | Description | Dependencies |
 |-----------|-------------|--------------|
@@ -112,7 +118,7 @@ Phase 6: dart_ipfs Integration
 | 3.6 | Session lifecycle (CLOSE, DRAIN capsules) | 3.3 |
 | 3.7 | Multiple sessions per connection | 3.6 |
 
-### Exit Criteria
+#### Exit Criteria
 
 - `WebTransportSession` API complete and functional.
 - Interop with Chromium's WebTransport implementation.
@@ -120,11 +126,11 @@ Phase 6: dart_ipfs Integration
 
 ---
 
-## 7. Phase 4: libp2p Integration
+### 2.6 Phase 4: libp2p Integration
 
 **Goal**: libp2p-compatible QUIC transport for the Dart libp2p stack.
 
-### Milestones
+#### Milestones
 
 | Milestone | Description | Dependencies |
 |-----------|-------------|--------------|
@@ -136,7 +142,7 @@ Phase 6: dart_ipfs Integration
 | 4.6 | multistream-select on QUIC streams | 4.5 |
 | 4.7 | NAT traversal (DCUtR coordination) | 4.5 |
 
-### Exit Criteria
+#### Exit Criteria
 
 - dart_quic ↔ go-libp2p QUIC connection succeeds.
 - Peer ID verification works end-to-end.
@@ -144,11 +150,11 @@ Phase 6: dart_ipfs Integration
 
 ---
 
-## 8. Phase 5: Optimization & Hardening
+### 2.7 Phase 5: Optimization & Hardening
 
 **Goal**: Production readiness.
 
-### Areas
+#### Areas
 
 | Area | Work |
 |------|------|
@@ -159,7 +165,7 @@ Phase 6: dart_ipfs Integration
 | API polish | Dartdoc, examples, changelog, semver stability |
 | Packaging | pub.dev publication, CI/CD pipeline |
 
-### Exit Criteria
+#### Exit Criteria
 
 - Performance benchmarks meet acceptable thresholds for client-side use.
 - Zero known security vulnerabilities.
@@ -168,11 +174,11 @@ Phase 6: dart_ipfs Integration
 
 ---
 
-## 9. Phase 6: dart_ipfs Integration
+### 2.8 Phase 6: dart_ipfs Integration
 
 **Goal**: `dart_quic` consumed by `dart_ipfs` as the QUIC transport.
 
-### Integration Points
+#### Integration Points
 
 | Component | dart_ipfs Usage |
 |-----------|----------------|
@@ -182,7 +188,7 @@ Phase 6: dart_ipfs Integration
 | Stream multiplexing | Protocol streams (Bitswap, Kademlia, etc.) |
 | Connection migration | Mobile P2P resilience |
 
-### Exit Criteria
+#### Exit Criteria
 
 - `dart_ipfs` can listen on `/quic-v1` addresses.
 - `dart_ipfs` can dial go-ipfs and js-ipfs QUIC nodes.
@@ -190,7 +196,33 @@ Phase 6: dart_ipfs Integration
 
 ---
 
-## 10. Timeline Estimates
+
+## 3. Security Considerations
+### 3.1 Security Considerations
+
+- Security audit (Phase 5) is mandatory before 1.0.0 release.
+- No compromise on TLS 1.3 compliance at any phase.
+- Fuzz testing begins in Phase 1 and continues throughout.
+- Vulnerabilities discovered at any phase are P0.
+
+---
+
+
+
+
+## Used By
+
+- [ROADMAP_ARCHITECTURE.md](ROADMAP_ARCHITECTURE.md) — References ROADMAP for high-level timeline and milestones.
+- [VERSIONING_POLICY.md](VERSIONING_POLICY.md) — References ROADMAP for phased implementation timeline.
+## 4. References
+### 4.1 References
+
+- dart_ipfs Roadmap v2.1: P0 — QUIC transport requirement
+- QUIC Interop Runner: https://interop.seemann.io/
+- pub.dev publishing guide: https://dart.dev/tools/pub/publishing
+- libp2p Interop Tests: https://github.com/libp2p/test-plans
+
+## 5. Timeline Estimates
 
 | Phase | Estimated Duration | Prerequisites |
 |-------|-------------------|---------------|
@@ -206,7 +238,8 @@ Phase 6: dart_ipfs Integration
 
 ---
 
-## 11. Risk Assessment
+
+## 6. Risk Assessment
 
 | Risk | Probability | Impact | Mitigation |
 |------|------------|--------|-----------|
@@ -219,7 +252,8 @@ Phase 6: dart_ipfs Integration
 
 ---
 
-## 12. Acceptance Criteria (Roadmap Document)
+
+## 7. Acceptance Criteria (Roadmap Document)
 
 - [ ] All phases defined with clear milestones.
 - [ ] Dependencies between phases are explicit.
@@ -229,19 +263,3 @@ Phase 6: dart_ipfs Integration
 - [ ] Integration with dart_ipfs clearly scoped.
 
 ---
-
-## 13. Security Considerations
-
-- Security audit (Phase 5) is mandatory before 1.0.0 release.
-- No compromise on TLS 1.3 compliance at any phase.
-- Fuzz testing begins in Phase 1 and continues throughout.
-- Vulnerabilities discovered at any phase are P0.
-
----
-
-## References
-
-- dart_ipfs Roadmap v2.1: P0 — QUIC transport requirement
-- QUIC Interop Runner: https://interop.seemann.io/
-- pub.dev publishing guide: https://dart.dev/tools/pub/publishing
-- libp2p Interop Tests: https://github.com/libp2p/test-plans

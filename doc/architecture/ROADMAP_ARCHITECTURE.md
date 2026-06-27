@@ -1,16 +1,17 @@
+---
+title: "Implementation Phase Architecture"
+category: architecture
+version: "1.0-draft"
+subsystem: "Build Order & Integration Plan"
+---
+
 # Implementation Phase Architecture
 
-**Version**: 1.0-draft  
-**Status**: Architecture  
-**Subsystem**: Build Order & Integration Plan
 
----
 
 ## 1. Purpose
 
-This document describes the order of implementation phases, the architectural decisions driving that order, integration points between modules, and dependency management during development.
-
----
+The high-level roadmap tells us what to build and when, but not how the modules depend on each other during implementation. Without a detailed build order and milestone dependency graph, Phase 2 (HTTP/3) might start before Phase 1 (core QUIC) is testable. This architecture document bridges that gap, showing the bottom-up sequence that makes each phase demonstrable.
 
 ## 2. Build Order Rationale
 
@@ -21,6 +22,7 @@ The implementation order is driven by three principles:
 3. **Value-first**: The earliest useful artifact is a working QUIC handshake.
 
 ---
+
 
 ## 3. Milestone Dependency Graph
 
@@ -58,6 +60,7 @@ The implementation order is driven by three principles:
 ```
 
 ---
+
 
 ## 4. Phase 1 Internal Build Order
 
@@ -199,6 +202,7 @@ Decision point: Evaluate after researching available Dart TLS libraries.
 
 ---
 
+
 ## 5. Phase 2 Internal Build Order
 
 ```
@@ -231,6 +235,7 @@ class Http3ClientImpl implements Http3Client {
 
 ---
 
+
 ## 6. Phase 4 Integration Architecture
 
 libp2p adapter wraps the QUIC core with custom TLS behavior:
@@ -253,6 +258,7 @@ class Libp2pQuicTransportImpl implements Libp2pQuicTransport {
 ```
 
 ---
+
 
 ## 7. Cross-Cutting Concerns
 
@@ -292,6 +298,7 @@ Set up in parallel with Phase 1:
 
 ---
 
+
 ## 8. Risk Mitigations by Phase
 
 | Phase | Risk | Mitigation |
@@ -304,6 +311,7 @@ Set up in parallel with Phase 1:
 | 5 | Performance bottlenecks | Profile from Phase 1; don't defer measurement |
 
 ---
+
 
 ## 9. Integration Testing Between Phases
 
@@ -318,6 +326,7 @@ Set up in parallel with Phase 1:
 | HTTP/3 + WebTransport | WebTransport session with Chromium |
 
 ---
+
 
 ## 10. Parallel Work Opportunities
 
@@ -334,6 +343,7 @@ Within each phase, some work can proceed in parallel:
 
 ---
 
+
 ## 11. Definition of Done (per Milestone)
 
 Each milestone is complete when:
@@ -346,7 +356,8 @@ Each milestone is complete when:
 
 ---
 
-## References
+
+## 12. References
 
 - ROADMAP.md (timeline and phase descriptions)
 - MODULE_OVERVIEW.md (module architecture)

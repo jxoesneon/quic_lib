@@ -1,16 +1,17 @@
+---
+title: "Module Overview"
+category: architecture
+version: "1.0-draft"
+subsystem: "System Design"
+---
+
 # Module Overview
 
-**Version**: 1.0-draft  
-**Status**: Architecture  
-**Subsystem**: System Design
 
----
 
 ## 1. Purpose
 
-This document describes the modular architecture of `dart_quic`: the layering of subsystems, their responsibilities, boundaries, and inter-module communication contracts.
-
----
+Large transport stacks risk becoming monolithic spaghetti. By defining clear module boundaries-UDP I/O, wire codec, TLS engine, packet engine, recovery, connection manager, stream manager, and application adapters-this document lets teams work in parallel without stomping on each other internals.
 
 ## 2. Layer Architecture
 
@@ -54,121 +55,88 @@ This document describes the modular architecture of `dart_quic`: the layering of
 
 ---
 
+
 ## 3. Module Catalog
 
 ### 3.1 UDP I/O (`src/io/`)
 
 **Responsibility**: Raw UDP datagram send/receive.
 
-| Component | Role |
-|-----------|------|
-| `UdpSocket` | Wraps `RawDatagramSocket`; async event loop integration |
-| `DatagramBatch` | Groups multiple datagrams for efficiency |
-| `AddressManager` | Tracks local/remote addresses for migration |
-
-**Interfaces**:
-- IN: Raw bytes from network
-- OUT: Raw bytes to network
-- UP: Parsed datagrams to Packet Engine
+| Component | Role | Input | Output |
+|-----------|------|-------|--------|
+| `UdpSocket` | Wraps `RawDatagramSocket`; async event loop integration | Raw bytes from network | Raw bytes to network |
+| `DatagramBatch` | Groups multiple datagrams for efficiency | Raw bytes | Batched raw bytes |
+| `AddressManager` | Tracks local/remote addresses for migration | Address changes | Tracked addresses |
 
 ### 3.2 Wire Codec (`src/wire/`)
 
 **Responsibility**: Encode/decode all QUIC wire formats.
 
-| Component | Role |
-|-----------|------|
-| `VarInt` | Variable-length integer codec |
-| `PacketParser` | Long/short header parsing |
-| `PacketBuilder` | Packet construction |
-| `FrameCodec` | All 20+ frame types |
-| `PacketNumber` | Encoding/decoding/reconstruction |
-
-**Interfaces**:
-- IN: Raw bytes
-- OUT: Structured `Packet` / `Frame` objects
-- No external dependencies
+| Component | Role | Input | Output |
+|-----------|------|-------|--------|
+| `VarInt` | Variable-length integer codec | Raw bytes | uint64 values |
+| `PacketParser` | Long/short header parsing | Raw bytes | Parsed Packet objects |
+| `PacketBuilder` | Packet construction | Structured packets | Raw bytes |
+| `FrameCodec` | All 20+ frame types | Raw frame bytes | Frame objects |
+| `PacketNumber` | Encoding/decoding/reconstruction | Truncated PN | Full packet number |
 
 ### 3.3 TLS Engine (`src/crypto/tls/`)
 
 **Responsibility**: TLS 1.3 handshake, key schedule, certificate management.
 
-| Component | Role |
-|-----------|------|
-| `TlsEngine` | Handshake state machine |
-| `KeySchedule` | HKDF-based key derivation |
-| `CertificateManager` | Certificate loading, validation |
-| `TransportParams` | Serialize/deserialize QUIC transport parameters |
-
-**Interfaces**:
-- IN: Handshake bytes from CRYPTO frames
-- OUT: Handshake bytes to send; traffic secrets
-- UP: Secrets provided to Packet Engine
+| Component | Role | Input | Output |
+|-----------|------|-------|--------|
+| `TlsEngine` | Handshake state machine | Handshake bytes from CRYPTO frames | Handshake bytes to send; traffic secrets |
+| `KeySchedule` | HKDF-based key derivation | Initial secret | Derived keys |
+| `CertificateManager` | Certificate loading, validation | Certificate bytes | Validation result |
+| `TransportParams` | Serialize/deserialize QUIC transport parameters | Serialized params | Parsed params |
 
 ### 3.4 Packet Engine (`src/crypto/packet/`)
 
 **Responsibility**: AEAD encryption/decryption, header protection.
 
-| Component | Role |
-|-----------|------|
-| `PacketProtector` | AEAD encrypt/decrypt per encryption level |
-| `HeaderProtection` | Apply/remove header protection |
-| `NonceGenerator` | Construct nonce from IV + packet number |
-| `KeyManager` | Track current/next keys; handle key updates |
-
-**Interfaces**:
-- IN: Plaintext packets (from Wire Codec) + secrets (from TLS)
-- OUT: Protected packets (to UDP I/O) / Decrypted packets (to Stream Manager)
+| Component | Role | Input | Output |
+|-----------|------|-------|--------|
+| `PacketProtector` | AEAD encrypt/decrypt per encryption level | Plaintext packets + secrets | Protected / decrypted packets |
+| `HeaderProtection` | Apply/remove header protection | Protected header | Plaintext header |
+| `NonceGenerator` | Construct nonce from IV + packet number | IV + packet number | Nonce |
+| `KeyManager` | Track current/next keys; handle key updates | Key update event | New keys |
 
 ### 3.5 Recovery (`src/recovery/`)
 
 **Responsibility**: Loss detection, congestion control, RTT estimation.
 
-| Component | Role |
-|-----------|------|
-| `RttEstimator` | Smoothed RTT, rttvar, min_rtt |
-| `LossDetector` | Packet/time threshold detection; PTO |
-| `CongestionController` | Interface + NewReno/CUBIC implementations |
-| `Pacer` | Token-bucket pacing |
-| `SentPacketTracker` | Per-space sent packet metadata |
-
-**Interfaces**:
-- IN: ACK frames, sent packet info, timer events
-- OUT: Loss events, send permission, pacing delay
-- UP: Retransmission requests to Stream Manager
+| Component | Role | Input | Output |
+|-----------|------|-------|--------|
+| `RttEstimator` | Smoothed RTT, rttvar, min_rtt | ACK timestamps | Smoothed RTT |
+| `LossDetector` | Packet/time threshold detection; PTO | ACK frames, sent packet info | Loss events |
+| `CongestionController` | Interface + NewReno/CUBIC implementations | Loss/ACK events | Send permission |
+| `Pacer` | Token-bucket pacing | Send permission | Pacing delay |
+| `SentPacketTracker` | Per-space sent packet metadata | Sent packets | Per-space metadata |
 
 ### 3.6 Connection Manager (`src/connection/`)
 
 **Responsibility**: Connection lifecycle, state machine, CID management.
 
-| Component | Role |
-|-----------|------|
-| `ConnectionStateMachine` | Handshaking → Established → Closing → Closed |
-| `ConnectionIdManager` | Issue, rotate, retire CIDs |
-| `MigrationHandler` | PATH_CHALLENGE/RESPONSE, address validation |
-| `IdleTimer` | Close connection on timeout |
-| `VersionNegotiator` | Handle version negotiation packets |
-
-**Interfaces**:
-- IN: Events from all lower modules
-- OUT: Connection-level decisions (close, migrate, negotiate)
-- UP: Connection state to application layer
+| Component | Role | Input | Output |
+|-----------|------|-------|--------|
+| `ConnectionStateMachine` | Handshaking → Established → Closing → Closed | Events from all lower modules | State transitions |
+| `ConnectionIdManager` | Issue, rotate, retire CIDs | CID rotation requests | New/retired CIDs |
+| `MigrationHandler` | PATH_CHALLENGE/RESPONSE, address validation | Path events | Validated paths |
+| `IdleTimer` | Close connection on timeout | Activity events | Timeout signals |
+| `VersionNegotiator` | Handle version negotiation packets | Version packets | Supported versions |
 
 ### 3.7 Stream Manager (`src/streams/`)
 
 **Responsibility**: Stream multiplexing, flow control, data delivery.
 
-| Component | Role |
-|-----------|------|
-| `StreamRegistry` | Track all open streams by ID |
-| `FlowController` | Connection-level and stream-level flow control |
-| `ReassemblyBuffer` | Per-stream ordered byte reassembly |
-| `StreamScheduler` | Decide which stream to send data from |
-| `SendBuffer` | Per-stream outgoing data buffer |
-
-**Interfaces**:
-- IN: STREAM frames (from decrypted packets); flow control frames
-- OUT: STREAM frames (for encryption); flow control frames
-- UP: Ordered byte streams to application adapters
+| Component | Role | Input | Output |
+|-----------|------|-------|--------|
+| `StreamRegistry` | Track all open streams by ID | Stream open/close events | Active stream list |
+| `FlowController` | Connection-level and stream-level flow control | Stream/data limits | Updated limits |
+| `ReassemblyBuffer` | Per-stream ordered byte reassembly | Out-of-order frames | Ordered byte streams |
+| `StreamScheduler` | Decide which stream to send data from | Send queue | Next stream to send |
+| `SendBuffer` | Per-stream outgoing data buffer | Application data | Framed data |
 
 ### 3.8 HTTP/3 (`src/http3/`)
 
@@ -207,6 +175,7 @@ This document describes the modular architecture of `dart_quic`: the layering of
 
 ---
 
+
 ## 4. Module Boundaries
 
 ### 4.1 Dependency Rules
@@ -232,6 +201,7 @@ This document describes the modular architecture of `dart_quic`: the layering of
 | libp2p | Stream Manager, TLS Engine |
 
 ---
+
 
 ## 5. Concurrency Model
 
@@ -274,6 +244,7 @@ Application writes data
 
 ---
 
+
 ## 6. Testing Architecture
 
 Each module is independently testable:
@@ -291,6 +262,7 @@ Each module is independently testable:
 
 ---
 
+
 ## 7. Configuration Injection
 
 ```dart
@@ -307,7 +279,8 @@ All module behavior is configurable at construction time — no global state.
 
 ---
 
-## References
+
+## 8. References
 
 - QUIC_WIRE_SPEC.md, QUIC_CRYPTO_SPEC.md, QUIC_STREAMS_SPEC.md, QUIC_RECOVERY_SPEC.md
 - HTTP3_SPEC.md, WEBTRANSPORT_SPEC.md, LIBP2P_QUIC_SPEC.md

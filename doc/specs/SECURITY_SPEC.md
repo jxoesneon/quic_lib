@@ -1,21 +1,29 @@
+---
+title: "Security Specification"
+category: spec
+version: "1.0-draft"
+status: "Specification"
+subsystem: "Security Model & Threat Mitigation"
+rfc_basis:
+  - "RFC 9000 Section 21"
+  - "RFC 9001 Section 9"
+  - "RFC 8446"
+dependencies:
+  - "ROADMAP.md"
+---
+
 # Security Specification
 
-**Version**: 1.0-draft  
-**Status**: Specification  
-**RFC Basis**: RFC 9000 Section 21, RFC 9001 Section 9, RFC 8446  
-**Subsystem**: Security Model & Threat Mitigation
 
----
 
 ## 1. Purpose
 
-This document specifies the security model for `dart_quic`: threat model, TLS 1.3 requirements, certificate handling, protection against amplification, replay, downgrade, and denial-of-service attacks.
+QUIC design eliminates many TCP/TLS attack vectors, but it also introduces new ones-amplification via Initial packets, migration linkability, and 0-RTT replay. Without an explicit security model, implementers will make inconsistent trust assumptions. This spec enumerates the threats and mandates the mitigations that keep dart_quic safe for P2P and server use.
 
----
+## 2. Detailed Specification
+### 2.1 Threat Model
 
-## 2. Threat Model
-
-### 2.1 Attacker Capabilities
+#### 2.1.1 Attacker Capabilities
 
 | Attacker Type | Capabilities | Threat Level |
 |--------------|-------------|--------------|
@@ -24,7 +32,7 @@ This document specifies the security model for `dart_quic`: threat model, TLS 1.
 | **Off-path** | Cannot observe traffic; can send spoofed packets | Low-Medium |
 | **Compromised peer** | Controls one endpoint; may violate protocol | High |
 
-### 2.2 Assets to Protect
+#### 2.1.2 Assets to Protect
 
 | Asset | Confidentiality | Integrity | Availability |
 |-------|----------------|-----------|--------------|
@@ -36,9 +44,10 @@ This document specifies the security model for `dart_quic`: threat model, TLS 1.
 
 ---
 
-## 3. TLS 1.3 Requirements
 
-### 3.1 Mandatory Cipher Suites
+### 2.2 TLS 1.3 Requirements
+
+#### 2.2.1 Mandatory Cipher Suites
 
 The implementation MUST support:
 - `TLS_AES_128_GCM_SHA256` (mandatory per RFC 9001)
@@ -47,28 +56,29 @@ The implementation SHOULD support:
 - `TLS_AES_256_GCM_SHA384`
 - `TLS_CHACHA20_POLY1305_SHA256`
 
-### 3.2 TLS Version
+#### 2.2.2 TLS Version
 
 - MUST use TLS 1.3 or higher.
 - MUST NOT negotiate TLS 1.2 or lower.
 - MUST reject connections attempting downgrade.
 
-### 3.3 Key Exchange
+#### 2.2.3 Key Exchange
 
 - MUST support X25519.
 - SHOULD support P-256 (secp256r1).
 - MAY support X448, P-384, P-521.
 
-### 3.4 Signature Algorithms
+#### 2.2.4 Signature Algorithms
 
 - MUST support Ed25519, ECDSA with P-256.
 - SHOULD support RSA-PSS (>= 2048 bits).
 
 ---
 
-## 4. Certificate Handling
 
-### 4.1 Standard QUIC (non-libp2p)
+### 2.3 Certificate Handling
+
+#### 2.3.1 Standard QUIC (non-libp2p)
 
 - Server MUST present a valid certificate chain.
 - Client MUST validate:
@@ -77,13 +87,13 @@ The implementation SHOULD support:
   - Certificate is not expired or revoked.
   - Certificate public key meets minimum strength requirements.
 
-### 4.2 libp2p Mode
+#### 2.3.2 libp2p Mode
 
 - Both peers present self-signed certificates (Section 4 of LIBP2P_QUIC_SPEC.md).
 - Validation is against the libp2p Public Key Extension, not CA chains.
 - Peer ID is the trust anchor.
 
-### 4.3 Certificate Storage
+#### 2.3.3 Certificate Storage
 
 - Private keys MUST be held in memory only during the connection lifetime.
 - No plaintext key material on disk.
@@ -91,9 +101,10 @@ The implementation SHOULD support:
 
 ---
 
-## 5. Amplification Protection (RFC 9000 Section 8)
 
-### 5.1 Server Anti-Amplification
+### 2.4 Amplification Protection (RFC 9000 Section 8)
+
+#### 2.4.1 Server Anti-Amplification
 
 Before address validation, the server MUST NOT send more than **3 times** the number of bytes received from the client:
 
@@ -101,7 +112,7 @@ Before address validation, the server MUST NOT send more than **3 times** the nu
 max_bytes = 3 * bytes_received_from_client
 ```
 
-### 5.2 Address Validation Mechanisms
+#### 2.4.2 Address Validation Mechanisms
 
 | Mechanism | When Used | How |
 |-----------|-----------|-----|
@@ -110,7 +121,7 @@ max_bytes = 3 * bytes_received_from_client
 | Handshake completion | After handshake | Client has been validated by completing TLS |
 | NEW_TOKEN | Future connections | Server provides token for future use |
 
-### 5.3 Initial Packet Padding
+#### 2.4.3 Initial Packet Padding
 
 Client's first Initial packet MUST be padded to at least **1200 bytes**:
 ```dart
@@ -123,9 +134,10 @@ This ensures the client sends enough data for the server's 3x amplification limi
 
 ---
 
-## 6. Replay Protection
 
-### 6.1 0-RTT Replay
+### 2.5 Replay Protection
+
+#### 2.5.1 0-RTT Replay
 
 0-RTT data is inherently replayable because it is encrypted with keys derived from a previous session. Mitigations:
 
@@ -136,7 +148,7 @@ This ensures the client sends enough data for the server's 3x amplification limi
 | **Time window** | Reject 0-RTT data older than a configured threshold |
 | **Application awareness** | API clearly marks data as 0-RTT; app decides safety |
 
-### 6.2 Dart API Marking
+#### 2.5.2 Dart API Marking
 
 ```dart
 class QuicStream {
@@ -147,29 +159,31 @@ class QuicStream {
 
 ---
 
-## 7. Downgrade Protection
 
-### 7.1 Version Downgrade
+### 2.6 Downgrade Protection
+
+#### 2.6.1 Version Downgrade
 
 - QUIC Version Negotiation uses integrity protection (RFC 8999).
 - The `version` field in packet headers is authenticated by packet protection.
 - An attacker cannot trick endpoints into using an older QUIC version.
 
-### 7.2 TLS Downgrade
+#### 2.6.2 TLS Downgrade
 
 - TLS 1.3's downgrade sentinel (in ServerHello.random) prevents TLS version downgrade.
 - QUIC MUST NOT use TLS versions below 1.3.
 
-### 7.3 Cipher Suite Downgrade
+#### 2.6.3 Cipher Suite Downgrade
 
 - Client and server negotiate cipher suites via TLS 1.3's normal mechanism.
 - The negotiated cipher suite is covered by the Finished MAC — tampering is detected.
 
 ---
 
-## 8. Denial-of-Service Protection
 
-### 8.1 Connection-Level DoS
+### 2.7 Denial-of-Service Protection
+
+#### 2.7.1 Connection-Level DoS
 
 | Attack | Mitigation |
 |--------|-----------|
@@ -177,7 +191,7 @@ class QuicStream {
 | Slowloris (slow handshake) | Handshake timeout; limit concurrent handshakes |
 | Resource exhaustion | Limit max connections per IP; memory budgets |
 
-### 8.2 Stream-Level DoS
+#### 2.7.2 Stream-Level DoS
 
 | Attack | Mitigation |
 |--------|-----------|
@@ -186,7 +200,7 @@ class QuicStream {
 | RESET_STREAM flood | Rate-limit resets; close connection on abuse |
 | Header bomb | SETTINGS_MAX_FIELD_SECTION_SIZE |
 
-### 8.3 Implementation Limits
+#### 2.7.3 Implementation Limits
 
 ```dart
 class SecurityLimits {
@@ -200,15 +214,16 @@ class SecurityLimits {
 
 ---
 
-## 9. Connection ID Security
 
-### 9.1 Linkability Prevention
+### 2.8 Connection ID Security
+
+#### 2.8.1 Linkability Prevention
 
 - Endpoints use NEW_CONNECTION_ID to provide multiple CIDs.
 - After migration, old CID is retired (RETIRE_CONNECTION_ID).
 - On-path observers cannot link activity across network changes.
 
-### 9.2 Stateless Reset
+#### 2.8.2 Stateless Reset
 
 - If an endpoint loses state, it can send a Stateless Reset.
 - The reset token is derived from the CID using a static key known only to the endpoint.
@@ -220,16 +235,17 @@ reset_token = HMAC-SHA256(static_key, connection_id)[0..16]
 
 ---
 
-## 10. Timing Side-Channels
 
-### 10.1 Constant-Time Operations
+### 2.9 Timing Side-Channels
+
+#### 2.9.1 Constant-Time Operations
 
 The following MUST be constant-time:
 - AEAD tag comparison (authentication verification).
 - HMAC comparison (for stateless reset tokens).
 - Certificate signature verification result comparison.
 
-### 10.2 Timing Leak Prevention
+#### 2.9.2 Timing Leak Prevention
 
 - Do NOT branch on secret data.
 - Use Dart's secure comparison utilities where available.
@@ -237,7 +253,8 @@ The following MUST be constant-time:
 
 ---
 
-## 11. Randomness Requirements
+
+### 2.10 Randomness Requirements
 
 | Usage | Source | Quality |
 |-------|--------|---------|
@@ -251,9 +268,10 @@ NEVER use `Random()` (non-secure) for any security-relevant value.
 
 ---
 
-## 12. Logging and Diagnostics
 
-### 12.1 Safe Logging
+### 2.11 Logging and Diagnostics
+
+#### 2.11.1 Safe Logging
 
 | Data | Log Level | Allowed? |
 |------|-----------|----------|
@@ -265,7 +283,7 @@ NEVER use `Random()` (non-secure) for any security-relevant value.
 | Certificate data | Debug | Fingerprint only |
 | Error messages | Info | Yes (sanitized) |
 
-### 12.2 Audit Trail
+#### 2.11.2 Audit Trail
 
 Log security-relevant events:
 - Connection establishment (peer identity, cipher suite).
@@ -275,7 +293,79 @@ Log security-relevant events:
 
 ---
 
-## 13. Acceptance Criteria
+
+
+
+
+### 2.12 STRIDE Threat Analysis
+
+The following maps QUIC/HTTP3/WebTransport-specific threats to the STRIDE categories.
+
+#### 2.12.1 Spoofing (S)
+
+| Threat | Description | Mitigation |
+|--------|-------------|------------|
+| Peer identity spoofing | Attacker presents a forged certificate or libp2p Public Key Extension. | Certificate chain validation (§2.3.1); libp2p Peer ID verification (§2.3.2). |
+| Connection migration hijacking | Off-path attacker sends PATH_CHALLENGE from a spoofed address. | PATH_RESPONSE validation; anti-amplification limit (§2.4). |
+| Retry token forgery | Attacker crafts a valid retry token without server state. | Token includes server-chosen entropy and expires quickly. |
+
+#### 2.12.2 Tampering (T)
+
+| Threat | Description | Mitigation |
+|--------|-------------|------------|
+| In-flight packet modification | Active on-path attacker flips bits in encrypted packets. | AEAD authentication rejects tampered packets (TLS 1.3 record layer). |
+| Certificate injection | Attacker injects a rogue certificate during handshake. | Certificate pinning or CA-chain validation (§2.3.1). |
+| Frame reordering | Attacker reorders STREAM frames to corrupt application data. | QUIC stream offsets guarantee in-order delivery; duplicate detection rejects replays. |
+
+#### 2.12.3 Repudiation (R)
+
+| Threat | Description | Mitigation |
+|--------|-------------|------------|
+| Missing audit trail | Operator cannot prove a connection event occurred. | Security event logging (§2.11.2); signed event streams for high-assurance deployments. |
+| Denial of connection existence | Peer claims no connection was established. | TLS 1.3 Finished MAC binds the transcript; both sides hold cryptographic proof. |
+
+#### 2.12.4 Information Disclosure (I)
+
+| Threat | Description | Mitigation |
+|--------|-------------|------------|
+| Traffic analysis | Observer infers application behavior from packet timing/size. | Connection ID rotation (§2.8.1); padding; coalescing. |
+| ACK timing side-channel | Observer deduces application data from ACK timing patterns. | ACK delay exponent and delayed ACK strategy (§2.9). |
+| Certificate metadata exposure | SNI or certificate SAN reveals peer identity. | ECH (Encrypted Client Hello) when available; libp2p uses hashed Peer IDs. |
+
+#### 2.12.5 Denial of Service (D)
+
+| Threat | Description | Mitigation |
+|--------|-------------|------------|
+| Amplification attack | Attacker spoofs victim address in Initial packet. | Anti-amplification limit (§2.4); Retry token for address validation. |
+| Resource exhaustion | Attacker opens many streams or sends giant frames. | MAX_STREAMS, MAX_DATA, MAX_STREAM_DATA limits (§2.7.2). |
+| Handshake flooding | Attacker sends many Initial packets without completing handshake. | Retry tokens; handshake timeout; per-IP connection limits (§2.7.1). |
+| Datagram abuse | Attacker sends oversized or rapid datagrams. | max_datagram_frame_size limit; datagram rate limiting. |
+
+#### 2.12.6 Elevation of Privilege (E)
+
+| Threat | Description | Mitigation |
+|--------|-------------|------------|
+| Stream ID misuse | Attacker opens a server-initiated bidirectional stream. | Strict stream ID validation; peer-initiated vs. local-initiated checks. |
+| Frame type confusion | Attacker sends a valid frame in an invalid context. | State-machine validation (e.g., no STREAM frames in handshake). |
+| Unauthorized migration | Attacker forces connection migration to a new path. | PATH_CHALLENGE/PATH_RESPONSE required; new path must pass validation. |
+
+---
+
+
+
+### 2.13 Supply-Chain Security
+
+1. **Dependency Vetting**: All dependencies must be pure-Dart and pinned in pubspec.lock. No binary blobs, no transitive native extensions without audit.
+2. **SBOM Generation**: An SPDX JSON software bill of materials is generated for every stable release and attached to the GitHub Release.
+3. **CVE Monitoring**: Dependabot or OSV-Scanner runs on every PR and weekly on main to detect known vulnerabilities in dependencies.
+4. **Third-Party Audit**: An external security audit is required before 1.0.0 and annually thereafter for stable releases.
+5. **Build Reproducibility**: CI builds use pinned Dart SDK versions. Docker images (if used) are built from locked source archives with checksum verification.
+6. **Package Signing**: pub.dev releases are signed via the publisher account. SHA-256 checksums of the release archive are published in release notes.
+
+---
+
+
+## 3. Acceptance Criteria
 
 - [ ] TLS 1.3 handshake completes with all mandatory cipher suites.
 - [ ] TLS 1.2 and below are rejected.
@@ -292,7 +382,8 @@ Log security-relevant events:
 
 ---
 
-## 14. Dependencies
+
+## 4. Dependencies
 
 - TLS 1.3 engine (crypto subsystem).
 - Wire codec (packet headers for protection).
@@ -302,7 +393,13 @@ Log security-relevant events:
 
 ---
 
-## 15. Testing Strategy
+
+
+
+## Used By
+
+- [ROADMAP.md](ROADMAP.md) — Lists SECURITY_SPEC as a formal specification deliverable.
+## 5. Testing Strategy
 
 - **Negative tests**: Verify rejection of invalid certificates, expired certs, wrong SNI.
 - **Amplification**: Verify server never exceeds 3x before validation.
@@ -313,7 +410,8 @@ Log security-relevant events:
 
 ---
 
-## References
+
+## 6. References
 
 - RFC 9000 Section 21 (Security Considerations): https://www.rfc-editor.org/rfc/rfc9000#section-21
 - RFC 9001 Section 9 (Security Considerations): https://www.rfc-editor.org/rfc/rfc9001#section-9

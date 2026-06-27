@@ -1,21 +1,31 @@
+---
+title: "QUIC Wire Format Specification"
+category: spec
+version: "1.0-draft"
+status: "Specification"
+subsystem: "Wire Encoding"
+rfc_basis:
+  - "RFC 9000 Sections 12, 16, 17, 19"
+dependencies:
+  - "ERROR_REGISTRY.md"
+  - "QUIC_DATAGRAM_SPEC.md"
+  - "RFC_9000_NOTES.md"
+  - "ROADMAP.md"
+  - "TEST_VECTORS.md"
+---
+
 # QUIC Wire Format Specification
 
-**Version**: 1.0-draft  
-**Status**: Specification  
-**RFC Basis**: RFC 9000 Sections 12, 16, 17, 19  
-**Subsystem**: Wire Encoding
 
----
 
 ## 1. Purpose
 
-This document specifies the wire encoding for QUIC packets in the `dart_quic` implementation: variable-length integers, packet headers (long and short), version negotiation, and all frame types defined in RFC 9000.
+Every QUIC implementation begins with the wire format: if varints, headers, or frames are encoded incorrectly, no peer will ever interoperate. This specification is the foundational contract for all other dart_quic specs, defining the exact byte sequences that the packet engine must produce and consume.
 
----
+## 2. Detailed Specification
+### 2.1 Variable-Length Integer Encoding (RFC 9000 Section 16)
 
-## 2. Variable-Length Integer Encoding (RFC 9000 Section 16)
-
-### 2.1 Format
+#### 2.1.1 Format
 
 All multi-byte integers in QUIC (except packet numbers) use a self-describing variable-length encoding:
 
@@ -30,7 +40,7 @@ All multi-byte integers in QUIC (except packet numbers) use a self-describing va
 +------+--------+-------------+------------------------------+
 ```
 
-### 2.2 Encoding Algorithm
+#### 2.1.2 Encoding Algorithm
 
 ```
 encode(value):
@@ -44,7 +54,7 @@ encode(value):
     write 8 bytes: (0xC0 | (value >> 56)), ..., (value & 0xFF)
 ```
 
-### 2.3 Decoding Algorithm
+#### 2.1.3 Decoding Algorithm
 
 ```
 decode(buffer):
@@ -59,15 +69,16 @@ decode(buffer):
 
 ---
 
-## 3. Packet Headers
 
-### 3.1 Header Form Bit
+### 2.2 Packet Headers
+
+#### 2.2.1 Header Form Bit
 
 The first bit of the first byte determines the header type:
 - `1` → Long Header
 - `0` → Short Header
 
-### 3.2 Long Header Format (RFC 9000 Section 17.2)
+#### 2.2.2 Long Header Format (RFC 9000 Section 17.2)
 
 Used during handshake (Initial, Handshake, 0-RTT) and Retry.
 
@@ -95,7 +106,7 @@ Long Header Packet {
 | 0x02 | Handshake | Length (i), Packet Number (8..32), Payload |
 | 0x03 | Retry | Retry Token (..), Retry Integrity Tag (128) |
 
-### 3.3 Short Header Format (RFC 9000 Section 17.3)
+#### 2.2.3 Short Header Format (RFC 9000 Section 17.3)
 
 Used for 1-RTT (application data) packets after handshake completion.
 
@@ -113,7 +124,7 @@ Short Header Packet {
 }
 ```
 
-### 3.4 Version Negotiation Packet (RFC 9000 Section 17.2.1)
+#### 2.2.4 Version Negotiation Packet (RFC 9000 Section 17.2.1)
 
 ```
 Version Negotiation {
@@ -128,7 +139,7 @@ Version Negotiation {
 }
 ```
 
-### 3.5 Packet Number Encoding (RFC 9000 Section 17.1)
+#### 2.2.5 Packet Number Encoding (RFC 9000 Section 17.1)
 
 Packet numbers are encoded in 1-4 bytes. The number of bytes is indicated by the Packet Number Length field (2 bits in the header):
 
@@ -143,9 +154,10 @@ Decoding requires the receiver to reconstruct the full packet number from the tr
 
 ---
 
-## 4. Frame Types (RFC 9000 Section 19)
 
-### 4.1 Frame Format
+### 2.3 Frame Types (RFC 9000 Section 19)
+
+#### 2.3.1 Frame Format
 
 ```
 Frame {
@@ -154,19 +166,19 @@ Frame {
 }
 ```
 
-### 4.2 PADDING Frame (Type 0x00)
+#### 2.3.2 PADDING Frame (Type 0x00)
 
 ```
 PADDING { }  // single zero byte; no fields
 ```
 
-### 4.3 PING Frame (Type 0x01)
+#### 2.3.3 PING Frame (Type 0x01)
 
 ```
 PING { }  // no fields; used to elicit ACK
 ```
 
-### 4.4 ACK Frame (Types 0x02-0x03)
+#### 2.3.4 ACK Frame (Types 0x02-0x03)
 
 ```
 ACK {
@@ -186,7 +198,7 @@ ACK {
 }
 ```
 
-### 4.5 RESET_STREAM Frame (Type 0x04)
+#### 2.3.5 RESET_STREAM Frame (Type 0x04)
 
 ```
 RESET_STREAM {
@@ -196,7 +208,7 @@ RESET_STREAM {
 }
 ```
 
-### 4.6 STOP_SENDING Frame (Type 0x05)
+#### 2.3.6 STOP_SENDING Frame (Type 0x05)
 
 ```
 STOP_SENDING {
@@ -205,7 +217,7 @@ STOP_SENDING {
 }
 ```
 
-### 4.7 CRYPTO Frame (Type 0x06)
+#### 2.3.7 CRYPTO Frame (Type 0x06)
 
 ```
 CRYPTO {
@@ -215,7 +227,7 @@ CRYPTO {
 }
 ```
 
-### 4.8 NEW_TOKEN Frame (Type 0x07)
+#### 2.3.8 NEW_TOKEN Frame (Type 0x07)
 
 ```
 NEW_TOKEN {
@@ -224,7 +236,7 @@ NEW_TOKEN {
 }
 ```
 
-### 4.9 STREAM Frame (Types 0x08-0x0f)
+#### 2.3.9 STREAM Frame (Types 0x08-0x0f)
 
 ```
 STREAM {
@@ -240,7 +252,7 @@ Bit flags in type byte:
 - Bit 1 (0x02): LEN — Length field present
 - Bit 2 (0x04): OFF — Offset field present
 
-### 4.10 Flow Control Frames
+#### 2.3.10 Flow Control Frames
 
 ```
 MAX_DATA (0x10) { Maximum Data (i) }
@@ -251,7 +263,7 @@ STREAM_DATA_BLOCKED (0x15) { Stream ID (i), Maximum Stream Data (i) }
 STREAMS_BLOCKED (0x16/0x17) { Maximum Streams (i) }
 ```
 
-### 4.11 Connection ID Frames
+#### 2.3.11 Connection ID Frames
 
 ```
 NEW_CONNECTION_ID (0x18) {
@@ -265,14 +277,14 @@ NEW_CONNECTION_ID (0x18) {
 RETIRE_CONNECTION_ID (0x19) { Sequence Number (i) }
 ```
 
-### 4.12 Path Validation Frames
+#### 2.3.12 Path Validation Frames
 
 ```
 PATH_CHALLENGE (0x1a) { Data (64) }   // 8 random bytes
 PATH_RESPONSE (0x1b) { Data (64) }    // echo of PATH_CHALLENGE
 ```
 
-### 4.13 CONNECTION_CLOSE Frames (Types 0x1c-0x1d)
+#### 2.3.13 CONNECTION_CLOSE Frames (Types 0x1c-0x1d)
 
 ```
 CONNECTION_CLOSE {
@@ -285,7 +297,7 @@ CONNECTION_CLOSE {
 - Type 0x1c: QUIC transport error (includes offending frame type)
 - Type 0x1d: Application error (no frame type field)
 
-### 4.14 HANDSHAKE_DONE Frame (Type 0x1e)
+#### 2.3.14 HANDSHAKE_DONE Frame (Type 0x1e)
 
 ```
 HANDSHAKE_DONE { }  // no fields; server-only
@@ -293,7 +305,8 @@ HANDSHAKE_DONE { }  // no fields; server-only
 
 ---
 
-## 5. Coalesced Packets (RFC 9000 Section 12.2)
+
+### 2.4 Coalesced Packets (RFC 9000 Section 12.2)
 
 Multiple QUIC packets can be coalesced into a single UDP datagram:
 - All packets in a datagram share the same 5-tuple.
@@ -303,7 +316,9 @@ Multiple QUIC packets can be coalesced into a single UDP datagram:
 
 ---
 
-## 6. Acceptance Criteria
+
+
+## 3. Acceptance Criteria
 
 - [ ] Variable-length integer encode/decode round-trips for all boundary values (0, 63, 64, 16383, 16384, 1073741823, 1073741824, max).
 - [ ] Long header parsing handles all four packet types.
@@ -316,7 +331,8 @@ Multiple QUIC packets can be coalesced into a single UDP datagram:
 
 ---
 
-## 7. Security Considerations
+
+## 4. Security Considerations
 
 - Malformed packets must be discarded without crashing.
 - Buffer overread protection: always validate Length fields before accessing payload.
@@ -325,13 +341,24 @@ Multiple QUIC packets can be coalesced into a single UDP datagram:
 
 ---
 
-## 8. Dependencies
+
+## 5. Dependencies
 
 - None (pure codec, no crypto or I/O required).
 
 ---
 
-## 9. Testing Strategy
+
+
+
+## Used By
+
+- [ERROR_REGISTRY.md](ERROR_REGISTRY.md) — Defines CONNECTION_CLOSE frame types and varint encoding.
+- [QUIC_DATAGRAM_SPEC.md](QUIC_DATAGRAM_SPEC.md) — Frame parsing/serialization for varints and frame types.
+- [../research/RFC_9000_NOTES.md](../research/RFC_9000_NOTES.md) — Research notes reference QUIC_WIRE_SPEC for complete frame type reference.
+- [ROADMAP.md](ROADMAP.md) — Lists QUIC_WIRE_SPEC as a formal specification deliverable.
+- [TEST_VECTORS.md](TEST_VECTORS.md) — Wire-format test vectors for varint and packet encoding.
+## 6. Testing Strategy
 
 - Unit tests for every encode/decode pair.
 - RFC 9000 Appendix A test vectors for packet construction.
@@ -340,7 +367,8 @@ Multiple QUIC packets can be coalesced into a single UDP datagram:
 
 ---
 
-## References
+
+## 7. References
 
 - RFC 9000 Section 12 (Packets and Frames): https://www.rfc-editor.org/rfc/rfc9000#section-12
 - RFC 9000 Section 16 (Variable-Length Integers): https://www.rfc-editor.org/rfc/rfc9000#section-16

@@ -1,19 +1,29 @@
+---
+title: "WebTransport Specification"
+category: spec
+version: "1.0-draft"
+status: "Specification"
+subsystem: "WebTransport over HTTP/3"
+rfc_basis:
+  - "draft-ietf-webtrans-http3"
+  - "RFC 9220"
+  - "RFC 9297"
+  - "RFC 9221"
+dependencies:
+  - "ERROR_REGISTRY.md"
+  - "ROADMAP.md"
+---
+
 # WebTransport Specification
 
-**Version**: 1.0-draft  
-**Status**: Specification  
-**Basis**: draft-ietf-webtrans-http3, RFC 9297, RFC 9221  
-**Subsystem**: WebTransport over HTTP/3
 
----
 
 ## 1. Purpose
 
-This document specifies the WebTransport layer for `dart_quic`: session establishment via extended CONNECT, bidirectional and unidirectional stream management, datagram support, session lifecycle, and the Dart API.
+WebTransport is the web next real-time transport, offering multiple independent streams and unreliable datagrams over a single HTTP/3 connection. Dart developers building games, collaboration tools, or streaming clients need this capability, but no Dart implementation exists. This spec defines the session management, stream dispatch, and capsule protocol that bring WebTransport to the Dart ecosystem.
 
----
-
-## 2. Architecture
+## 2. Detailed Specification
+### 2.1 Architecture
 
 ```
 ┌─────────────────────────────────────┐
@@ -33,15 +43,16 @@ This document specifies the WebTransport layer for `dart_quic`: session establis
 
 ---
 
-## 3. Prerequisites
 
-### 3.1 Transport Parameters
+### 2.2 Prerequisites
+
+#### 2.2.1 Transport Parameters
 
 | Parameter | Requirement |
 |-----------|-------------|
 | `max_datagram_frame_size` | > 0 (both endpoints) |
 
-### 3.2 HTTP/3 Settings
+#### 2.2.2 HTTP/3 Settings
 
 | Setting | Requirement |
 |---------|-------------|
@@ -51,9 +62,10 @@ This document specifies the WebTransport layer for `dart_quic`: session establis
 
 ---
 
-## 4. Session Establishment
 
-### 4.1 Client Request
+### 2.3 Session Establishment
+
+#### 2.3.1 Client Request
 
 The client initiates a WebTransport session via an extended CONNECT request on a bidirectional QUIC stream:
 
@@ -66,7 +78,7 @@ The client initiates a WebTransport session via an extended CONNECT request on a
 origin = https://client.example.com
 ```
 
-### 4.2 Server Response
+#### 2.3.2 Server Response
 
 ```http
 :status = 200
@@ -76,7 +88,7 @@ sec-webtransport-http3-draft = draft02
 - 2xx status: session accepted.
 - 4xx/5xx: session rejected (stream can be reset).
 
-### 4.3 Session Stream
+#### 2.3.3 Session Stream
 
 The CONNECT stream becomes the **session stream**:
 - Its stream ID serves as the Session ID for associated streams/datagrams.
@@ -85,9 +97,10 @@ The CONNECT stream becomes the **session stream**:
 
 ---
 
-## 5. Streams
 
-### 5.1 Bidirectional Streams
+### 2.4 Streams
+
+#### 2.4.1 Bidirectional Streams
 
 **Client-initiated**:
 ```
@@ -103,7 +116,7 @@ Next bytes: Session ID (varint) = CONNECT stream ID
 Remaining: Application payload
 ```
 
-### 5.2 Unidirectional Streams
+#### 2.4.2 Unidirectional Streams
 
 ```
 First bytes: 0x54 (signal value, varint)
@@ -113,15 +126,16 @@ Remaining: Application payload
 
 Either endpoint can open unidirectional streams.
 
-### 5.3 Stream Association
+#### 2.4.3 Stream Association
 
 All WebTransport streams carry a Session ID that associates them with a specific session. Implementations MUST verify the Session ID refers to an active session.
 
 ---
 
-## 6. Datagrams
 
-### 6.1 Format
+### 2.5 Datagrams
+
+#### 2.5.1 Format
 
 WebTransport datagrams use HTTP Datagrams (RFC 9297):
 
@@ -134,7 +148,7 @@ HTTP Datagram {
 
 Carried in QUIC DATAGRAM frames (RFC 9221).
 
-### 6.2 Properties
+#### 2.5.2 Properties
 
 - **Unreliable**: No retransmission.
 - **Unordered**: May arrive out of order or not at all.
@@ -142,7 +156,7 @@ Carried in QUIC DATAGRAM frames (RFC 9221).
 - **Not flow-controlled**: QUIC datagrams bypass QUIC flow control.
 - **Congestion-controlled**: Still subject to congestion control.
 
-### 6.3 Maximum Datagram Size
+#### 2.5.3 Maximum Datagram Size
 
 ```
 max_payload = max_datagram_frame_size - quic_overhead - http_datagram_header
@@ -152,9 +166,10 @@ Where `http_datagram_header` = length of the encoded Quarter Stream ID.
 
 ---
 
-## 7. Session Lifecycle
 
-### 7.1 States
+### 2.6 Session Lifecycle
+
+#### 2.6.1 States
 
 ```
 Connecting → Established → Draining → Closed
@@ -162,7 +177,7 @@ Connecting → Established → Draining → Closed
                    (DRAIN capsule received)
 ```
 
-### 7.2 Termination
+#### 2.6.2 Termination
 
 #### Graceful Close (initiator)
 
@@ -191,7 +206,8 @@ CLOSE_WEBTRANSPORT_SESSION Capsule {
 
 ---
 
-## 8. Multiple Sessions
+
+### 2.7 Multiple Sessions
 
 - Multiple WebTransport sessions can coexist on one HTTP/3 connection.
 - Each has a unique CONNECT stream (different stream IDs).
@@ -200,81 +216,16 @@ CLOSE_WEBTRANSPORT_SESSION Capsule {
 
 ---
 
-## 9. Dart API
 
-```dart
-/// Client-side session establishment
-abstract class WebTransportClient {
-  static Future<WebTransportSession> connect(
-    Uri uri, {
-    Map<String, String>? headers,
-  });
-}
+### 2.8 Dart API
 
-/// Server-side session acceptance
-abstract class WebTransportServer {
-  static Future<WebTransportServer> bind(
-    InternetAddress address,
-    int port, {
-    required SecurityContext securityContext,
-    int maxSessions = 100,
-  });
-  
-  Stream<WebTransportSession> get sessions;
-  Future<void> close();
-}
-
-/// A single WebTransport session
-abstract class WebTransportSession {
-  /// Session ID (the CONNECT stream ID)
-  int get sessionId;
-  
-  /// Bidirectional streams
-  Future<WebTransportBidiStream> openBidirectionalStream();
-  Stream<WebTransportBidiStream> get incomingBidirectionalStreams;
-  
-  /// Unidirectional streams
-  Future<WebTransportSendStream> openUnidirectionalStream();
-  Stream<WebTransportReceiveStream> get incomingUnidirectionalStreams;
-  
-  /// Datagrams
-  void sendDatagram(List<int> data);
-  Stream<List<int>> get datagrams;
-  int get maxDatagramSize;
-  
-  /// Lifecycle
-  Future<void> close({int errorCode = 0, String reason = ''});
-  Future<void> get closed;  // completes when session ends
-  WebTransportCloseInfo? get closeInfo;
-}
-
-class WebTransportBidiStream {
-  Stream<List<int>> get inbound;
-  StreamSink<List<int>> get outbound;
-  Future<void> close();
-  Future<void> reset(int errorCode);
-}
-
-class WebTransportSendStream {
-  StreamSink<List<int>> get outbound;
-  Future<void> close();
-  Future<void> reset(int errorCode);
-}
-
-class WebTransportReceiveStream {
-  Stream<List<int>> get inbound;
-  Future<void> stopSending(int errorCode);
-}
-
-class WebTransportCloseInfo {
-  final int errorCode;
-  final String reason;
-}
-```
+The WebTransport Dart API is defined in [DART_API_SPEC.md §2.7](DART_API_SPEC.md#27-webtransport-api). The following subsections describe how WebTransport capsules and streams map to those interfaces.
 
 ---
 
-## 10. Acceptance Criteria
+
+
+## 3. Acceptance Criteria
 
 - [ ] Session establishment via extended CONNECT succeeds.
 - [ ] Server rejects sessions beyond SETTINGS_WEBTRANSPORT_MAX_SESSIONS.
@@ -290,7 +241,8 @@ class WebTransportCloseInfo {
 
 ---
 
-## 11. Security Considerations
+
+## 4. Security Considerations
 
 - Validate origin header on server side to prevent cross-origin attacks.
 - Enforce maximum session count to prevent resource exhaustion.
@@ -300,7 +252,8 @@ class WebTransportCloseInfo {
 
 ---
 
-## 12. Dependencies
+
+## 5. Dependencies
 
 - HTTP/3 layer (HTTP3_SPEC.md): Extended CONNECT, SETTINGS, stream management.
 - QUIC Datagrams (RFC 9221): DATAGRAM frame support in QUIC transport.
@@ -309,7 +262,14 @@ class WebTransportCloseInfo {
 
 ---
 
-## 13. Testing Strategy
+
+
+
+## Used By
+
+- [ERROR_REGISTRY.md](ERROR_REGISTRY.md) — Defines WebTransport capsule types and session lifecycle.
+- [ROADMAP.md](ROADMAP.md) — Lists WEBTRANSPORT_SPEC as a formal specification deliverable.
+## 6. Testing Strategy
 
 - Unit: Signal value encoding/decoding, datagram framing.
 - Integration: Full session lifecycle (connect → streams → datagrams → close).
@@ -319,7 +279,8 @@ class WebTransportCloseInfo {
 
 ---
 
-## References
+
+## 7. References
 
 - draft-ietf-webtrans-http3: https://datatracker.ietf.org/doc/draft-ietf-webtrans-http3/
 - RFC 9297 (HTTP Datagrams): https://www.rfc-editor.org/rfc/rfc9297

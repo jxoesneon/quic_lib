@@ -8,7 +8,7 @@ status: "Accepted"
 
 ## 1. Purpose
 
-Dart single-threaded event loop cannot keep up with crypto and packet processing for many concurrent QUIC peers. Isolates provide true parallelism, and QUIC connections are naturally independent. Running each connection in its own isolate keeps one peer heavy crypto from stalling another, which is essential for a libp2p node that may maintain 50+ connections.
+A single Dart event loop may struggle with concurrent crypto and packet processing for many peers. Isolates provide parallelism, and QUIC connections are naturally independent. Running each connection in its own isolate keeps one peer's heavy crypto from stalling another, which is expected to help a libp2p node that may maintain 50+ connections.
 
 ## 2. Detailed Specification
 ### 2.1 Context

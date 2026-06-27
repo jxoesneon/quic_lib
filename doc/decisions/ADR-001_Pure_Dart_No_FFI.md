@@ -8,7 +8,7 @@ status: "Accepted"
 
 ## 1. Purpose
 
-Wrapping a native QUIC library via dart:ffi would ship faster, but it would sacrifice the web, WASM, and embedded targets that make Dart attractive. This decision commits dart_quic to a pure-Dart core, accepting the performance tradeoff in exchange for universal portability and full maintenance control.
+Wrapping a native QUIC library via dart:ffi would ship faster, but it would limit support for web, WASM, and embedded targets where FFI is unavailable. This decision commits dart_quic to a pure-Dart core, accepting the performance tradeoff in exchange for broader portability and control over maintenance timelines.
 
 ## 2. Detailed Specification
 ### 2.1 Context
@@ -26,5 +26,5 @@ Build `dart_quic` as a pure Dart implementation with zero `dart:ffi` dependencie
 - **Portability**: Runs on every platform Dart supports (native, web, WASM) without platform-specific build steps or native toolchains.
 - **Performance**: Pure Dart is slower than native code for crypto and packet processing. We accept this tradeoff and mitigate with pluggable crypto backends (`package:cryptography`) and isolate-based parallelism.
 - **Build simplicity**: No `CMake`, `podspec`, or native binding configuration. Consumers add a pub dependency and go.
-- **Maintenance control**: We own the full stack—no upstream native library releases blocking us, no ABI compatibility issues across Dart SDK versions.
+- **Maintenance control**: The project maintains the full Dart layer, so upstream native library releases and ABI compatibility issues do not block development.
 - **Security audit surface**: Larger than a thin FFI wrapper, but smaller than maintaining custom native patches.

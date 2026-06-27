@@ -9,7 +9,7 @@ companion_rfcs: []
 
 ## 1. Purpose
 
-The Dart ecosystem lacks a production-ready pure-Dart QUIC stack, which blocks HTTP/3 adoption, WebTransport support, and libp2p participation for the entire language. Understanding exactly what is missing-and which existing packages fall short-justifies the investment in dart_quic and shapes the architecture decisions that follow.
+The Dart ecosystem lacks a production-ready pure-Dart QUIC stack, which limits HTTP/3 adoption, WebTransport support, and libp2p participation in Dart projects that prefer pure-Dart dependencies. Understanding exactly what is missing—and which existing packages fall short—helps justify the investment in dart_quic and shapes the architecture decisions that follow.
 
 ## 2. The Problem
 
@@ -130,7 +130,7 @@ Gaming, live collaboration, and streaming applications in Dart (Flutter) need We
 
 ### 4. Ecosystem Gap = Opportunity
 
-The Dart ecosystem is mature in many areas (HTTP clients, gRPC, protobuf) but has a glaring gap in modern transport protocols. Filling this gap positions `dart_quic` as foundational infrastructure.
+The Dart ecosystem is mature in many areas (HTTP clients, gRPC, protobuf) but has a noticeable gap in modern transport protocols. Filling this gap would provide a building block for Dart networking libraries such as `dart_ipfs`.
 
 ---
 

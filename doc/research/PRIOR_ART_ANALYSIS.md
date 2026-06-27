@@ -9,7 +9,7 @@ companion_rfcs: []
 
 ## 1. Purpose
 
-Reinventing QUIC from scratch without studying existing implementations is a recipe for rediscovering known pitfalls. By analyzing quic-go, aioquic, ngtcp2, MsQuic, and others, dart_quic can adopt proven patterns-event-driven engines, pluggable congestion control, zero-copy paths-and avoid mistakes already made in C, Go, and Rust.
+Studying existing implementations helps dart_quic adopt proven patterns—event-driven engines, pluggable congestion control, zero-copy paths—and avoid mistakes already identified in other languages.
 
 ## 2. Overview
 

@@ -4,12 +4,10 @@ A comprehensive, pure-Dart QUIC protocol stack specification and architecture.
 
 ## Charter
 
-`dart_quic` exists to define the institution-level, deep-research-backed,
-interoperable, pure-Dart implementation of QUIC, HTTP/3, and WebTransport for the
-Dart ecosystem. This repository intentionally remains at the
-**specification/documentation stage**; code implementation follows only after
-the architecture, protocol mapping, security model, and test strategy are
-exhaustively documented.
+`dart_quic` is a specification and architecture for a pure-Dart QUIC, HTTP/3,
+and WebTransport implementation. This repository currently contains only
+documentation and specifications; code implementation will follow once the
+design, security model, and test strategy are documented.
 
 ## Scope
 

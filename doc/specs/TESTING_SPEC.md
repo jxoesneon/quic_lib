@@ -15,7 +15,7 @@ dependencies:
 
 ## 1. Purpose
 
-Specification without verification is just prose. dart_quic needs a multi-layer testing strategy-unit, integration, interop, fuzz-to catch regressions before they reach downstream consumers. This document defines the test levels, target implementations, and CI plan that hold the stack accountable to its own specs.
+Specifications need verification to be trustworthy. dart_quic needs a multi-layer testing strategy—unit, integration, interop, fuzz—to catch regressions before they reach downstream consumers. This document defines the test levels, target implementations, and CI plan that verify the stack against its own specifications.
 
 ## 2. Detailed Specification
 ### 2.1 Testing Levels

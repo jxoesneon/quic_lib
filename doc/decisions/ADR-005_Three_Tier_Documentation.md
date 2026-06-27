@@ -8,7 +8,7 @@ status: "Accepted"
 
 ## 1. Purpose
 
-RFC researchers, protocol implementers, and new contributors need different information at different levels of detail. A flat documentation structure forces everyone to wade through irrelevant material. This decision establishes three tiers-research, specs, architecture-so that each audience finds what it needs without cross-referencing fatigue.
+RFC researchers, protocol implementers, and new contributors need different information at different levels of detail. A flat documentation structure can require readers to navigate past material that is not relevant to their current task. This decision establishes three tiers—research, specs, architecture—so that each audience finds what it needs without unnecessary cross-referencing.
 
 ## 2. Detailed Specification
 ### 2.1 Context
@@ -27,6 +27,6 @@ Organize documentation into three tiers:
 ### 2.3 Consequences
 
 - **Clear audience**: Researchers can ignore architecture internals; implementers can ignore RFC summaries if they already know the protocol.
-- **Some overlap**: A concept like flow control appears in all three tiers (RFC notes, formal spec, architecture diagram). We accept duplication if it prevents cross-referencing fatigue.
+- **Some overlap**: A concept like flow control appears in all three tiers (RFC notes, formal spec, architecture diagram). We accept duplication if it reduces unnecessary cross-referencing.
 - **Discoverability**: The central `INDEX.md` must be kept up to date so readers can navigate across tiers.
 - **Maintenance burden**: Three directories mean three places to update when a design changes. We mitigate this by treating `doc/specs/` as the authoritative source for behavior and `doc/architecture/` as the authoritative source for code structure.

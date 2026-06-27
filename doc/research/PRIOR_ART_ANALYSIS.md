@@ -1,14 +1,24 @@
-# Prior Art Analysis: Existing QUIC Implementations
-
+---
+title: "Prior Art Analysis: Existing QUIC Implementations"
+category: research
+companion_rfcs: []
 ---
 
-## Overview
+# Prior Art Analysis: Existing QUIC Implementations
+
+
+## 1. Purpose
+
+Reinventing QUIC from scratch without studying existing implementations is a recipe for rediscovering known pitfalls. By analyzing quic-go, aioquic, ngtcp2, MsQuic, and others, dart_quic can adopt proven patterns-event-driven engines, pluggable congestion control, zero-copy paths-and avoid mistakes already made in C, Go, and Rust.
+
+## 2. Overview
 
 This document surveys major QUIC implementations across languages and evaluates their architecture, maturity, and lessons for a pure-Dart implementation.
 
 ---
 
-## Implementation Matrix
+
+## 3. Implementation Matrix
 
 | Implementation | Language | License | RFC Version | HTTP/3 | WebTransport | Stream Scheduling | Maturity |
 |---------------|----------|---------|-------------|--------|--------------|-------------------|----------|
@@ -24,7 +34,8 @@ This document surveys major QUIC implementations across languages and evaluates 
 
 ---
 
-## Detailed Analysis
+
+## 4. Detailed Analysis
 
 ### 1. quic-go (Go)
 
@@ -184,7 +195,8 @@ This document surveys major QUIC implementations across languages and evaluates 
 
 ---
 
-## Architectural Patterns Across Implementations
+
+## 5. Architectural Patterns Across Implementations
 
 ### Common Layering
 
@@ -214,7 +226,8 @@ This document surveys major QUIC implementations across languages and evaluates 
 
 ---
 
-## Performance Benchmarks (from research literature)
+
+## 6. Performance Benchmarks (from research literature)
 
 | Sender → Receiver | Throughput (Gbit/s) |
 |-------------------|---------------------|
@@ -230,7 +243,8 @@ Note: Dart's single-threaded event loop may limit raw throughput compared to C/R
 
 ---
 
-## Conclusions for dart_quic Design
+
+## 7. Conclusions for dart_quic Design
 
 1. **Follow ngtcp2/aioquic pattern**: Separate protocol engine from I/O.
 2. **Use Dart Streams/Futures natively**: Don't fight the language's async model.
@@ -241,7 +255,8 @@ Note: Dart's single-threaded event loop may limit raw throughput compared to C/R
 
 ---
 
-## References
+
+## 8. References
 
 - QUIC Implementations Wiki: https://github.com/quicwg/base-drafts/wiki/Implementations
 - QUIC Interop Runner: https://interop.seemann.io/

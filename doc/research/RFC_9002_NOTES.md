@@ -1,20 +1,28 @@
+---
+title: "RFC 9002 Notes: QUIC Loss Detection and Congestion Control"
+category: research
+authors: "J. Iyengar (Ed.), I. Swett (Ed.)"
+published: "May 2021"
+companion_rfcs: []
+---
+
 # RFC 9002 Notes: QUIC Loss Detection and Congestion Control
 
-**RFC**: 9002  
-**Authors**: J. Iyengar (Ed.), I. Swett (Ed.)  
-**Published**: May 2021  
-**Status**: Standards Track  
-**Depends on**: RFC 9000
 
 ---
 
-## Abstract
+## 1. Purpose
+
+Loss detection and congestion control in QUIC differ from TCP in subtle but critical ways: separate packet number spaces, unambiguous RTT samples, and integrated probe timeouts. Misunderstanding any of these leads to stalled connections or network abuse. These notes provide the algorithmic details that the recovery implementation must match.
+
+## 2. Abstract
 
 RFC 9002 describes loss detection and congestion control mechanisms for QUIC. It specifies a loss detection algorithm based on packet number acknowledgment and a congestion controller similar to TCP NewReno.
 
 ---
 
-## Design Context
+
+## 3. Design Context
 
 Unlike TCP, QUIC:
 - Uses **per-packet** sequence numbers (never retransmits the same packet number).
@@ -26,7 +34,8 @@ This eliminates TCP's retransmission ambiguity and enables cleaner loss detectio
 
 ---
 
-## RTT Measurement (Section 5)
+
+## 4. RTT Measurement (Section 5)
 
 ### Variables
 
@@ -57,7 +66,8 @@ On subsequent samples:
 
 ---
 
-## Loss Detection (Section 6)
+
+## 5. Loss Detection (Section 6)
 
 ### Packet Threshold
 
@@ -95,7 +105,8 @@ PTO = smoothed_rtt + max(4 * rttvar, kGranularity) + max_ack_delay
 
 ---
 
-## Congestion Control (Section 7)
+
+## 6. Congestion Control (Section 7)
 
 ### Algorithm: NewReno-like
 
@@ -126,7 +137,8 @@ QUIC specifies a congestion controller similar to TCP NewReno with the following
 
 ---
 
-## Persistent Congestion (Section 7.6.2)
+
+## 7. Persistent Congestion (Section 7.6.2)
 
 If packets are lost over a duration exceeding the persistent congestion period, the sender assumes the path has fundamentally changed:
 
@@ -141,7 +153,8 @@ This is analogous to a TCP timeout retransmission.
 
 ---
 
-## Pacing (Section 7.7)
+
+## 8. Pacing (Section 7.7)
 
 Recommended but not required. Sends packets at a rate matching the congestion window:
 
@@ -153,14 +166,16 @@ Pacing reduces burstiness and improves fairness with other flows.
 
 ---
 
-## Under-Utilized Connections (Section 7.8)
+
+## 9. Under-Utilized Connections (Section 7.8)
 
 - If the application is not sending enough to fill the cwnd, the sender SHOULD NOT increase cwnd.
 - `bytes_in_flight` must be at or near `cwnd` for congestion events to reduce the window.
 
 ---
 
-## Per-Space vs. Per-Path
+
+## 10. Per-Space vs. Per-Path
 
 | Property | Scope |
 |----------|-------|
@@ -170,7 +185,8 @@ Pacing reduces burstiness and improves fairness with other flows.
 
 ---
 
-## Differences from TCP Recovery
+
+## 11. Differences from TCP Recovery
 
 | TCP | QUIC |
 |-----|------|
@@ -183,7 +199,8 @@ Pacing reduces burstiness and improves fairness with other flows.
 
 ---
 
-## Relevance to dart_quic
+
+## 12. Relevance to dart_quic
 
 1. **Timer precision**: Dart's timer system (`Timer`, `Stopwatch`) must provide at least millisecond granularity for PTO and loss detection.
 2. **Per-space tracking**: The implementation needs separate sent-packet lists per encryption level.
@@ -194,7 +211,8 @@ Pacing reduces burstiness and improves fairness with other flows.
 
 ---
 
-## References
+
+## 13. References
 
 - RFC 9002: https://www.rfc-editor.org/rfc/rfc9002
 - RFC 9000 Section 13 (Packet Processing): https://www.rfc-editor.org/rfc/rfc9000#section-13

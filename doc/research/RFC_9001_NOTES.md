@@ -1,20 +1,28 @@
+---
+title: "RFC 9001 Notes: Using TLS to Secure QUIC"
+category: research
+authors: "M. Thomson (Ed.), S. Turner (Ed.)"
+published: "May 2021"
+companion_rfcs: []
+---
+
 # RFC 9001 Notes: Using TLS to Secure QUIC
 
-**RFC**: 9001  
-**Authors**: M. Thomson (Ed.), S. Turner (Ed.)  
-**Published**: May 2021  
-**Status**: Standards Track  
-**Depends on**: RFC 9000, RFC 8446 (TLS 1.3)
 
 ---
 
-## Abstract
+## 1. Purpose
+
+QUIC replaces the TLS record layer entirely, carrying handshake messages in CRYPTO frames and deriving packet-protection keys via HKDF. This architectural shift is easy to misunderstand-especially around encryption levels, nonce construction, and header protection. These notes ensure the crypto and wire teams share the same mental model.
+
+## 2. Abstract
 
 RFC 9001 describes how TLS 1.3 is used to secure QUIC connections. QUIC takes over the responsibilities of the TLS record layer — TLS handshake and alert messages are carried directly in QUIC CRYPTO frames rather than in TLS records.
 
 ---
 
-## Architecture: QUIC + TLS Integration
+
+## 3. Architecture: QUIC + TLS Integration
 
 ```
 +------------+                        +------------+
@@ -42,7 +50,8 @@ QUIC provides:
 
 ---
 
-## Encryption Levels (Section 4)
+
+## 4. Encryption Levels (Section 4)
 
 QUIC uses four encryption levels, each corresponding to a TLS epoch:
 
@@ -55,23 +64,17 @@ QUIC uses four encryption levels, each corresponding to a TLS epoch:
 
 ---
 
-## Initial Secrets Derivation (Section 5.2)
 
-Initial secrets are **not** derived from a TLS handshake. They use a well-known salt and the client's initial Destination Connection ID:
+## 5. Initial Secrets Derivation (Section 5.2)
 
-```
-initial_salt = 0x38762cf7f55934b34d179ae6a4c80cadccbb7f0a  (QUIC v1)
-
-initial_secret = HKDF-Extract(initial_salt, client_dst_connection_id)
-client_initial_secret = HKDF-Expand-Label(initial_secret, "client in", "", 32)
-server_initial_secret = HKDF-Expand-Label(initial_secret, "server in", "", 32)
-```
+Initial secrets are **not** derived from a TLS handshake. They use a well-known salt and the client's initial Destination Connection ID. See [QUIC_CRYPTO_SPEC.md §3](../specs/QUIC_CRYPTO_SPEC.md#3-initial-secrets-and-packet-protection-rfc-9001-section-5) for the complete derivation and exact test vectors.
 
 These provide confidentiality only against passive observers — an active attacker who sees the Initial packet can derive the same keys.
 
 ---
 
-## Key Derivation (Section 5.1)
+
+## 6. Key Derivation (Section 5.1)
 
 From each traffic secret, QUIC derives:
 
@@ -89,7 +92,8 @@ All `HKDF-Expand-Label` calls use a zero-length Context (empty string).
 
 ---
 
-## Packet Protection (Section 5.3-5.4)
+
+## 7. Packet Protection (Section 5.3-5.4)
 
 ### AEAD Encryption
 
@@ -111,7 +115,8 @@ Applied **after** payload encryption to obscure the packet number length and val
 
 ---
 
-## Supported Cipher Suites (Section 5.3)
+
+## 8. Supported Cipher Suites (Section 5.3)
 
 | TLS Cipher Suite | AEAD | Key Length | IV Length | HP Algorithm |
 |------------------|------|------------|-----------|--------------|
@@ -121,7 +126,8 @@ Applied **after** payload encryption to obscure the packet number length and val
 
 ---
 
-## Key Update (Section 6)
+
+## 9. Key Update (Section 6)
 
 After the handshake completes, either endpoint can initiate a key update:
 
@@ -137,7 +143,8 @@ application_traffic_secret_N+1 =
 
 ---
 
-## Retry Integrity (Section 5.8)
+
+## 10. Retry Integrity (Section 5.8)
 
 Retry packets use a fixed key and nonce (published in the RFC) to compute an integrity tag:
 
@@ -150,7 +157,8 @@ This prevents off-path modification of Retry packets while remaining stateless f
 
 ---
 
-## TLS Handshake Messages in QUIC (Section 4)
+
+## 11. TLS Handshake Messages in QUIC (Section 4)
 
 TLS handshake messages are carried in CRYPTO frames at the appropriate encryption level:
 
@@ -168,7 +176,8 @@ TLS handshake messages are carried in CRYPTO frames at the appropriate encryptio
 
 ---
 
-## QUIC Transport Parameters TLS Extension (Section 8.2)
+
+## 12. QUIC Transport Parameters TLS Extension (Section 8.2)
 
 QUIC transport parameters are sent as a TLS extension (`quic_transport_parameters`, code point 0x0039`). Both endpoints include this extension in their handshake:
 
@@ -179,7 +188,8 @@ Parameters are encoded as a sequence of (ID, length, value) tuples.
 
 ---
 
-## Security Considerations for dart_quic
+
+## 13. Security Considerations for dart_quic
 
 1. **Initial secrets are public**: Any observer who sees the DCID can derive Initial keys. Initial packets provide integrity but not true confidentiality.
 2. **Constant-time operations**: Key derivation and packet protection must use constant-time comparisons to prevent timing attacks.
@@ -189,7 +199,8 @@ Parameters are encoded as a sequence of (ID, length, value) tuples.
 
 ---
 
-## Implementation Notes for Dart
+
+## 14. Implementation Notes for Dart
 
 - `package:cryptography` or `package:pointycastle` can provide AES-GCM, ChaCha20-Poly1305, and HKDF.
 - Header protection requires either AES-ECB (single-block) or ChaCha20 (5-byte mask generation).
@@ -198,7 +209,8 @@ Parameters are encoded as a sequence of (ID, length, value) tuples.
 
 ---
 
-## References
+
+## 15. References
 
 - RFC 9001: https://www.rfc-editor.org/rfc/rfc9001
 - RFC 8446 (TLS 1.3): https://www.rfc-editor.org/rfc/rfc8446

@@ -1,19 +1,28 @@
+---
+title: "HTTP/3 Specification"
+category: spec
+version: "1.0-draft"
+status: "Specification"
+subsystem: "HTTP/3 Protocol Layer"
+rfc_basis:
+  - "RFC 9114"
+  - "RFC 9204 (QPACK)"
+dependencies:
+  - "ERROR_REGISTRY.md"
+  - "ROADMAP.md"
+  - "WEBTRANSPORT_SPEC.md"
+---
+
 # HTTP/3 Specification
 
-**Version**: 1.0-draft  
-**Status**: Specification  
-**RFC Basis**: RFC 9114, RFC 9204 (QPACK)  
-**Subsystem**: HTTP/3 Protocol Layer
 
----
 
 ## 1. Purpose
 
-This document specifies the HTTP/3 protocol layer for `dart_quic`: stream mapping, frame types, QPACK header compression, settings negotiation, error handling, and the Dart API surface for HTTP/3 clients and servers.
+HTTP/3 is becoming the default for modern web infrastructure, yet Dart has no pure-Dart implementation. Without a specified HTTP/3 layer, dart_quic would remain a low-level transport with no path to serving web traffic or interoping with browsers. This spec defines the mapping from QUIC streams to HTTP semantics, enabling Dart servers and clients to speak the same protocol as CDN edge nodes.
 
----
-
-## 2. Architecture
+## 2. Detailed Specification
+### 2.1 Architecture
 
 ```
 ┌────────────────────────────────────┐
@@ -27,15 +36,16 @@ This document specifies the HTTP/3 protocol layer for `dart_quic`: stream mappin
 ├────────────────────────────────────┤
 │     Stream Type Dispatcher         │  (control, QPACK, request, push)
 ├────────────────────────────────────┤
-│       QUIC Transport               │  (from QUIC_STREAMS_SPEC.md)
+│       QUIC Transport               │  (from [QUIC_STREAMS_SPEC.md](./QUIC_STREAMS_SPEC.md))
 └────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Stream Mapping (RFC 9114 Section 6)
 
-### 3.1 Required Streams
+### 2.2 Stream Mapping (RFC 9114 Section 6)
+
+#### 2.2.1 Required Streams
 
 Each endpoint MUST open exactly these unidirectional streams:
 
@@ -45,19 +55,19 @@ Each endpoint MUST open exactly these unidirectional streams:
 | QPACK Encoder | 0x02 | Both send one | Dynamic table update instructions |
 | QPACK Decoder | 0x03 | Both send one | Acknowledgments to encoder |
 
-### 3.2 Request Streams
+#### 2.2.2 Request Streams
 
 - Each HTTP request/response uses one **client-initiated bidirectional** QUIC stream.
 - Request format: HEADERS frame → optional DATA frames → optional trailing HEADERS frame.
 - Response format: HEADERS frame → optional DATA frames → optional trailing HEADERS frame.
 
-### 3.3 Push Streams
+#### 2.2.3 Push Streams
 
 - Server-initiated unidirectional streams with type ID 0x01.
 - Format: Push ID (i) → HEADERS frame → DATA frames.
 - Client limits push IDs via MAX_PUSH_ID.
 
-### 3.4 Stream Type Detection
+#### 2.2.4 Stream Type Detection
 
 First varint on a unidirectional stream indicates its type:
 
@@ -73,7 +83,8 @@ switch stream_type:
 
 ---
 
-## 4. HTTP/3 Frame Format
+
+### 2.3 HTTP/3 Frame Format
 
 ```
 HTTP/3 Frame {
@@ -83,28 +94,28 @@ HTTP/3 Frame {
 }
 ```
 
-### 4.1 DATA Frame (Type 0x00)
+#### 2.3.1 DATA Frame (Type 0x00)
 
 ```
 DATA { Payload (..) }
 ```
 Carries request/response body data.
 
-### 4.2 HEADERS Frame (Type 0x01)
+#### 2.3.2 HEADERS Frame (Type 0x01)
 
 ```
 HEADERS { Encoded Field Section (..) }
 ```
 Contains QPACK-encoded HTTP fields.
 
-### 4.3 CANCEL_PUSH Frame (Type 0x03)
+#### 2.3.3 CANCEL_PUSH Frame (Type 0x03)
 
 ```
 CANCEL_PUSH { Push ID (i) }
 ```
 Sent on control stream to cancel a server push.
 
-### 4.4 SETTINGS Frame (Type 0x04)
+#### 2.3.4 SETTINGS Frame (Type 0x04)
 
 ```
 SETTINGS {
@@ -123,14 +134,14 @@ Sent as the **first frame** on each control stream.
 | 0x06 | SETTINGS_MAX_FIELD_SECTION_SIZE | unlimited |
 | 0x07 | SETTINGS_QPACK_BLOCKED_STREAMS | 0 |
 
-### 4.5 GOAWAY Frame (Type 0x07)
+#### 2.3.5 GOAWAY Frame (Type 0x07)
 
 ```
 GOAWAY { Stream ID/Push ID (i) }
 ```
 Initiates graceful shutdown. The ID indicates the last stream/push the sender will process.
 
-### 4.6 MAX_PUSH_ID Frame (Type 0x0d)
+#### 2.3.6 MAX_PUSH_ID Frame (Type 0x0d)
 
 ```
 MAX_PUSH_ID { Push ID (i) }
@@ -139,9 +150,10 @@ Client tells server the maximum Push ID it will accept.
 
 ---
 
-## 5. QPACK Integration
 
-### 5.1 Encoding Request Headers
+### 2.4 QPACK Integration
+
+#### 2.4.1 Encoding Request Headers
 
 ```dart
 // Pseudo-headers (required for requests)
@@ -155,7 +167,7 @@ accept = application/json
 user-agent = dart_quic/1.0
 ```
 
-### 5.2 Encoding Response Headers
+#### 2.4.2 Encoding Response Headers
 
 ```dart
 // Pseudo-header
@@ -166,13 +178,13 @@ content-type = application/json
 content-length = 1234
 ```
 
-### 5.3 QPACK Streams
+#### 2.4.3 QPACK Streams
 
 - Encoder stream: Sends instructions to add entries to the dynamic table.
 - Decoder stream: Sends acknowledgments and cancellations.
 - Field sections on request streams reference static/dynamic table entries.
 
-### 5.4 Blocking Behavior
+#### 2.4.4 Blocking Behavior
 
 - `SETTINGS_QPACK_BLOCKED_STREAMS`: Maximum streams that can block waiting for dynamic table updates.
 - If set to 0: Only static table references allowed (no blocking, lower compression).
@@ -180,9 +192,10 @@ content-length = 1234
 
 ---
 
-## 6. Connection Lifecycle
 
-### 6.1 Initialization
+### 2.5 Connection Lifecycle
+
+#### 2.5.1 Initialization
 
 ```
 1. QUIC connection established (1-RTT complete)
@@ -192,7 +205,7 @@ content-length = 1234
 5. Connection ready for requests
 ```
 
-### 6.2 Request/Response
+#### 2.5.2 Request/Response
 
 ```
 Client:
@@ -212,7 +225,7 @@ Server:
   7. Close send side (FIN)
 ```
 
-### 6.3 Graceful Shutdown
+#### 2.5.3 Graceful Shutdown
 
 ```
 1. Endpoint sends GOAWAY(last_stream_id)
@@ -223,17 +236,18 @@ Server:
 
 ---
 
-## 7. Error Handling
 
-### 7.1 Stream Errors
+### 2.6 Error Handling
+
+#### 2.6.1 Stream Errors
 
 Reset the individual stream with an HTTP/3 error code via QUIC RESET_STREAM.
 
-### 7.2 Connection Errors
+#### 2.6.2 Connection Errors
 
 Close the entire connection with an HTTP/3 error code via QUIC CONNECTION_CLOSE (type 0x1d).
 
-### 7.3 Error Codes
+#### 2.6.3 Error Codes
 
 | Code | Name | Trigger |
 |------|------|---------|
@@ -254,52 +268,16 @@ Close the entire connection with an HTTP/3 error code via QUIC CONNECTION_CLOSE 
 
 ---
 
-## 8. Dart API
 
-### 8.1 Client
+### 2.7 Dart API
 
-```dart
-abstract class Http3Client {
-  static Future<Http3Client> connect(Uri uri, {Http3Settings? settings});
-  
-  Future<Http3Response> send(Http3Request request);
-  Stream<Http3PushResponse> get serverPushes;
-  
-  Future<void> close();  // graceful GOAWAY
-}
-
-class Http3Request {
-  final String method;
-  final Uri uri;
-  final Map<String, String> headers;
-  final Stream<List<int>>? body;
-}
-
-class Http3Response {
-  final int statusCode;
-  final Map<String, String> headers;
-  final Stream<List<int>> body;
-  final Map<String, String>? trailers;
-}
-```
-
-### 8.2 Server
-
-```dart
-abstract class Http3Server {
-  static Future<Http3Server> bind(InternetAddress address, int port, {
-    required SecurityContext securityContext,
-    Http3Settings? settings,
-  });
-  
-  Stream<Http3Request> get requests;
-  Future<void> close();
-}
-```
+The HTTP/3 Dart API is defined in [DART_API_SPEC.md §2.6](DART_API_SPEC.md#26-http3-api). The following subsections describe how HTTP/3 frames and settings map to those interfaces.
 
 ---
 
-## 9. Acceptance Criteria
+
+
+## 3. Acceptance Criteria
 
 - [ ] Control stream is opened and SETTINGS sent on connection establishment.
 - [ ] QPACK encoder/decoder streams are opened.
@@ -315,7 +293,8 @@ abstract class Http3Server {
 
 ---
 
-## 10. Security Considerations
+
+## 4. Security Considerations
 
 - Validate all pseudo-headers (e.g., `:method` must be valid, `:path` must not be empty).
 - Enforce max field section size to prevent memory exhaustion.
@@ -324,7 +303,8 @@ abstract class Http3Server {
 
 ---
 
-## 11. Dependencies
+
+## 5. Dependencies
 
 - QUIC Streams (QUIC_STREAMS_SPEC.md): Bidirectional and unidirectional streams.
 - QPACK codec: Header compression/decompression (from RFC_9204_NOTES.md research).
@@ -332,7 +312,15 @@ abstract class Http3Server {
 
 ---
 
-## 12. Testing Strategy
+
+
+
+## Used By
+
+- [ERROR_REGISTRY.md](ERROR_REGISTRY.md) — References HTTP/3 frame usage and stream mapping.
+- [ROADMAP.md](ROADMAP.md) — Lists HTTP3_SPEC as a formal specification deliverable.
+- [WEBTRANSPORT_SPEC.md](WEBTRANSPORT_SPEC.md) — WebTransport builds on HTTP/3 layer.
+## 6. Testing Strategy
 
 - Unit: Frame encode/decode round-trips.
 - Integration: Full request/response exchange over QUIC.
@@ -342,7 +330,8 @@ abstract class Http3Server {
 
 ---
 
-## References
+
+## 7. References
 
 - RFC 9114: https://www.rfc-editor.org/rfc/rfc9114
 - RFC 9204 (QPACK): https://www.rfc-editor.org/rfc/rfc9204

@@ -1,19 +1,29 @@
+---
+title: "libp2p QUIC Transport Specification"
+category: spec
+version: "1.0-draft"
+status: "Specification"
+subsystem: "libp2p QUIC Integration"
+rfc_basis:
+  - "libp2p/specs (tls/tls.md, quic/)"
+  - "RFC 9000"
+dependencies:
+  - "DART_IPFS_INTEGRATION.md"
+  - "ERROR_REGISTRY.md"
+  - "ROADMAP.md"
+  - "VERSIONING_POLICY.md"
+---
+
 # libp2p QUIC Transport Specification
 
-**Version**: 1.0-draft  
-**Status**: Specification  
-**Basis**: libp2p/specs (tls/tls.md, quic/), RFC 9000  
-**Subsystem**: libp2p QUIC Integration
 
----
 
 ## 1. Purpose
 
-This document specifies the libp2p QUIC transport adapter for `dart_quic`: multiaddr parsing, TLS 1.3 with libp2p peer authentication (self-signed certificates with public key extension), stream mapping, and integration with the libp2p protocol negotiation stack.
+The IPFS network speaks QUIC via /quic-v1 multiaddrs, and Dart cannot participate without a libp2p-compatible transport adapter. This specification bridges the gap between RFC 9000 QUIC and the libp2p peer-authentication model, giving dart_ipfs a standards-compliant path to join the global IPFS swarm.
 
----
-
-## 2. Architecture
+## 2. Detailed Specification
+### 2.1 Architecture
 
 ```
 ┌─────────────────────────────────────┐
@@ -36,9 +46,10 @@ This document specifies the libp2p QUIC transport adapter for `dart_quic`: multi
 
 ---
 
-## 3. Multiaddr Format
 
-### 3.1 Supported Formats
+### 2.2 Multiaddr Format
+
+#### 2.2.1 Supported Formats
 
 ```
 /ip4/<addr>/udp/<port>/quic-v1
@@ -47,7 +58,7 @@ This document specifies the libp2p QUIC transport adapter for `dart_quic`: multi
 /ip6/<addr>/udp/<port>/quic-v1/p2p/<peer-id>
 ```
 
-### 3.2 Component Codes
+#### 2.2.2 Component Codes
 
 | Component | Code | Size |
 |-----------|------|------|
@@ -57,55 +68,31 @@ This document specifies the libp2p QUIC transport adapter for `dart_quic`: multi
 | quic-v1 | 0xcc | 0 bytes |
 | p2p | 0x01a5 | variable (multihash) |
 
-### 3.3 Parsing
+#### 2.2.3 Parsing
 
-```dart
-class QuicMultiaddr {
-  final InternetAddress address;  // IPv4 or IPv6
-  final int port;
-  final PeerId? peerId;           // optional
-  
-  factory QuicMultiaddr.parse(String multiaddr) { ... }
-  String encode() => '/ip4/$address/udp/$port/quic-v1${peerId != null ? "/p2p/$peerId" : ""}';
-}
-```
+A parsed multiaddr contains:
+- `address`: `InternetAddress` (IPv4 or IPv6).
+- `port`: UDP port number.
+- `peerId`: optional `PeerId` (present when the `/p2p` component is included).
+
+Construction from a string parses each component in order and validates protocol codes.
 
 ---
 
-## 4. TLS 1.3 Peer Authentication
 
-### 4.1 Certificate Generation
+### 2.3 TLS 1.3 Peer Authentication
+
+#### 2.3.1 Certificate Generation
 
 Each endpoint generates a certificate for each connection:
 
-```dart
-class Libp2pCertificate {
-  /// Generate a self-signed X.509 certificate with libp2p extension
-  static X509Certificate generate({
-    required PrivateKey hostKey,    // The node's persistent identity key
-    required PublicKey hostPubKey,
-  }) {
-    // 1. Generate ephemeral key pair for the certificate
-    ephemeralKeyPair = generateKeyPair(algorithm: ECDSA_P256);
-    
-    // 2. Create the libp2p extension
-    extension = createLibp2pExtension(hostKey, hostPubKey, ephemeralKeyPair.public);
-    
-    // 3. Self-sign the certificate with the ephemeral private key
-    cert = X509Certificate(
-      subject: "CN=libp2p",
-      publicKey: ephemeralKeyPair.public,
-      validity: (now - 1.hour, now + 24.hours),
-      extensions: [extension],
-      signedWith: ephemeralKeyPair.private,
-    );
-    
-    return cert;
-  }
-}
-```
+Certificate generation is a procedural process:
+1. Generate an ephemeral ECDSA P-256 key pair for the certificate.
+2. Create the libp2p Public Key Extension (OID `1.3.6.1.4.1.53594.1.1`) containing the host's persistent public key and a signature over the certificate's SPKI.
+3. Build a self-signed X.509 certificate with subject `CN=libp2p`, the ephemeral public key, validity of roughly 24 hours, and the libp2p extension.
+4. Sign the certificate with the ephemeral private key.
 
-### 4.2 libp2p Public Key Extension
+#### 2.3.2 libp2p Public Key Extension
 
 **OID**: 1.3.6.1.4.1.53594.1.1
 
@@ -120,18 +107,16 @@ Where:
 - `public_key`: The node's host public key (protobuf: `message PublicKey { KeyType Type = 1; bytes Data = 2; }`)
 - `signature`: Host private key signs the concatenation of the string `"libp2p-tls-handshake:"` and the DER-encoded SubjectPublicKeyInfo of the certificate's public key.
 
-### 4.3 KeyType Enum
+#### 2.3.3 KeyType Enum
 
-```protobuf
-enum KeyType {
-  RSA = 0;
-  Ed25519 = 1;
-  Secp256k1 = 2;
-  ECDSA = 3;
-}
-```
+| KeyType Value | Name | Description |
+|--------------|------|-------------|
+| 0 | RSA | RSA public key |
+| 1 | Ed25519 | Ed25519 public key |
+| 2 | Secp256k1 | secp256k1 public key |
+| 3 | ECDSA | ECDSA public key (P-256, P-384, or P-521) |
 
-### 4.4 Verification Algorithm
+#### 2.3.4 Verification Algorithm
 
 ```
 function verify_peer_certificate(cert, expected_peer_id):
@@ -164,7 +149,8 @@ function verify_peer_certificate(cert, expected_peer_id):
 
 ---
 
-## 5. ALPN
+
+### 2.4 ALPN
 
 The ALPN (Application-Layer Protocol Negotiation) token for libp2p QUIC:
 
@@ -176,9 +162,10 @@ This is included in the TLS ClientHello and ServerHello. If ALPN negotiation fai
 
 ---
 
-## 6. Connection Establishment
 
-### 6.1 Dialing (Client)
+### 2.5 Connection Establishment
+
+#### 2.5.1 Dialing (Client)
 
 ```
 1. Parse target multiaddr → (address, port, expected_peer_id)
@@ -194,7 +181,7 @@ This is included in the TLS ClientHello and ServerHello. If ALPN negotiation fai
 7. Connection established → return (connection, remote_peer_id)
 ```
 
-### 6.2 Listening (Server)
+#### 2.5.2 Listening (Server)
 
 ```
 1. Bind UDP socket to listen address
@@ -211,9 +198,10 @@ This is included in the TLS ClientHello and ServerHello. If ALPN negotiation fai
 
 ---
 
-## 7. Stream Lifecycle
 
-### 7.1 Mapping
+### 2.6 Stream Lifecycle
+
+#### 2.6.1 Mapping
 
 | libp2p Operation | QUIC Operation |
 |-----------------|----------------|
@@ -223,7 +211,7 @@ This is included in the TLS ClientHello and ServerHello. If ALPN negotiation fai
 | Reset stream | QUIC RESET_STREAM |
 | Receive reset | QUIC STOP_SENDING |
 
-### 7.2 Protocol Negotiation
+#### 2.6.2 Protocol Negotiation
 
 Each new stream performs multistream-select negotiation:
 
@@ -236,7 +224,7 @@ Each new stream performs multistream-select negotiation:
 [Protocol data follows]
 ```
 
-### 7.3 Stream Limits
+#### 2.6.3 Stream Limits
 
 - libp2p implementations typically set high MAX_STREAMS limits (1000+).
 - Each protocol instance uses one stream.
@@ -244,7 +232,8 @@ Each new stream performs multistream-select negotiation:
 
 ---
 
-## 8. Connection Properties
+
+### 2.7 Connection Properties
 
 | Property | Value |
 |----------|-------|
@@ -256,9 +245,10 @@ Each new stream performs multistream-select negotiation:
 
 ---
 
-## 9. Peer ID Derivation
 
-### 9.1 From Public Key
+### 2.8 Peer ID Derivation
+
+#### 2.8.1 From Public Key
 
 ```
 if encoded_pub_key.length <= 42:
@@ -267,7 +257,7 @@ else:
   peer_id = Multihash(sha2-256, sha256(encoded_pub_key))
 ```
 
-### 9.2 Encoding
+#### 2.8.2 Encoding
 
 Peer IDs are typically represented as:
 - Base58btc-encoded multihash (legacy: "Qm..." for RSA)
@@ -275,9 +265,10 @@ Peer IDs are typically represented as:
 
 ---
 
-## 10. NAT Traversal
 
-### 10.1 Relay (Circuit Relay v2)
+### 2.9 NAT Traversal
+
+#### 2.9.1 Relay (Circuit Relay v2)
 
 When direct connection is not possible:
 ```
@@ -286,14 +277,14 @@ When direct connection is not possible:
 
 The relay forwards QUIC packets between peers.
 
-### 10.2 Hole Punching (DCUtR)
+#### 2.9.2 Hole Punching (DCUtR)
 
 1. Peers discover each other's observed addresses via relay.
 2. Coordinate simultaneous connection attempts.
 3. Both send Initial packets to each other's observed addresses.
 4. NAT mapping is established when one side's packet reaches the other.
 
-### 10.3 Connection Migration
+#### 2.9.3 Connection Migration
 
 QUIC connection migration can survive NAT rebinding:
 - Connection ID-based identification (not 4-tuple).
@@ -301,54 +292,16 @@ QUIC connection migration can survive NAT rebinding:
 
 ---
 
-## 11. Dart API
 
-```dart
-/// libp2p QUIC transport
-abstract class Libp2pQuicTransport {
-  /// Dial a remote peer
-  Future<Libp2pConnection> dial(
-    Multiaddr target, {
-    required PrivateKey hostKey,
-    PeerId? expectedPeerId,
-  });
-  
-  /// Listen for incoming connections
-  Future<Libp2pQuicListener> listen(
-    Multiaddr bindAddr, {
-    required PrivateKey hostKey,
-  });
-}
+### 2.10 Dart API
 
-abstract class Libp2pQuicListener {
-  Multiaddr get localAddr;
-  Stream<Libp2pConnection> get connections;
-  Future<void> close();
-}
-
-abstract class Libp2pConnection {
-  PeerId get localPeerId;
-  PeerId get remotePeerId;
-  Multiaddr get remoteAddr;
-  
-  Future<Libp2pStream> openStream(String protocolId);
-  Stream<Libp2pStream> get incomingStreams;
-  
-  Future<void> close();
-}
-
-abstract class Libp2pStream {
-  String get protocolId;
-  Stream<List<int>> get inbound;
-  StreamSink<List<int>> get outbound;
-  Future<void> close();
-  Future<void> reset();
-}
-```
+The libp2p QUIC transport Dart API is defined in [DART_API_SPEC.md §2.8](DART_API_SPEC.md#28-libp2p-api). The following subsections describe libp2p-specific certificate generation and peer authentication.
 
 ---
 
-## 12. Acceptance Criteria
+
+
+## 3. Acceptance Criteria
 
 - [ ] Multiaddr parsing handles all valid `/udp/.../quic-v1` formats.
 - [ ] Certificate generation produces valid X.509 with libp2p extension.
@@ -363,7 +316,8 @@ abstract class Libp2pStream {
 
 ---
 
-## 13. Security Considerations
+
+## 4. Security Considerations
 
 - **Certificate freshness**: Short validity periods prevent replay of old certificates.
 - **Peer ID verification**: MUST always verify the derived Peer ID on the client side.
@@ -373,7 +327,8 @@ abstract class Libp2pStream {
 
 ---
 
-## 14. Dependencies
+
+## 5. Dependencies
 
 - QUIC Transport (QUIC_STREAMS_SPEC.md, QUIC_CRYPTO_SPEC.md): Core QUIC connection and streams.
 - Crypto (package:cryptography): Ed25519, ECDSA, X25519.
@@ -383,7 +338,16 @@ abstract class Libp2pStream {
 
 ---
 
-## 15. Testing Strategy
+
+
+
+## Used By
+
+- [DART_IPFS_INTEGRATION.md](DART_IPFS_INTEGRATION.md) — Defines wire and handshake details consumed by dart_ipfs.
+- [ERROR_REGISTRY.md](ERROR_REGISTRY.md) — Defines libp2p multistream-select integration over QUIC.
+- [ROADMAP.md](ROADMAP.md) — Lists LIBP2P_QUIC_SPEC as a formal specification deliverable.
+- [VERSIONING_POLICY.md](VERSIONING_POLICY.md) — Mentions LIBP2P_QUIC_SPEC as downstream integration contract.
+## 6. Testing Strategy
 
 - Unit: Certificate generation, extension encoding/decoding, peer ID derivation.
 - Integration: Full connection establishment between two dart_quic instances.
@@ -393,7 +357,8 @@ abstract class Libp2pStream {
 
 ---
 
-## References
+
+## 7. References
 
 - libp2p TLS spec: https://github.com/libp2p/specs/blob/master/tls/tls.md
 - libp2p QUIC: https://github.com/libp2p/specs/tree/master/quic

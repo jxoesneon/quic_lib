@@ -1,18 +1,34 @@
+---
+title: "Dart API Surface Specification"
+category: spec
+version: "1.0-draft"
+status: "Specification"
+subsystem: "Public API Design"
+rfc_basis: []
+dependencies:
+  - "API_SURFACE.md"
+  - "CUBIC_SPEC.md"
+  - "DART_IPFS_INTEGRATION.md"
+  - "ERROR_REGISTRY.md"
+  - "HTTP3_SPEC.md"
+  - "LIBP2P_QUIC_SPEC.md"
+  - "QUIC_RECOVERY_SPEC.md"
+  - "QUIC_STREAMS_SPEC.md"
+  - "SECURITY_SPEC.md"
+  - "VERSIONING_POLICY.md"
+  - "WEBTRANSPORT_SPEC.md"
+---
+
 # Dart API Surface Specification
 
-**Version**: 1.0-draft  
-**Status**: Specification  
-**Subsystem**: Public API Design
 
----
 
 ## 1. Purpose
 
-This document specifies the public API surface for `dart_quic`: class hierarchy, `Stream`/`Future` idioms, `dart:io` integration patterns, error handling, and the zero-native-dependency constraint.
+Developers building on dart_quic need a public API that feels native to Dart-Stream-based, async-first, and free of FFI boilerplate. Without a unified surface specification, each subsystem would expose inconsistent patterns, forcing consumers to learn multiple idioms. This document establishes the single authoritative API contract that all layers (QUIC, HTTP/3, WebTransport, libp2p) must implement, enabling seamless downstream integration.
 
----
-
-## 2. Design Principles
+## 2. Detailed Specification
+### 2.1 Design Principles
 
 1. **Idiomatic Dart**: Follow `dart:io` conventions for networking APIs (`bind`, `connect`, streams, sinks).
 2. **Layered exposure**: Users can operate at QUIC, HTTP/3, WebTransport, or libp2p levels.
@@ -23,7 +39,8 @@ This document specifies the public API surface for `dart_quic`: class hierarchy,
 
 ---
 
-## 3. Package Structure
+
+### 2.2 Package Structure
 
 ```
 dart_quic/
@@ -44,9 +61,10 @@ dart_quic/
 
 ---
 
-## 4. Core QUIC API
 
-### 4.1 Connection Establishment
+### 2.3 Core QUIC API
+
+#### 2.3.1 Connection Establishment
 
 ```dart
 /// A QUIC endpoint that can listen for and initiate connections.
@@ -79,7 +97,7 @@ abstract class QuicEndpoint {
 }
 ```
 
-### 4.2 Connection
+#### 2.3.2 Connection
 
 ```dart
 /// An established QUIC connection.
@@ -124,7 +142,7 @@ abstract class QuicConnection {
 }
 ```
 
-### 4.3 Streams
+#### 2.3.3 Streams
 
 ```dart
 /// A bidirectional QUIC stream.
@@ -161,7 +179,7 @@ abstract class QuicReceiveStream {
 }
 ```
 
-### 4.4 Configuration
+#### 2.3.4 Configuration
 
 ```dart
 /// QUIC connection configuration (maps to transport parameters).
@@ -216,9 +234,10 @@ enum CongestionAlgorithm {
 
 ---
 
-## 5. Error Handling
 
-### 5.1 Exception Hierarchy
+### 2.4 Error Handling
+
+#### 2.4.1 Exception Hierarchy
 
 ```dart
 /// Base exception for all QUIC errors.
@@ -252,7 +271,7 @@ class QuicVersionNegotiationException extends QuicException {
 }
 ```
 
-### 5.2 Error Propagation
+#### 2.4.2 Error Propagation
 
 | Error Source | Dart Manifestation |
 |-------------|-------------------|
@@ -264,9 +283,10 @@ class QuicVersionNegotiationException extends QuicException {
 
 ---
 
-## 6. dart:io Integration
 
-### 6.1 SecurityContext
+### 2.5 dart:io Integration
+
+#### 2.5.1 SecurityContext
 
 ```dart
 // Reuse Dart's SecurityContext for TLS certificate configuration
@@ -280,7 +300,7 @@ final endpoint = await QuicEndpoint.bind(
 );
 ```
 
-### 6.2 InternetAddress
+#### 2.5.2 InternetAddress
 
 Use Dart's `InternetAddress` for all address representations:
 ```dart
@@ -290,7 +310,7 @@ await endpoint.connect(
 );
 ```
 
-### 6.3 Stream Integration
+#### 2.5.3 Stream Integration
 
 ```dart
 // Reading from a QUIC stream works like any Dart Stream
@@ -308,7 +328,8 @@ someStream.pipe(quicStream);
 
 ---
 
-## 7. HTTP/3 API
+
+### 2.6 HTTP/3 API
 
 ```dart
 /// HTTP/3 client — simplified high-level API.
@@ -333,19 +354,22 @@ abstract class Http3Client {
 
 ---
 
-## 8. WebTransport API
+
+### 2.7 WebTransport API
 
 See WEBTRANSPORT_SPEC.md Section 9 for the full API definition.
 
 ---
 
-## 9. libp2p API
+
+### 2.8 libp2p API
 
 See LIBP2P_QUIC_SPEC.md Section 11 for the full API definition.
 
 ---
 
-## 10. Crypto Backend Abstraction
+
+### 2.9 Crypto Backend Abstraction
 
 ```dart
 /// Abstract interface for cryptographic operations.
@@ -379,7 +403,8 @@ class DefaultCryptoBackend implements QuicCryptoBackend { ... }
 
 ---
 
-## 11. Connection Statistics
+
+### 2.10 Connection Statistics
 
 ```dart
 class QuicConnectionStats {
@@ -399,7 +424,9 @@ class QuicConnectionStats {
 
 ---
 
-## 12. Acceptance Criteria
+
+
+## 3. Acceptance Criteria
 
 - [ ] All public APIs compile without errors.
 - [ ] No `dart:ffi` imports in core library.
@@ -414,7 +441,8 @@ class QuicConnectionStats {
 
 ---
 
-## 13. Security Considerations
+
+## 4. Security Considerations
 
 - Never expose raw keys or secrets in public API return values.
 - SecurityContext should be the only way to configure TLS credentials.
@@ -423,7 +451,8 @@ class QuicConnectionStats {
 
 ---
 
-## 14. Dependencies
+
+## 5. Dependencies
 
 - `dart:io` (InternetAddress, RawDatagramSocket, SecurityContext)
 - `dart:async` (Stream, Future, Completer, StreamController)
@@ -433,7 +462,23 @@ class QuicConnectionStats {
 
 ---
 
-## 15. Testing Strategy
+
+
+
+## Used By
+
+- [API_SURFACE.md](API_SURFACE.md) — Consolidated into DART_API_SPEC.
+- [CUBIC_SPEC.md](CUBIC_SPEC.md) — Implements the CongestionControl interface defined in DART_API_SPEC.
+- [DART_IPFS_INTEGRATION.md](DART_IPFS_INTEGRATION.md) — References general Dart API conventions.
+- [ERROR_REGISTRY.md](ERROR_REGISTRY.md) — Maps wire error codes to the Dart exception hierarchy.
+- [HTTP3_SPEC.md](HTTP3_SPEC.md) — HTTP/3 public Dart API surface is defined in DART_API_SPEC.
+- [LIBP2P_QUIC_SPEC.md](LIBP2P_QUIC_SPEC.md) — libp2p adapter Dart API is defined in DART_API_SPEC.
+- [QUIC_RECOVERY_SPEC.md](QUIC_RECOVERY_SPEC.md) — References CongestionControl interface and SentPacket type.
+- [QUIC_STREAMS_SPEC.md](QUIC_STREAMS_SPEC.md) — Authoritative Dart API for streams is in DART_API_SPEC.
+- [SECURITY_SPEC.md](SECURITY_SPEC.md) — References QuicStream.isEarlyData API definition.
+- [VERSIONING_POLICY.md](VERSIONING_POLICY.md) — Public API surface governed by this policy.
+- [WEBTRANSPORT_SPEC.md](WEBTRANSPORT_SPEC.md) — WebTransport Dart API surface is defined in DART_API_SPEC.
+## 6. Testing Strategy
 
 - API contracts: Verify all methods return correct types.
 - Mock testing: Use mock I/O backends to test without network.
@@ -443,7 +488,8 @@ class QuicConnectionStats {
 
 ---
 
-## References
+
+## 7. References
 
 - Dart IO Library: https://api.dart.dev/stable/dart-io/dart-io-library.html
 - Effective Dart Design: https://dart.dev/effective-dart/design

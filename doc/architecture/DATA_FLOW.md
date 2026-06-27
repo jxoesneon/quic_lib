@@ -1,16 +1,17 @@
+---
+title: "Data Flow Architecture"
+category: architecture
+version: "1.0-draft"
+subsystem: "Packet Processing Pipelines"
+---
+
 # Data Flow Architecture
 
-**Version**: 1.0-draft  
-**Status**: Architecture  
-**Subsystem**: Packet Processing Pipelines
 
----
 
 ## 1. Purpose
 
-This document describes the data flow through `dart_quic`: the packet receive path, send path, stream demultiplexing, application read/write semantics, and the event-driven processing model.
-
----
+A modular architecture is only as good as the data flow between modules. Without an explicit pipeline diagram-from UDP socket through packet engine, stream manager, and application adapter-developers will introduce ad-hoc couplings that break under load. This document visualizes the send and receive paths so that every subsystem knows its upstream and downstream contract.
 
 ## 2. High-Level Data Flow
 
@@ -53,6 +54,7 @@ This document describes the data flow through `dart_quic`: the packet receive pa
 ```
 
 ---
+
 
 ## 3. Receive Path (Detailed)
 
@@ -163,6 +165,7 @@ This document describes the data flow through `dart_quic`: the packet receive pa
 
 ---
 
+
 ## 4. Send Path (Detailed)
 
 ### 4.1 Triggering Send
@@ -262,6 +265,7 @@ Sending is triggered by:
 
 ---
 
+
 ## 5. Stream Demultiplexing
 
 ### 5.1 Receive Side
@@ -296,6 +300,7 @@ Application calls stream.add(data)
 
 ---
 
+
 ## 6. ACK Processing Flow
 
 ```
@@ -325,6 +330,7 @@ ACK frame received
 ```
 
 ---
+
 
 ## 7. Handshake Data Flow
 
@@ -368,6 +374,7 @@ ACK frame received
 
 ---
 
+
 ## 8. Timer Events
 
 | Timer | Trigger | Action |
@@ -379,6 +386,7 @@ ACK frame received
 | Loss time | Earliest potential loss | Re-check loss detection |
 
 ---
+
 
 ## 9. Dart Async Integration
 
@@ -411,7 +419,8 @@ streamController.stream.listen((data) {
 
 ---
 
-## References
+
+## 10. References
 
 - MODULE_OVERVIEW.md (module responsibilities)
 - QUIC_WIRE_SPEC.md (frame/packet formats)

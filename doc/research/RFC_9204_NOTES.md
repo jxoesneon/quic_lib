@@ -1,20 +1,28 @@
+---
+title: "RFC 9204 Notes: QPACK: Field Compression for HTTP/3"
+category: research
+authors: "C. Krasic, M. Bishop, A. Frindell (Eds.)"
+published: "June 2022"
+companion_rfcs: []
+---
+
 # RFC 9204 Notes: QPACK: Field Compression for HTTP/3
 
-**RFC**: 9204  
-**Authors**: C. Krasic, M. Bishop, A. Frindell (Eds.)  
-**Published**: June 2022  
-**Status**: Standards Track  
-**Depends on**: RFC 9114, RFC 9000
 
 ---
 
-## Abstract
+## 1. Purpose
+
+QPACK explicit encoder/decoder streams and blocking-tolerant references are a significant departure from HPACK implicit dynamic table updates. Implementing QPACK without understanding these design choices risks either head-of-line blocking or poor compression ratios. These notes provide the conceptual foundation for the QPACK codec spec.
+
+## 2. Abstract
 
 QPACK is a compression format for efficiently representing HTTP header and trailer fields in HTTP/3. It is a variation of HPACK (RFC 7541) redesigned for QUIC's out-of-order delivery, trading off compression ratio for reduced head-of-line blocking.
 
 ---
 
-## Why Not HPACK?
+
+## 3. Why Not HPACK?
 
 HPACK requires in-order delivery of compressed field sections because the dynamic table is updated implicitly by each encoded section. In HTTP/2 over TCP, this ordering is guaranteed. In HTTP/3 over QUIC, streams are delivered independently — HPACK would cause head-of-line blocking at the application layer.
 
@@ -25,7 +33,8 @@ QPACK solves this by:
 
 ---
 
-## Architecture
+
+## 4. Architecture
 
 ```
 Encoder                                  Decoder
@@ -40,39 +49,19 @@ Encoder                                  Decoder
 
 ---
 
-## Tables
 
-### Static Table (Section 3.1)
+## 5. Tables
 
-Predefined table with 99 entries (index 0-98) containing common HTTP fields:
+See [HTTP3_SPEC.md §5](../specs/HTTP3_SPEC.md#5-qpack-codec-rfc-9204) for the complete QPACK specification including static table, dynamic table, and encoder/decoder instructions. Briefly:
 
-| Index | Name | Value |
-|-------|------|-------|
-| 0 | `:authority` | (empty) |
-| 1 | `:path` | `/` |
-| 2 | `age` | `0` |
-| 3 | `content-disposition` | (empty) |
-| ... | ... | ... |
-| 15 | `:method` | `CONNECT` |
-| 16 | `:method` | `DELETE` |
-| 17 | `:method` | `GET` |
-| 18 | `:method` | `HEAD` |
-| 19 | `:method` | `OPTIONS` |
-| 20 | `:method` | `POST` |
-| 21 | `:method` | `PUT` |
-| ... | ... | ... |
-| 98 | `x-frame-options` | `sameorigin` |
-
-### Dynamic Table (Section 3.2)
-
-- FIFO queue of (name, value) entries.
-- Capacity set via `SETTINGS_QPACK_MAX_TABLE_CAPACITY`.
-- Entries are added via encoder instructions.
-- Both endpoints maintain synchronized copies.
+- **Static Table**: 99 predefined entries with common HTTP fields.
+- **Dynamic Table**: FIFO queue of (name, value) entries, capacity set via `SETTINGS_QPACK_MAX_TABLE_CAPACITY`.
+- Both endpoints maintain synchronized copies updated via encoder instructions.
 
 ---
 
-## Encoder Instructions (Section 4.3)
+
+## 6. Encoder Instructions (Section 4.3)
 
 Sent on the encoder stream:
 
@@ -85,7 +74,8 @@ Sent on the encoder stream:
 
 ---
 
-## Decoder Instructions (Section 4.4)
+
+## 7. Decoder Instructions (Section 4.4)
 
 Sent on the decoder stream:
 
@@ -97,7 +87,8 @@ Sent on the decoder stream:
 
 ---
 
-## Encoded Field Section (Section 4.5)
+
+## 8. Encoded Field Section (Section 4.5)
 
 Each HEADERS frame carries a field section with:
 
@@ -123,7 +114,8 @@ Encoded Field Section {
 
 ---
 
-## Blocking and Required Insert Count
+
+## 9. Blocking and Required Insert Count
 
 - **Required Insert Count**: The minimum number of dynamic table inserts the decoder must have processed to decode the field section.
 - If the decoder hasn't received enough encoder instructions, it blocks.
@@ -132,7 +124,8 @@ Encoded Field Section {
 
 ---
 
-## Integer Encoding (Section 4.1)
+
+## 10. Integer Encoding (Section 4.1)
 
 QPACK uses the same prefix integer encoding as HPACK:
 
@@ -150,7 +143,8 @@ else:
 
 ---
 
-## String Encoding (Section 4.2)
+
+## 11. String Encoding (Section 4.2)
 
 Two modes:
 1. **Huffman-encoded**: H-bit = 1; uses the HPACK Huffman table (Appendix B of RFC 7541).
@@ -158,7 +152,8 @@ Two modes:
 
 ---
 
-## Security Considerations (Section 7)
+
+## 12. Security Considerations (Section 7)
 
 - **Probing attacks** (CRIME/BREACH): Mitigated by QPACK's ability to use literal representations and by QUIC's encryption of per-stream data.
 - **Memory exhaustion**: Dynamic table capacity is bounded by settings; implementations must enforce limits.
@@ -166,7 +161,8 @@ Two modes:
 
 ---
 
-## Relevance to dart_quic
+
+## 13. Relevance to dart_quic
 
 1. **Separate codec**: QPACK encoder/decoder should be a standalone module, testable independently.
 2. **Static table**: Hardcode the 99-entry static table as a const list.
@@ -177,7 +173,8 @@ Two modes:
 
 ---
 
-## References
+
+## 14. References
 
 - RFC 9204: https://www.rfc-editor.org/rfc/rfc9204
 - RFC 7541 (HPACK): https://www.rfc-editor.org/rfc/rfc7541

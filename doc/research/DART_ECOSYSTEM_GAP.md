@@ -1,8 +1,17 @@
-# Dart Ecosystem Gap Analysis: Why Pure Dart Needs a QUIC Stack
-
+---
+title: "Dart Ecosystem Gap Analysis: Why Pure Dart Needs a QUIC Stack"
+category: research
+companion_rfcs: []
 ---
 
-## The Problem
+# Dart Ecosystem Gap Analysis: Why Pure Dart Needs a QUIC Stack
+
+
+## 1. Purpose
+
+The Dart ecosystem lacks a production-ready pure-Dart QUIC stack, which blocks HTTP/3 adoption, WebTransport support, and libp2p participation for the entire language. Understanding exactly what is missing-and which existing packages fall short-justifies the investment in dart_quic and shapes the architecture decisions that follow.
+
+## 2. The Problem
 
 As of mid-2026, the Dart ecosystem has **no production-ready, pure-Dart QUIC implementation**. This gap blocks:
 
@@ -13,7 +22,8 @@ As of mid-2026, the Dart ecosystem has **no production-ready, pure-Dart QUIC imp
 
 ---
 
-## Current Landscape
+
+## 3. Current Landscape
 
 ### Official Dart SDK Position
 
@@ -44,7 +54,8 @@ As of mid-2026, the Dart ecosystem has **no production-ready, pure-Dart QUIC imp
 
 ---
 
-## Constraints Unique to Dart
+
+## 4. Constraints Unique to Dart
 
 ### 1. Single-Threaded Event Loop
 
@@ -98,7 +109,8 @@ Dart is increasingly targeting WASM (via `dart2wasm`). Constraints:
 
 ---
 
-## Why Build This Now
+
+## 5. Why Build This Now
 
 ### 1. dart_ipfs P0 Dependency
 
@@ -122,7 +134,8 @@ The Dart ecosystem is mature in many areas (HTTP clients, gRPC, protobuf) but ha
 
 ---
 
-## Design Principles Derived from Constraints
+
+## 6. Design Principles Derived from Constraints
 
 1. **Pure Dart core**: No FFI dependencies in the transport layer.
 2. **Async-native**: Build on `Stream`/`Future`/`Completer` — no blocking anywhere.
@@ -134,7 +147,8 @@ The Dart ecosystem is mature in many areas (HTTP clients, gRPC, protobuf) but ha
 
 ---
 
-## References
+
+## 7. References
 
 - dart-lang/sdk#38595: https://github.com/dart-lang/sdk/issues/38595
 - Dart RawDatagramSocket: https://api.dart.dev/stable/dart-io/RawDatagramSocket-class.html

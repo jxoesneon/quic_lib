@@ -1,21 +1,30 @@
+---
+title: "QUIC Cryptographic Specification"
+category: spec
+version: "1.0-draft"
+status: "Specification"
+subsystem: "Packet Protection & Key Management"
+rfc_basis:
+  - "RFC 9001"
+  - "RFC 8446 (TLS 1.3)"
+  - "RFC 5869 (HKDF)"
+dependencies:
+  - "ROADMAP.md"
+  - "TEST_VECTORS.md"
+---
+
 # QUIC Cryptographic Specification
 
-**Version**: 1.0-draft  
-**Status**: Specification  
-**RFC Basis**: RFC 9001, RFC 8446 (TLS 1.3), RFC 5869 (HKDF)  
-**Subsystem**: Packet Protection & Key Management
 
----
 
 ## 1. Purpose
 
-This document specifies the cryptographic operations for `dart_quic`: TLS 1.3 integration, key derivation, packet protection (AEAD encryption), header protection, key updates, and Initial secret computation.
+QUIC security guarantees rest entirely on correct TLS 1.3 integration, key derivation, and packet protection. A single mistake in nonce construction or HKDF labeling breaks interoperability and potentially confidentiality. This spec provides the cryptographic contract that the TLS engine and packet protector must satisfy, so that higher layers can trust the wire.
 
----
+## 2. Detailed Specification
+### 2.1 TLS 1.3 Integration Architecture
 
-## 2. TLS 1.3 Integration Architecture
-
-### 2.1 Layering
+#### 2.1.1 Layering
 
 ```
 ┌────────────────────────────────┐
@@ -36,7 +45,7 @@ This document specifies the cryptographic operations for `dart_quic`: TLS 1.3 in
 └────────────────────────────────┘
 ```
 
-### 2.2 TLS-QUIC Interface Contract
+#### 2.1.2 TLS-QUIC Interface Contract
 
 The TLS engine MUST provide to QUIC:
 1. Handshake bytes to send (per encryption level).
@@ -50,7 +59,8 @@ QUIC MUST provide to TLS:
 
 ---
 
-## 3. Encryption Levels
+
+### 2.2 Encryption Levels
 
 | Level | Secret Derivation | Lifetime |
 |-------|-------------------|----------|
@@ -61,9 +71,10 @@ QUIC MUST provide to TLS:
 
 ---
 
-## 4. Initial Secrets (RFC 9001 Section 5.2)
 
-### 4.1 Derivation
+### 2.3 Initial Secrets (RFC 9001 Section 5.2)
+
+#### 2.3.1 Derivation
 
 ```
 // QUIC v1 initial salt (fixed, published in RFC)
@@ -91,7 +102,7 @@ server_initial_secret = HKDF-Expand-Label(
 )
 ```
 
-### 4.2 HKDF-Expand-Label
+#### 2.3.2 HKDF-Expand-Label
 
 ```
 HKDF-Expand-Label(Secret, Label, Context, Length):
@@ -107,7 +118,8 @@ Note: All QUIC usages of HKDF-Expand-Label use a **zero-length Context**.
 
 ---
 
-## 5. Key Derivation from Secrets (RFC 9001 Section 5.1)
+
+### 2.4 Key Derivation from Secrets (RFC 9001 Section 5.1)
 
 From each traffic secret, derive:
 
@@ -125,9 +137,10 @@ hp  = HKDF-Expand-Label(secret, "quic hp",  "", hp_key_length)
 
 ---
 
-## 6. Packet Protection (AEAD)
 
-### 6.1 Nonce Construction (RFC 9001 Section 5.3)
+### 2.5 Packet Protection (AEAD)
+
+#### 2.5.1 Nonce Construction (RFC 9001 Section 5.3)
 
 ```
 nonce = iv XOR pad_left(packet_number, 12)
@@ -137,7 +150,7 @@ nonce = iv XOR pad_left(packet_number, 12)
 - Left-padded with zeros to 12 bytes.
 - XOR with the 12-byte IV.
 
-### 6.2 Encryption
+#### 2.5.2 Encryption
 
 ```
 ciphertext = AEAD-Encrypt(key, nonce, aad, plaintext)
@@ -147,7 +160,7 @@ ciphertext = AEAD-Encrypt(key, nonce, aad, plaintext)
 - **Plaintext**: The packet payload (frames).
 - **Output**: Ciphertext + authentication tag (16 bytes for AES-GCM, 16 bytes for ChaCha20-Poly1305).
 
-### 6.3 Decryption
+#### 2.5.3 Decryption
 
 ```
 plaintext = AEAD-Decrypt(key, nonce, aad, ciphertext)
@@ -157,13 +170,14 @@ If decryption fails (authentication tag mismatch), the packet MUST be discarded 
 
 ---
 
-## 7. Header Protection (RFC 9001 Section 5.4)
 
-### 7.1 Purpose
+### 2.6 Header Protection (RFC 9001 Section 5.4)
+
+#### 2.6.1 Purpose
 
 Header protection obscures the packet number and certain flag bits from observers who don't possess the header protection key.
 
-### 7.2 Algorithm
+#### 2.6.2 Algorithm
 
 **Applied after encryption (sender) / removed before decryption (receiver).**
 
@@ -206,9 +220,10 @@ for i in 0..pn_length:
 
 ---
 
-## 8. Key Update (RFC 9001 Section 6)
 
-### 8.1 Derivation
+### 2.7 Key Update (RFC 9001 Section 6)
+
+#### 2.7.1 Derivation
 
 ```
 application_traffic_secret_N+1 = HKDF-Expand-Label(
@@ -221,13 +236,13 @@ application_traffic_secret_N+1 = HKDF-Expand-Label(
 
 Then derive new `key` and `iv` from the new secret (same as Section 5).
 
-### 8.2 Key Phase Bit
+#### 2.7.2 Key Phase Bit
 
 - The Key Phase bit in the short header toggles on each key update.
 - Both endpoints track the current and previous key generation.
 - A received packet with a different Key Phase bit triggers use of the next-generation keys.
 
-### 8.3 Constraints
+#### 2.7.3 Constraints
 
 - Only one key update may be in progress at a time.
 - Initiator must receive an ACK for a packet sent with the new keys before initiating another update.
@@ -235,7 +250,8 @@ Then derive new `key` and `iv` from the new secret (same as Section 5).
 
 ---
 
-## 9. Retry Integrity Tag (RFC 9001 Section 5.8)
+
+### 2.8 Retry Integrity Tag (RFC 9001 Section 5.8)
 
 ```
 // QUIC v1 fixed key and nonce
@@ -252,7 +268,9 @@ retry_integrity_tag = AES-128-GCM-Encrypt(retry_key, retry_nonce, pseudo_retry, 
 
 ---
 
-## 10. Acceptance Criteria
+
+
+## 3. Acceptance Criteria
 
 - [ ] Initial secret derivation matches RFC 9001 Appendix A test vectors.
 - [ ] HKDF-Expand-Label produces correct output for known inputs.
@@ -267,7 +285,8 @@ retry_integrity_tag = AES-128-GCM-Encrypt(retry_key, retry_nonce, pseudo_retry, 
 
 ---
 
-## 11. Security Considerations
+
+## 4. Security Considerations
 
 - **Constant-time comparisons**: All tag verification must be constant-time to prevent timing side-channels.
 - **Key erasure**: Old keys should be zeroed from memory after the transition period.
@@ -277,7 +296,8 @@ retry_integrity_tag = AES-128-GCM-Encrypt(retry_key, retry_nonce, pseudo_retry, 
 
 ---
 
-## 12. Dependencies
+
+## 5. Dependencies
 
 - `package:cryptography` (preferred): AES-GCM, ChaCha20-Poly1305, HKDF, SHA-256/384.
 - `package:pointycastle` (fallback): AES-ECB for header protection, HKDF.
@@ -285,7 +305,14 @@ retry_integrity_tag = AES-128-GCM-Encrypt(retry_key, retry_nonce, pseudo_retry, 
 
 ---
 
-## 13. Testing Strategy
+
+
+
+## Used By
+
+- [ROADMAP.md](ROADMAP.md) — Lists QUIC_CRYPTO_SPEC as a formal specification deliverable.
+- [TEST_VECTORS.md](TEST_VECTORS.md) — Test vectors derive from QUIC crypto specification.
+## 6. Testing Strategy
 
 - RFC 9001 Appendix A test vectors (Initial secret derivation, packet protection).
 - Cross-implementation validation against aioquic, quic-go packet captures.
@@ -294,7 +321,8 @@ retry_integrity_tag = AES-128-GCM-Encrypt(retry_key, retry_nonce, pseudo_retry, 
 
 ---
 
-## References
+
+## 7. References
 
 - RFC 9001: https://www.rfc-editor.org/rfc/rfc9001
 - RFC 8446 (TLS 1.3): https://www.rfc-editor.org/rfc/rfc8446

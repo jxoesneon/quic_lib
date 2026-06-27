@@ -1,19 +1,26 @@
+---
+title: "WebTransport over HTTP/3 Draft Notes"
+category: research
+companion_rfcs: []
+---
+
 # WebTransport over HTTP/3 Draft Notes
 
-**Document**: draft-ietf-webtrans-http3 (latest: draft-15)  
-**Working Group**: IETF WebTransport (webtrans)  
-**Status**: Active Internet-Draft (on Standards Track path)  
-**Depends on**: RFC 9114 (HTTP/3), RFC 9000 (QUIC), RFC 9297 (HTTP Datagrams)
 
 ---
 
-## Abstract
+## 1. Purpose
+
+WebTransport over HTTP/3 is still evolving as an IETF draft, yet it is already shipping in Chromium and demanded by real-time Dart applications. These notes track the draft semantics-session establishment via extended CONNECT, capsule types, flow control, and session termination-that the WebTransport spec must codify.
+
+## 2. Abstract
 
 WebTransport over HTTP/3 is a protocol that enables web application clients (constrained by the web security model) to communicate with a remote server using a secure multiplexed transport. It provides unidirectional streams, bidirectional streams, and datagrams, all multiplexed within a single HTTP/3 connection.
 
 ---
 
-## Motivation
+
+## 3. Motivation
 
 WebSocket provides a single bidirectional byte stream. For real-time applications (gaming, live media, collaborative editing), developers need:
 - **Multiple independent streams** (no head-of-line blocking between messages)
@@ -25,7 +32,8 @@ WebTransport over HTTP/3 provides all of these.
 
 ---
 
-## Session Establishment (Section 3)
+
+## 4. Session Establishment (Section 3)
 
 ### Prerequisites
 
@@ -51,7 +59,8 @@ A WebTransport session is established via an extended CONNECT request:
 
 ---
 
-## Features (Section 4)
+
+## 5. Features (Section 4)
 
 ### 4.1 Datagrams
 
@@ -96,7 +105,8 @@ WebTransport Bidirectional Stream (server) {
 
 ---
 
-## Session Lifecycle
+
+## 6. Session Lifecycle
 
 ```
 Client                                        Server
@@ -128,7 +138,8 @@ Client                                        Server
 
 ---
 
-## Multiplexing Multiple Sessions
+
+## 7. Multiplexing Multiple Sessions
 
 Multiple WebTransport sessions can share a single HTTP/3 connection:
 - Each has its own CONNECT stream (distinct stream ID).
@@ -137,7 +148,8 @@ Multiple WebTransport sessions can share a single HTTP/3 connection:
 
 ---
 
-## Capsule Protocol Integration
+
+## 8. Capsule Protocol Integration
 
 WebTransport uses the Capsule Protocol (RFC 9297) on the CONNECT stream for:
 
@@ -148,7 +160,8 @@ WebTransport uses the Capsule Protocol (RFC 9297) on the CONNECT stream for:
 
 ---
 
-## Flow Control Considerations
+
+## 9. Flow Control Considerations
 
 - WebTransport streams are QUIC streams and subject to QUIC flow control.
 - Datagrams are not flow-controlled (they are unreliable).
@@ -157,7 +170,8 @@ WebTransport uses the Capsule Protocol (RFC 9297) on the CONNECT stream for:
 
 ---
 
-## Security Model
+
+## 10. Security Model
 
 - Origin-based: The CONNECT request carries `:authority` and `:path` that identify the server application.
 - Certificate validation: Standard HTTPS certificate validation applies.
@@ -166,7 +180,8 @@ WebTransport uses the Capsule Protocol (RFC 9297) on the CONNECT stream for:
 
 ---
 
-## Relevance to dart_quic
+
+## 11. Relevance to dart_quic
 
 1. **Layering**: WebTransport sits on top of HTTP/3, which sits on top of QUIC. The Dart implementation should maintain this layering cleanly.
 2. **Session abstraction**: A `WebTransportSession` class should encapsulate:
@@ -180,7 +195,8 @@ WebTransport uses the Capsule Protocol (RFC 9297) on the CONNECT stream for:
 
 ---
 
-## References
+
+## 12. References
 
 - draft-ietf-webtrans-http3: https://datatracker.ietf.org/doc/draft-ietf-webtrans-http3/
 - RFC 9297 (HTTP Datagrams): https://www.rfc-editor.org/rfc/rfc9297

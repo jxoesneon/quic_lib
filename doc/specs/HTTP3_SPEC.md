@@ -237,7 +237,50 @@ Server:
 ---
 
 
-### 2.6 Error Handling
+### 2.6 Priority Signaling (RFC 9218)
+
+HTTP/3 replaces the HTTP/2 priority scheme with the Extensible Prioritization Scheme (RFC 9218).
+
+#### 2.6.1 Priority Update Frame (Type 0xF0700)
+
+Sent on the control stream to update a request's priority after the stream is created:
+
+```
+PRIORITY_UPDATE Frame {
+  Type (i) = 0xF0700,
+  Incremental (1),
+  Target Stream ID (i),
+  Priority Field Value (..),  // e.g., "u=3, i"
+}
+```
+
+- **Urgency** (`u`): 0 (highest) to 7 (lowest). Default: 3.
+- **Incremental** (`i`): Boolean; if true, responses can be interleaved.
+
+#### 2.6.2 Default Priorities
+
+| Resource Type | Default Urgency | Incremental |
+|---------------|-----------------|-------------|
+| HTML document | 0 | no |
+| CSS | 1 | no |
+| JavaScript (blocking) | 1 | no |
+| Images | 3 | yes |
+| Async scripts | 4 | yes |
+| Prefetch | 7 | yes |
+
+#### 2.6.3 Scheduling Behavior
+
+- The sender SHOULD send responses in urgency order (lower `u` first).
+- Within the same urgency, incremental responses SHOULD be interleaved.
+- QUIC stream flow control and congestion control still apply; priority influences scheduler decisions.
+
+---
+
+
+---
+
+
+### 2.7 Error Handling
 
 #### 2.6.1 Stream Errors
 
@@ -269,7 +312,7 @@ Close the entire connection with an HTTP/3 error code via QUIC CONNECTION_CLOSE 
 ---
 
 
-### 2.7 Dart API
+### 2.8 Dart API
 
 The HTTP/3 Dart API is defined in [DART_API_SPEC.md §2.6](DART_API_SPEC.md#26-http3-api). The following subsections describe how HTTP/3 frames and settings map to those interfaces.
 

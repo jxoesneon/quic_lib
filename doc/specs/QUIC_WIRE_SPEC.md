@@ -152,6 +152,27 @@ Packet numbers are encoded in 1-4 bytes. The number of bytes is indicated by the
 
 Decoding requires the receiver to reconstruct the full packet number from the truncated value using the largest acknowledged packet number.
 
+**Packet Number Reconstruction Algorithm (RFC 9000 Section 17.1):**
+
+Given:
+- `truncated`: the truncated packet number from the header (1-4 bytes).
+- `numBits`: the bit-length of the truncated field (determined by header type).
+- `largestAcked`: the highest packet number acknowledged in the same space.
+
+```
+candidate = largestAcked + 1
+clearBits = candidate & ~((1 << numBits) - 1)
+reconstructed = clearBits | truncated
+
+// Ensure the reconstructed value is within half the range of `numBits`
+if reconstructed <= largestAcked - (1 << (numBits - 1)):
+    reconstructed += (1 << numBits)
+elif reconstructed > largestAcked + (1 << (numBits - 1)):
+    reconstructed -= (1 << numBits)
+```
+
+The reconstructed value is the full packet number.
+
 ---
 
 

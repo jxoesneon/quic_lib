@@ -67,7 +67,7 @@ WebTransport is the web next real-time transport, offering multiple independent 
 
 #### 2.3.1 Client Request
 
-The client initiates a WebTransport session via an extended CONNECT request on a bidirectional QUIC stream:
+The client initiates a WebTransport session via an extended CONNECT request on a bidirectional QUIC stream (RFC 9220 Section 3):
 
 ```http
 :method = CONNECT

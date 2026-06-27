@@ -87,7 +87,7 @@ Benchmarks SHOULD also report the actual hardware used when publishing results.
 
 Before each benchmark run:
 
-- Disable CPU frequency scaling (e.g., `performance` governor on Linux, `sudo pmset -c` on macOS, `High performance` power plan on Windows).
+- Disable CPU frequency scaling (e.g., `performance` governor on Linux, `sudo pmset -c` on macOS, `High performance` power plan on Windows). **Warning:** `sudo` commands are for local benchmarking environments only and must not be used in CI pipelines.
 - Close non-essential applications and background services.
 - Run benchmarks on wall power (not battery).
 - Pin the Dart process to a single core when measuring pure CPU-bound micro-benchmarks (optional but recommended for variance reduction).

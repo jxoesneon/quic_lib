@@ -35,6 +35,8 @@
 - [QUIC Datagram Spec](specs/QUIC_DATAGRAM_SPEC.md)
 - [QUIC Recovery Spec](specs/QUIC_RECOVERY_SPEC.md)
 - [QUIC Streams Spec](specs/QUIC_STREAMS_SPEC.md)
+- [QPACK Spec](specs/QPACK_SPEC.md)
+- [QUIC Transport Parameters Spec](specs/QUIC_TRANSPORT_PARAMETERS_SPEC.md)
 - [QUIC Wire Spec](specs/QUIC_WIRE_SPEC.md)
 - [Roadmap](specs/ROADMAP.md)
 - [Security Spec](specs/SECURITY_SPEC.md)

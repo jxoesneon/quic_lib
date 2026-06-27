@@ -52,7 +52,7 @@ Encoder                                  Decoder
 
 ## 5. Tables
 
-See [HTTP3_SPEC.md §5](../specs/HTTP3_SPEC.md#5-qpack-codec-rfc-9204) for the complete QPACK specification including static table, dynamic table, and encoder/decoder instructions. Briefly:
+See [HTTP3_SPEC.md §2.4](../specs/HTTP3_SPEC.md#24-qpack-integration-rfc-9204) for the QPACK integration context; the complete codec is specified in [QPACK_SPEC.md](../specs/QPACK_SPEC.md). including static table, dynamic table, and encoder/decoder instructions. Briefly:
 
 - **Static Table**: 99 predefined entries with common HTTP fields.
 - **Dynamic Table**: FIFO queue of (name, value) entries, capacity set via `SETTINGS_QPACK_MAX_TABLE_CAPACITY`.

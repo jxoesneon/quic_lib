@@ -357,14 +357,104 @@ abstract class Http3Client {
 
 ### 2.7 WebTransport API
 
-See WEBTRANSPORT_SPEC.md Section 9 for the full API definition.
+```dart
+abstract class WebTransportSession {
+  int get sessionId;
+
+  Future<WebTransportBidiStream> openBidirectionalStream();
+  Stream<WebTransportBidiStream> get incomingBidirectionalStreams;
+  Future<WebTransportSendStream> openUnidirectionalStream();
+  Stream<WebTransportReceiveStream> get incomingUnidirectionalStreams;
+
+  void sendDatagram(List<int> data);
+  Stream<List<int>> get datagrams;
+  int get maxDatagramSize;
+
+  Future<void> close({int errorCode = 0, String reason = ''});
+  Future<void> get closed;
+  WebTransportCloseInfo? get closeInfo;
+}
+
+abstract class WebTransportBidiStream implements WebTransportSendStream, WebTransportReceiveStream {
+  int get streamId;
+}
+
+abstract class WebTransportSendStream {
+  int get streamId;
+  void add(List<int> data);
+  Future<void> close();
+  Future<void> reset(int errorCode);
+}
+
+abstract class WebTransportReceiveStream {
+  int get streamId;
+  Stream<List<int>> get stream;
+  Future<void> stopReceiving(int errorCode);
+}
+
+class WebTransportCloseInfo {
+  final int errorCode;
+  final String reason;
+  WebTransportCloseInfo(this.errorCode, this.reason);
+}
+```
 
 ---
 
 
 ### 2.8 libp2p API
 
-See LIBP2P_QUIC_SPEC.md Section 11 for the full API definition.
+```dart
+abstract class Libp2pQuicTransport {
+  Future<Libp2pConnection> dial(Multiaddr target, {
+    required PrivateKey hostKey,
+    PeerId? expectedPeerId,
+  });
+
+  Future<Libp2pQuicListener> listen(Multiaddr bindAddr, {
+    required PrivateKey hostKey,
+  });
+}
+
+abstract class Libp2pQuicListener {
+  Stream<Libp2pConnection> get connections;
+  Future<void> close();
+}
+
+abstract class Libp2pConnection {
+  PeerId get remotePeerId;
+  Multiaddr get remoteAddress;
+  Future<Libp2pStream> openStream({List<String>? protocols});
+  Stream<Libp2pStream> get incomingStreams;
+  Future<void> close();
+}
+
+abstract class Libp2pStream {
+  int get streamId;
+  String get protocol;
+  void add(List<int> data);
+  Future<void> close();
+  Stream<List<int>> get stream;
+}
+
+class PeerId {
+  final List<int> bytes;
+  PeerId(this.bytes);
+  factory PeerId.fromPublicKey(PublicKey key);
+  factory PeerId.fromBytes(List<int> bytes);
+  String toBase58();
+}
+
+class Multiaddr {
+  final List<MultiaddrComponent> components;
+  Multiaddr(this.components);
+  factory Multiaddr.parse(String str);
+  InternetAddress? get ip;
+  int? get port;
+  PeerId? get peerId;
+  String encode();
+}
+```
 
 ---
 
@@ -467,9 +557,9 @@ class QuicConnectionStats {
 
 ## Used By
 
-- [API_SURFACE.md](API_SURFACE.md) — Consolidated into DART_API_SPEC.
+- [API_SURFACE.md](../architecture/API_SURFACE.md) — Consolidated into DART_API_SPEC.
 - [CUBIC_SPEC.md](CUBIC_SPEC.md) — Implements the CongestionControl interface defined in DART_API_SPEC.
-- [DART_IPFS_INTEGRATION.md](DART_IPFS_INTEGRATION.md) — References general Dart API conventions.
+- [DART_IPFS_INTEGRATION.md](../architecture/DART_IPFS_INTEGRATION.md) — References general Dart API conventions.
 - [ERROR_REGISTRY.md](ERROR_REGISTRY.md) — Maps wire error codes to the Dart exception hierarchy.
 - [HTTP3_SPEC.md](HTTP3_SPEC.md) — HTTP/3 public Dart API surface is defined in DART_API_SPEC.
 - [LIBP2P_QUIC_SPEC.md](LIBP2P_QUIC_SPEC.md) — libp2p adapter Dart API is defined in DART_API_SPEC.

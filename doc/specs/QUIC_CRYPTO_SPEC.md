@@ -270,6 +270,50 @@ retry_integrity_tag = AES-128-GCM-Encrypt(retry_key, retry_nonce, pseudo_retry, 
 
 
 
+### 2.9 0-RTT and Session Resumption (RFC 9001 Section 4.6)
+
+#### 2.9.1 0-RTT Key Derivation
+
+0-RTT uses keys derived from the resumed session's `client_early_traffic_secret`:
+
+```
+client_early_traffic_secret = HKDF-Expand-Label(
+  secret: resumption_master_secret,
+  label: "c e traffic",
+  context: "",
+  length: Hash.length
+)
+
+0-RTT write key, IV = derive_key_and_iv(client_early_traffic_secret)
+```
+
+These keys protect 0-RTT application data sent before the handshake completes. 0-RTT data is replayable; the application must mark it as `isEarlyData`.
+
+#### 2.9.2 NewSessionTicket and PSK
+
+When the server accepts a 0-RTT attempt, it issues a `NewSessionTicket` containing:
+- `ticket`: opaque byte string (PSK identity).
+- `ticket_lifetime`: maximum time in seconds the ticket is valid (≤ 604800).
+- `ticket_age_add`: random 32-bit value added to the client's `obfuscated_ticket_age`.
+- `nonce`: unique per ticket.
+- `ticket_extensions`: including `quic_transport_parameters` to bind parameters to the ticket.
+
+The client stores the ticket and the corresponding `resumption_master_secret`. On resumption:
+1. The client sends `pre_shared_key` and `early_data` extensions in the ClientHello.
+2. The server validates the PSK and, if accepted, derives 0-RTT keys.
+3. If rejected, the client falls back to a 1-RTT handshake.
+
+#### 2.9.3 Anti-Replay
+
+The server MUST NOT accept 0-RTT data that it cannot guarantee is not a replay. Strategies:
+- Accept 0-RTT only for idempotent operations (GET, HEAD).
+- Use a single-use ticket policy (invalidate after first 0-RTT use).
+- Reject 0-RTT older than a configured threshold.
+
+---
+
+
+
 ## 3. Acceptance Criteria
 
 - [ ] Initial secret derivation matches RFC 9001 Appendix A test vectors.

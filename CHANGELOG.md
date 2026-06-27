@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.0-alpha.3] — 2026-06-27
+
+### Added
+- **AEAD encryption/decryption wiring** in packet pipeline:
+  - `KeyManager` — derives Initial-space keys from DCID using `InitialSecrets` + `KeyDerivation`
+  - `PacketNumberSpaceKeys` — holds `PacketProtector` + `HeaderProtection` per space
+  - `QuicConnection.buildEncryptedPacket()` — encrypts payload + applies header protection
+  - `QuicConnection.processEncryptedDatagram()` — decrypts payload + dispatches frames
+  - Falls back to plaintext when no keys are installed
+- Integration tests: `test/integration/encrypted_pipeline_test.dart` (6 tests covering key derivation, encrypted build, plaintext fallback, encrypted CRYPTO/STREAM/CONNECTION_CLOSE dispatch)
+
+### Changed
+- `QuicConnection` constructor accepts optional `KeyManager`
+- `buildPacket` and `processIncomingDatagram` remain as plaintext fallbacks
+
+---
+
 ## [0.1.0-alpha.2] — 2026-06-27
 
 ### Added

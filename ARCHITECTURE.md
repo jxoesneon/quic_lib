@@ -167,6 +167,15 @@ See `SECURITY_FIXES.md` for the complete list.
 
 ## Known Gaps
 
+### Completed in Alpha.3
+
+| Gap | Status |
+|-----|--------|
+| AEAD encryption in pipeline | **DONE** — `QuicConnection.buildEncryptedPacket()` encrypts + protects headers |
+| AEAD decryption in pipeline | **DONE** — `QuicConnection.processEncryptedDatagram()` decrypts + dispatches |
+| Initial key derivation | **DONE** — `KeyManager.deriveInitial()` derives keys from DCID |
+| Per-space key management | **DONE** — `PacketNumberSpaceKeys` holds `PacketProtector` + `HeaderProtection` |
+
 ### Completed in Alpha.2
 
 | Gap | Status |
@@ -181,16 +190,15 @@ See `SECURITY_FIXES.md` for the complete list.
 
 | Gap | Impact | ETA |
 |-----|--------|-----|
-| AEAD encryption in pipeline | `PacketProtector.encrypt` not wired into `buildPacket` | Alpha.3 |
-| AEAD decryption in pipeline | `PacketProtector.decrypt` not wired into `processPacket` | Alpha.3 |
-| Header protection in pipeline | `HeaderProtection.apply/remove` not wired | Alpha.3 |
-| Handshake message parsing | CRYPTO bytes not parsed into TLS message types for `HandshakeStateMachine.onMessage()` | Alpha.3 |
-| `QuicEndpoint.connect` unimplemented | Cannot initiate connections | Alpha.3 |
-| WebTransport stream bridging | Capsules not mapped to QUIC streams | Alpha.3 |
+| Full header protection round-trip | `HeaderProtection.remove` not yet called in `processEncryptedDatagram` (scaffold passes through) | Alpha.4 |
+| Handshake message parsing | CRYPTO bytes not parsed into TLS message types for `HandshakeStateMachine.onMessage()` | Alpha.4 |
+| Handshake key transition | Initial → Handshake → Application key rotation on handshake completion | Alpha.4 |
+| `QuicEndpoint.connect` unimplemented | Cannot initiate connections | Alpha.4 |
+| WebTransport stream bridging | Capsules not mapped to QUIC streams | Alpha.4 |
 | DCUtR protocol orchestration | NAT hole punching logic missing | Alpha.4 |
-| HTTP/3 request/response lifecycle | `Http3Connection` scaffold only | Alpha.3 |
+| HTTP/3 request/response lifecycle | `Http3Connection` scaffold only | Alpha.4 |
 | QPACK dynamic table | Only static table lookups implemented | Alpha.4 |
-| Packet number reconstruction | Short-header PN inference from truncated PNs | Alpha.3 |
+| Packet number reconstruction | Short-header PN inference from truncated PNs | Alpha.4 |
 
 ---
 

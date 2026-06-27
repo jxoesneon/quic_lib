@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.0] — 2026-06-27
+
+### Added
+- **`HandshakeKeyExchange`** — X25519 ephemeral key generation, shared secret computation, and TLS 1.3-style handshake secret derivation (scaffold for real TLS stack)
+- **HTTP/3 full request/response** — `Http3Request`/`Http3Response` with QPACK header encoding/decoding, `Http3Connection.sendRequest()` accepts requests, `getResponse()` decodes received HEADERS frames
+- **WebTransport datagram support** — `DatagramCapsule` serialize/parse, `CapsuleType.datagram`, `WebTransportSession.sendDatagram()`/`receivedDatagrams`
+- **Connection migration wiring** — `MigrationHelper` integrated into `QuicConnection._dispatchFrames()` for `PATH_CHALLENGE`/`PATH_RESPONSE`, `onAddressValidated()` called on successful path validation
+- Integration tests: `test/crypto/tls/handshake_key_exchange_test.dart` (4 tests), `test/http3/http3_request_response_test.dart` (7 tests), `test/webtransport/datagram_capsule_test.dart` (3 tests), `test/connection/migration_integration_test.dart` (5 tests), `test/integration/v020_features_test.dart` (12 tests)
+
+### Fixed
+- `test/http3/coverage_gap_test.dart` — updated `CapsuleType.fromValue` unknown-value test to use `0x01` instead of `0x00` (now reserved for datagram)
+
+---
+
 ## [0.1.0-beta.1] — 2026-06-27
 
 ### Added

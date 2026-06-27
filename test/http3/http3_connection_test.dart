@@ -2,6 +2,7 @@ import 'package:dart_quic/src/http3/data_frame.dart';
 import 'package:dart_quic/src/http3/frame_types.dart';
 import 'package:dart_quic/src/http3/headers_frame.dart';
 import 'package:dart_quic/src/http3/http3_connection.dart';
+import 'package:dart_quic/src/http3/http3_request.dart';
 import 'package:dart_quic/src/http3/settings_frame.dart';
 import 'package:test/test.dart';
 
@@ -18,7 +19,8 @@ void main() {
   group('Http3Connection', () {
     test('sendRequest returns a stream ID', () async {
       final conn = Http3Connection(quicConnection: FakeQuicConnection());
-      final streamId = await conn.sendRequest({});
+      final request = Http3Request(method: 'GET', path: '/');
+      final streamId = await conn.sendRequest(request);
       expect(streamId, equals(0));
     });
 

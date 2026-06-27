@@ -19,8 +19,37 @@ import '../recovery/recovery_manager.dart';
 import '../recovery/sent_packet_tracker.dart';
 import '../security/anti_amplification_limit.dart';
 import '../wire/frame.dart';
+import 'migration_helper.dart';
 import '../wire/packet_header.dart';
 import '../crypto/packet/space_keys.dart';
+
+/// Internal subclass that tracks challenge data by content hash so parsed
+/// frames (which carry [Uint8List]) can be matched against generated
+/// challenges (which carry [List<int>]).
+class _QuicMigrationHelper extends MigrationHelper {
+  final Map<String, List<int>> _challengeByHex = {};
+
+  @override
+  PathChallengeFrame generateChallenge({int? currentTimeUs}) {
+    final challenge = super.generateChallenge(currentTimeUs: currentTimeUs);
+    _challengeByHex[_bytesToHex(challenge.data)] = challenge.data;
+    return challenge;
+  }
+
+  List<int>? lookupChallenge(List<int> data) =>
+      _challengeByHex[_bytesToHex(data)];
+
+  void removeChallenge(List<int> data) =>
+      _challengeByHex.remove(_bytesToHex(data));
+
+  static String _bytesToHex(List<int> bytes) {
+    final buffer = StringBuffer();
+    for (final b in bytes) {
+      buffer.write(b.toRadixString(16).padLeft(2, '0'));
+    }
+    return buffer.toString();
+  }
+}
 
 /// Orchestrates all subsystems of a QUIC connection.
 class QuicConnection {
@@ -34,6 +63,8 @@ class QuicConnection {
   final StreamIdAllocator _streamIdAllocator;
   final SentPacketTracker _sentPacketTracker = SentPacketTracker();
   final AntiAmplificationLimit _antiAmpLimit = AntiAmplificationLimit();
+  final MigrationHelper _migrationHelper = _QuicMigrationHelper();
+  PathChallengeFrame? _lastPendingChallenge;
   late final RecoveryManager _recoveryManager;
 
   // Frame-dispatch subsystems (nullable until handshake pipeline is fully wired).
@@ -164,6 +195,15 @@ class QuicConnection {
   /// The key manager for packet encryption/decryption (null for plaintext mode).
   KeyManager? get keyManager => _keyManager;
 
+  /// The migration helper coordinating path validation.
+  MigrationHelper get migrationHelper => _migrationHelper;
+
+  /// Returns the most recent pending challenge for PATH_RESPONSE generation.
+  PathChallengeFrame? getPendingChallenge() => _lastPendingChallenge;
+
+  /// Check if a path is validated.
+  bool isPathValidated(List<int> pathId) => _migrationHelper.isPathValidated(pathId);
+
   // -----------------------------------------------------------------------
   // Incoming packet pipeline
   // -----------------------------------------------------------------------
@@ -204,11 +244,19 @@ class QuicConnection {
             reason: 'APPLICATION_CLOSE received: ${f.errorCode}',
           );
         case PathChallengeFrame _:
-          // Record challenge for PATH_RESPONSE generation.
-          // TODO: Wire into a pending path validation response queue.
+          final challenge = _migrationHelper.generateChallenge();
+          _lastPendingChallenge = challenge;
           break;
-        case PathResponseFrame _:
-          // TODO: Wire into MigrationHelper when integrated.
+        case PathResponseFrame f:
+          final originalData =
+              (_migrationHelper as _QuicMigrationHelper).lookupChallenge(f.data);
+          if (originalData != null) {
+            final response = PathResponseFrame(data: originalData);
+            if (_migrationHelper.onResponseReceived(response)) {
+              (_migrationHelper as _QuicMigrationHelper).removeChallenge(f.data);
+              onAddressValidated();
+            }
+          }
           break;
         case MaxDataFrame _:
           // TODO: Update connection-level flow control.

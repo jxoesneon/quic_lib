@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'data_frame.dart';
 import 'frame_types.dart';
 import 'headers_frame.dart';
+import 'http3_request.dart';
+import 'http3_response.dart';
 import 'settings_frame.dart';
 
 /// Placeholder for an HTTP/3 request stream.
@@ -85,13 +87,37 @@ class Http3Connection {
 
   /// Send an HTTP/3 request.
   ///
-  /// Allocates a new client-initiated bidirectional stream, creates an
-  /// [Http3Stream] for it, and returns the stream ID.
-  Future<int> sendRequest(Object request) async {
+  /// Allocates a new client-initiated bidirectional stream, encodes the
+  /// request headers and optional body, and returns the stream ID.
+  Future<int> sendRequest(Http3Request request) async {
     final quic = _quicConnection as dynamic;
     final streamId = quic.openBidirectionalStream() as int;
-    // TODO: Create Http3Stream and wire into request lifecycle.
+    final headers = request.encodeHeaders();
+    _sendHeaders(streamId, headers);
+    if (request.body != null && request.body!.isNotEmpty) {
+      _sendData(streamId, request.body!);
+    }
     return streamId;
+  }
+
+  /// Create a HEADERS frame from [headers] and store it for [streamId].
+  void _sendHeaders(int streamId, Uint8List headers) {
+    final frame = Http3HeadersFrame(encodedFieldSection: headers);
+    _pendingHeaders[streamId] = frame;
+  }
+
+  /// Create a DATA frame from [data] and store it for [streamId].
+  void _sendData(int streamId, Uint8List data) {
+    final frame = Http3DataFrame(data: data);
+    _pendingData.putIfAbsent(streamId, () => []).add(frame);
+  }
+
+  /// Return a decoded [Http3Response] if headers were received for [streamId].
+  Http3Response? getResponse(int streamId) {
+    final headersFrame = _pendingHeaders[streamId];
+    if (headersFrame == null) return null;
+    final encoded = Uint8List.fromList(headersFrame.encodedFieldSection);
+    return Http3Response.decodeHeaders(encoded);
   }
 
   /// Process received frames on a QUIC stream.

@@ -336,7 +336,7 @@ void main() {
 
     test('fromValue with unknown value returns null', () {
       expect(CapsuleType.fromValue(0x9999), isNull);
-      expect(CapsuleType.fromValue(0x00), isNull);
+      expect(CapsuleType.fromValue(0x01), isNull);
     });
   });
 

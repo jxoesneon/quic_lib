@@ -27,9 +27,16 @@ class WebTransportSession {
   /// Whether the session is still active (not draining and not closed).
   bool get isActive => !_isDraining && !_isClosed;
 
+  final List<Uint8List> _receivedDatagrams = [];
+
+  /// Datagrams received via [CapsuleType.datagram] capsules.
+  List<Uint8List> get receivedDatagrams => List.unmodifiable(_receivedDatagrams);
+
   /// Process an incoming capsule received on the session's control stream.
   void onCapsuleReceived(Capsule capsule) {
     switch (capsule.type) {
+      case CapsuleType.datagram:
+        _receivedDatagrams.add(Uint8List.fromList(capsule.payload));
       case CapsuleType.closeWebTransportSession:
         _isClosed = true;
         QuicLogger.log('WebTransportSession($_sessionId): received CLOSE');
@@ -73,6 +80,16 @@ class WebTransportSession {
     return Capsule(
       type: CapsuleType.drainWebTransportSession,
       payload: Uint8List(0),
+    );
+  }
+
+  /// Send a datagram via a [Capsule] of type [CapsuleType.datagram].
+  ///
+  /// Per RFC 9220 Section 5, the capsule payload carries the datagram.
+  Capsule sendDatagram(Uint8List data) {
+    return Capsule(
+      type: CapsuleType.datagram,
+      payload: data,
     );
   }
 

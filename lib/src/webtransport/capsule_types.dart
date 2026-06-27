@@ -4,6 +4,7 @@ import 'package:dart_quic/src/wire/varint.dart';
 
 /// Capsule types for WebTransport over HTTP/3 (RFC 9220).
 enum CapsuleType {
+  datagram(0x00),
   closeWebTransportSession(0x1a4),
   drainWebTransportSession(0x78ae),
   // Extension capsules (GREASE)

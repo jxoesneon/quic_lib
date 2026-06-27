@@ -167,6 +167,15 @@ See `SECURITY_FIXES.md` for the complete list.
 
 ## Known Gaps
 
+### Completed in v0.2.0
+
+| Gap | Status |
+|-----|--------|
+| Real TLS handshake key exchange | **DONE** — `HandshakeKeyExchange` with X25519 ephemeral keys, shared secret, and TLS 1.3-style handshake secret derivation |
+| HTTP/3 full request/response | **DONE** — `Http3Request`/`Http3Response` with QPACK header encoding/decoding; `Http3Connection` sends requests and decodes responses |
+| WebTransport datagram support | **DONE** — `CapsuleType.datagram`, `DatagramCapsule`, `WebTransportSession.sendDatagram()`/`receivedDatagrams` |
+| Connection migration | **DONE** — `MigrationHelper` wired into `QuicConnection._dispatchFrames()`; `PATH_CHALLENGE`/`PATH_RESPONSE` validates paths |
+
 ### Completed in Beta.1
 
 | Gap | Status |
@@ -210,12 +219,12 @@ See `SECURITY_FIXES.md` for the complete list.
 
 | Gap | Impact | ETA |
 |-----|--------|-----|
-| Real TLS handshake over CRYPTO frames | `CryptoFrameHandler` parses types but no real X25519/Ed25519 key exchange | v0.2.0 |
-| HTTP/3 full request/response | Headers encoding/decoding, body streaming, trailers | v0.2.0 |
-| WebTransport datagram support | Datagram capsules not wired | v0.2.0 |
-| DCUtR real NAT hole punching | No actual UDP socket coordination yet | v0.2.0 |
-| Connection migration | PATH_CHALLENGE/RESPONSE not fully wired | v0.2.0 |
-| 0-RTT resumption | Session ticket and early data not implemented | v0.2.0 |
+| DCUtR real NAT hole punching | No actual UDP socket coordination yet | v0.3.0 |
+| 0-RTT resumption | Session ticket and early data not implemented | v0.3.0 |
+| Connection migration (full) | PATH_CHALLENGE/RESPONSE wired but no actual address change handling | v0.3.0 |
+| HTTP/3 body streaming | DATA frames not fully streamed through QUIC | v0.3.0 |
+| TLS certificate verification | No real certificate parsing or verification chain | v0.3.0 |
+| Retry token generation | RetryIntegrityTag exists but not wired into packet flow | v0.3.0 |
 
 ---
 

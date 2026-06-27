@@ -30,6 +30,7 @@ class Http3Connection {
   final Http3SettingsFrame _localSettings;
   Http3SettingsFrame _peerSettings = Http3SettingsFrame();
   bool _settingsExchanged = false;
+  Http3SettingsFrame? _pendingSettings;
 
   bool _isClosing = false;
   final Map<int, HeadersFrame> _pendingHeaders = {};
@@ -39,7 +40,8 @@ class Http3Connection {
     required Object quicConnection,
     Http3SettingsFrame? localSettings,
   })  : _quicConnection = quicConnection,
-        _localSettings = localSettings ?? Http3SettingsFrame.from(
+        _localSettings = localSettings ??
+            Http3SettingsFrame.from(
               maxFieldSectionSize: 16384,
               maxTableCapacity: 0,
               blockedStreams: 0,
@@ -56,6 +58,9 @@ class Http3Connection {
 
   /// True once the peer's SETTINGS frame has been received.
   bool get settingsExchanged => _settingsExchanged;
+
+  /// Pending SETTINGS frame to be sent on the control stream.
+  Http3SettingsFrame? get pendingSettings => _pendingSettings;
 
   /// True once a GOAWAY frame has been received.
   bool get isClosing => _isClosing;
@@ -80,9 +85,12 @@ class Http3Connection {
       return;
     }
     for (var offset = 0; offset < body.length; offset += chunkSize) {
-      final end = (offset + chunkSize < body.length) ? offset + chunkSize : body.length;
+      final end =
+          (offset + chunkSize < body.length) ? offset + chunkSize : body.length;
       final chunk = body.sublist(offset, end);
-      _pendingData.putIfAbsent(streamId, () => []).add(Http3DataFrame(data: chunk));
+      _pendingData
+          .putIfAbsent(streamId, () => [])
+          .add(Http3DataFrame(data: chunk));
     }
   }
 
@@ -95,7 +103,8 @@ class Http3Connection {
     final nonEmptyFrames = frames.where((f) => f.data.isNotEmpty).toList();
     if (nonEmptyFrames.isEmpty) return Uint8List(0);
 
-    final totalLength = nonEmptyFrames.fold<int>(0, (sum, f) => sum + f.data.length);
+    final totalLength =
+        nonEmptyFrames.fold<int>(0, (sum, f) => sum + f.data.length);
     final result = Uint8List(totalLength);
     var offset = 0;
     for (final frame in nonEmptyFrames) {
@@ -108,13 +117,14 @@ class Http3Connection {
   /// Initiate the HTTP/3 connection by sending a SETTINGS frame on the
   /// control stream.
   ///
-  /// **Not yet implemented.** The control stream and frame encoder are still
-  /// under development.
-  void sendSettings() {
-    throw UnimplementedError(
-      'Http3Connection.sendSettings is not yet implemented. '
-      'Control stream creation and SETTINGS frame encoding are pending.',
+  /// Stores the default local SETTINGS in [_pendingSettings].
+  Http3SettingsFrame sendSettings() {
+    _pendingSettings = Http3SettingsFrame.from(
+      maxFieldSectionSize: 65536,
+      maxTableCapacity: 0,
+      blockedStreams: 0,
     );
+    return _pendingSettings!;
   }
 
   /// Process a received SETTINGS frame from the peer's control stream.

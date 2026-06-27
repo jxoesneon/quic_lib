@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.0] — 2026-06-27
+
+### Added
+- **Flow control frame handlers** — `QuicConnection._dispatchFrames` now handles `MAX_DATA` (connection-level), `MAX_STREAM_DATA` (stream-level via `StreamManager`), and `MAX_STREAMS` (scaffold comment); `connectionFlowController` getter exposed
+- **HTTP/3 SETTINGS** — `Http3Connection.sendSettings()` returns a default `Http3SettingsFrame` (65536/0/0) instead of throwing `UnimplementedError`; `pendingSettings` getter added
+- **PeerId encoding** — `PeerId.encodeBase58()`/`decodeBase58()` and `encodeBase36()`/`decodeBase36()` using standard alphabets
+- **Coverage gap closure** — 57 coverage tests (`test/coverage/final_coverage_test.dart`) for FrameCodec.serialize, PacketNumberSpaceManager zeroRtt ops, QuicSend/ReceiveStream, SentPacketTracker, LossDetector, PtoScheduler, ConnectionIdManager, AntiAmplificationLimit
+- **Final hardening tests** — 17 security boundary tests (`test/security/final_hardening_test.dart`) for FlowController.maxWindow, ConnectionIdManager.maxActiveIds, AntiAmplificationLimit, SessionTicketStore.maxTickets
+- Integration tests: `test/connection/flow_control_frames_test.dart` (4 tests), `test/libp2p/peer_id_encoding_test.dart` (3 tests), `test/integration/v050_features_test.dart` (7 tests)
+
+---
+
 ## [0.4.0] — 2026-06-27
 
 ### Added

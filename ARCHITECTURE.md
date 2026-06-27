@@ -167,6 +167,15 @@ See `SECURITY_FIXES.md` for the complete list.
 
 ## Known Gaps
 
+### Completed in v0.5.0
+
+| Gap | Status |
+|-----|--------|
+| Flow control frame handlers | **DONE** — `MAX_DATA`, `MAX_STREAM_DATA`, `MAX_STREAMS` wired in `_dispatchFrames`; `connectionFlowController` getter |
+| HTTP/3 SETTINGS | **DONE** — `Http3Connection.sendSettings()` returns default `Http3SettingsFrame`; `pendingSettings` getter |
+| PeerId encoding | **DONE** — `PeerId.encodeBase58()`/`decodeBase58()` and `encodeBase36()`/`decodeBase36()` |
+| Coverage gap closure | **DONE** — 57 coverage tests + 17 hardening tests for FrameCodec, PN spaces, streams, recovery, CID manager, anti-amplification |
+
 ### Completed in v0.4.0
 
 | Gap | Status |

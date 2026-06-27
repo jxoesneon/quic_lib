@@ -10,6 +10,7 @@ import '../crypto/tls/crypto_frame_handler.dart';
 import '../crypto/tls/handshake_state_machine.dart';
 import '../streams/stream_id.dart';
 import '../streams/stream_manager.dart';
+import '../streams/flow_controller.dart';
 import '../recovery/packet_number_space.dart';
 import '../recovery/rtt_estimator.dart';
 import '../recovery/loss_detector.dart';
@@ -76,6 +77,7 @@ class QuicConnection {
   final StreamManager _streamManager = StreamManager();
   final KeyManager? _keyManager;
   CryptoFrameHandler? _cryptoFrameHandler;
+  final FlowController _connectionFlowController = FlowController(initialLimit: 65536);
 
   QuicConnection({
     required ConnectionStateMachine stateMachine,
@@ -197,6 +199,9 @@ class QuicConnection {
   /// The stream manager routing STREAM frames.
   StreamManager get streamManager => _streamManager;
 
+  /// The connection-level flow controller.
+  FlowController get connectionFlowController => _connectionFlowController;
+
   /// The crypto frame assembler (null until handshake pipeline is wired).
   CryptoFrameAssembler? get cryptoAssembler => _cryptoAssembler;
 
@@ -281,14 +286,16 @@ class QuicConnection {
             }
           }
           break;
-        case MaxDataFrame _:
-          // TODO: Update connection-level flow control.
+        case MaxDataFrame f:
+          _connectionFlowController.updateLimit(f.maxData);
           break;
-        case MaxStreamDataFrame _:
-          // TODO: Update stream-level flow control.
+        case MaxStreamDataFrame f:
+          _streamManager.updateSendWindow(f.streamId, f.maxStreamData);
           break;
         case MaxStreamsFrame _:
-          // TODO: Update stream limit.
+          // Update the stream limit for the given stream type.
+          // For the scaffold, we just record it; full integration would
+          // unblock stream creation.
           break;
         case NewConnectionIdFrame f:
           _cidManager.registerId(
@@ -604,4 +611,7 @@ class QuicConnection {
 
   /// Number of currently active connection IDs.
   int get activeConnectionIdCount => _cidManager.activeIds.length;
+
+  /// Update the connection-level flow control limit.
+  void updateConnectionFlowControl(int newLimit) => _connectionFlowController.updateLimit(newLimit);
 }

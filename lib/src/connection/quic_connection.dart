@@ -1,6 +1,13 @@
+import 'dart:typed_data';
+
 import '../connection/connection_state_machine.dart';
 import '../connection/connection_id_manager.dart';
+import '../connection/packet_receiver.dart';
+import '../connection/packet_sender.dart';
+import '../crypto/tls/crypto_frame_assembler.dart';
+import '../crypto/tls/handshake_state_machine.dart';
 import '../streams/stream_id.dart';
+import '../streams/stream_manager.dart';
 import '../recovery/packet_number_space.dart';
 import '../recovery/rtt_estimator.dart';
 import '../recovery/loss_detector.dart';
@@ -9,6 +16,7 @@ import '../recovery/congestion_controller.dart';
 import '../recovery/recovery_manager.dart';
 import '../recovery/sent_packet_tracker.dart';
 import '../security/anti_amplification_limit.dart';
+import '../wire/frame.dart';
 
 /// Orchestrates all subsystems of a QUIC connection.
 class QuicConnection {
@@ -24,6 +32,11 @@ class QuicConnection {
   final AntiAmplificationLimit _antiAmpLimit = AntiAmplificationLimit();
   late final RecoveryManager _recoveryManager;
 
+  // Frame-dispatch subsystems (nullable until handshake pipeline is fully wired).
+  final CryptoFrameAssembler? _cryptoAssembler;
+  final HandshakeStateMachine? _handshakeMachine;
+  final StreamManager _streamManager = StreamManager();
+
   QuicConnection({
     required ConnectionStateMachine stateMachine,
     required ConnectionIdManager cidManager,
@@ -33,6 +46,8 @@ class QuicConnection {
     required PtoScheduler ptoScheduler,
     required CongestionController congestionController,
     required StreamIdAllocator streamIdAllocator,
+    CryptoFrameAssembler? cryptoAssembler,
+    HandshakeStateMachine? handshakeMachine,
   })  : _stateMachine = stateMachine,
         _cidManager = cidManager,
         _pnSpaceManager = pnSpaceManager,
@@ -40,7 +55,9 @@ class QuicConnection {
         _lossDetector = lossDetector,
         _ptoScheduler = ptoScheduler,
         _congestionController = congestionController,
-        _streamIdAllocator = streamIdAllocator {
+        _streamIdAllocator = streamIdAllocator,
+        _cryptoAssembler = cryptoAssembler,
+        _handshakeMachine = handshakeMachine {
     _recoveryManager = RecoveryManager(
       congestionController: _congestionController,
       lossDetector: _lossDetector,
@@ -115,6 +132,137 @@ class QuicConnection {
   /// The recovery manager coordinating loss detection, congestion control,
   /// PTO scheduling, and RTT estimation.
   RecoveryManager get recoveryManager => _recoveryManager;
+
+  /// The stream manager routing STREAM frames.
+  StreamManager get streamManager => _streamManager;
+
+  /// The crypto frame assembler (null until handshake pipeline is wired).
+  CryptoFrameAssembler? get cryptoAssembler => _cryptoAssembler;
+
+  /// The handshake state machine (null until handshake pipeline is wired).
+  HandshakeStateMachine? get handshakeMachine => _handshakeMachine;
+
+  /// The connection state machine managing the connection lifecycle.
+  ConnectionStateMachine get stateMachine => _stateMachine;
+
+  // -----------------------------------------------------------------------
+  // Incoming packet pipeline
+  // -----------------------------------------------------------------------
+
+  /// Process an incoming UDP datagram, splitting coalesced packets and
+  /// dispatching frames to the appropriate subsystems.
+  ///
+  /// Returns the number of successfully processed packets.
+  int processIncomingDatagram(Uint8List datagram) {
+    onBytesReceived(datagram.length);
+    final packets = PacketReceiver.processDatagram(datagram);
+    for (final packet in packets) {
+      _dispatchFrames(packet.space, packet.frames);
+    }
+    return packets.length;
+  }
+
+  void _dispatchFrames(PacketNumberSpace? space, List<Frame> frames) {
+    if (space == null) return;
+    for (final frame in frames) {
+      switch (frame) {
+        case AckFrame f:
+          onAckReceived(
+            space.spaceIndex,
+            f.largestAcknowledged,
+            f.ackRanges.map((r) => (gap: r.gap, length: r.length)).toList(),
+          );
+        case CryptoFrame f:
+          _handleCryptoFrame(f);
+        case ConnectionCloseFrame f:
+          _stateMachine.transitionTo(
+            ConnectionState.draining,
+            reason: 'CONNECTION_CLOSE received: ${f.errorCode}',
+          );
+        case ApplicationCloseFrame f:
+          _stateMachine.transitionTo(
+            ConnectionState.draining,
+            reason: 'APPLICATION_CLOSE received: ${f.errorCode}',
+          );
+        case PathChallengeFrame _:
+          // Record challenge for PATH_RESPONSE generation.
+          // TODO: Wire into a pending path validation response queue.
+          break;
+        case PathResponseFrame _:
+          // TODO: Wire into MigrationHelper when integrated.
+          break;
+        case MaxDataFrame _:
+          // TODO: Update connection-level flow control.
+          break;
+        case MaxStreamDataFrame _:
+          // TODO: Update stream-level flow control.
+          break;
+        case MaxStreamsFrame _:
+          // TODO: Update stream limit.
+          break;
+        case StreamFrame f:
+          _streamManager.onStreamFrame(f);
+        case HandshakeDoneFrame _:
+          if (_stateMachine.isHandshaking) {
+            _stateMachine.transitionTo(
+              ConnectionState.established,
+              reason: 'HANDSHAKE_DONE received',
+            );
+          }
+        case PingFrame _:
+          // PING frames require an ACK but carry no data.
+          break;
+        case PaddingFrame _:
+          // No-op.
+          break;
+        default:
+          // Unknown/unhandled frame types are ignored per RFC 9000.
+          break;
+      }
+    }
+  }
+
+  void _handleCryptoFrame(CryptoFrame frame) {
+    final assembler = _cryptoAssembler;
+    if (assembler == null) return;
+    final messages = assembler.deliver(frame);
+    for (final _ in messages) {
+      // TODO: Parse TLS message type and pass to HandshakeStateMachine.onMessage().
+      // For now, if we're handshaking and get a CRYPTO message, assume progress.
+      if (_handshakeMachine != null && _stateMachine.isHandshaking) {
+        // Placeholder: real integration will parse TLS message type.
+      }
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Outgoing packet pipeline
+  // -----------------------------------------------------------------------
+
+  /// Build an outgoing packet for the given space and frames, and track it
+  /// with the recovery manager.
+  Uint8List buildPacket({
+    required PacketNumberSpace space,
+    required List<Frame> frames,
+    required List<int> dcid,
+    List<int>? scid,
+  }) {
+    final packetNumber = allocatePacketNumber(space);
+    final packet = PacketSender.buildPacket(
+      frames: frames,
+      space: space,
+      dcid: dcid,
+      scid: scid,
+      packetNumber: packetNumber,
+    );
+    onPacketSent(
+      packetNumber,
+      DateTime.now().millisecondsSinceEpoch * 1000,
+      ackEliciting: frames.any((f) => f is! PaddingFrame),
+      sizeInBytes: packet.length,
+    );
+    return packet;
+  }
 
   /// Validate peer address after receiving a Retry packet or PATH_RESPONSE.
   /// Removes the anti-amplification limit.

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.0-alpha.2] — 2026-06-27
+
+### Added
+- **Packet pipeline integration** in `QuicConnection`:
+  - `processIncomingDatagram()` — splits coalesced packets, dispatches frames to subsystems
+  - `buildPacket()` — builds outgoing packets with `PacketSender` and tracks via `RecoveryManager`
+  - Frame dispatch: CRYPTO → `CryptoFrameAssembler`, ACK → `RecoveryManager`, STREAM → `StreamManager`, CONNECTION_CLOSE → `ConnectionStateMachine.draining`, HANDSHAKE_DONE → `ConnectionStateMachine.established`
+- `StreamManager` — routes STREAM frames to `QuicReceiveStream` instances by stream ID
+- `SentPacketTracker.resetAll()` — clears all tracked spaces
+- `QuicConnection.stateMachine` public getter
+- Integration tests: `test/integration/packet_pipeline_test.dart` (7 tests covering build, ACK dispatch, CRYPTO dispatch, STREAM dispatch, CONNECTION_CLOSE transition, coalesced packets, anti-amplification)
+
+### Changed
+- `RecoveryManager.reset()` now calls `_sentPacketTracker.resetAll()`
+- CI workflow fuzz/benchmark jobs reference actual scaffold files with realistic timeouts
+
+---
+
 ## [0.1.0-alpha.1] — 2026-06-27
 
 ### Security

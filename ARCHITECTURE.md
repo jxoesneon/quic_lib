@@ -83,29 +83,39 @@ if (conn.isPtoExpired(nowUs)) { conn.onPtoFired(nowUs); }
 conn.onAddressValidated();
 ```
 
-**Current status:** All subsystems are independently tested and hardened. `QuicConnection` exposes them but the full packet pipeline (receive → decrypt → parse frames → dispatch) is not yet wired.
+**Current status:** Subsystems are wired. `QuicConnection` now provides:
+- `buildPacket()` — builds and tracks outgoing packets via `PacketSender` + `RecoveryManager`
+- `processIncomingDatagram()` — splits coalesced packets, parses frames, dispatches to subsystems
+- Frame dispatch: CRYPTO → `CryptoFrameAssembler`, ACK → `RecoveryManager`, STREAM → `StreamManager`, CONNECTION_CLOSE → draining, HANDSHAKE_DONE → established
 
-### 2. Packet Pipeline (Planned)
+### 2. Packet Pipeline (Partially Wired)
 
-The intended receive pipeline:
+The receive pipeline (plaintext frames — AEAD decryption is scaffolded for alpha.3):
 
 ```
 UdpSocket.incoming
   → CoalescedPacket.split (if coalesced)
-  → PacketHeaderParser.parse
-  → HeaderProtection.remove
-  → PacketProtector.decrypt
-  → FrameCodec.parse
-  → Frame dispatch:
-      - CRYPTO → CryptoFrameAssembler → HandshakeStateMachine
+  → PacketReceiver.processDatagram
+    → PacketReceiver.processPacket (header parse + frame parse)
+    → QuicConnection._dispatchFrames
+      - CRYPTO → CryptoFrameAssembler → (pending: HandshakeStateMachine.onMessage)
       - STREAM → StreamManager → QuicStream.deliver
-      - ACK → SentPacketTracker + LossDetector + CongestionController
-      - CONNECTION_CLOSE → ConnectionStateMachine.transitionTo(closing)
-      - PATH_CHALLENGE / PATH_RESPONSE → MigrationHelper
-      - MAX_DATA / MAX_STREAM_DATA → FlowController.updateLimit
+      - ACK → RecoveryManager.onAckReceived
+      - CONNECTION_CLOSE → ConnectionStateMachine.transitionTo(draining)
+      - PATH_CHALLENGE / PATH_RESPONSE → MigrationHelper (pending)
+      - MAX_DATA / MAX_STREAM_DATA → FlowController (pending)
 ```
 
-**Current status:** Each stage exists as an independent module. `PacketReceiver.processPacket` performs header parsing and frame parsing but does not decrypt or dispatch.
+The send pipeline:
+
+```
+QuicConnection.buildPacket()
+  → PacketSender.buildPacket (header + plaintext frames)
+  → (pending: PacketProtector.encrypt + HeaderProtection.apply)
+  → RecoveryManager.onPacketSent (tracking)
+```
+
+**Current status:** Frame dispatch is operational for CRYPTO, ACK, STREAM, CONNECTION_CLOSE, and HANDSHAKE_DONE. AEAD encryption/decryption and header protection removal are implemented as independent modules but not yet wired into the pipeline (alpha.3 target).
 
 ### 3. Handshake Pipeline (Planned)
 
@@ -155,21 +165,32 @@ See `SECURITY_FIXES.md` for the complete list.
 
 ---
 
-## Known Gaps (Alpha.1 → Alpha.2)
+## Known Gaps
+
+### Completed in Alpha.2
+
+| Gap | Status |
+|-----|--------|
+| Frame dispatch pipeline | **DONE** — `QuicConnection.processIncomingDatagram()` + `_dispatchFrames()` |
+| Stream manager | **DONE** — `StreamManager` routes STREAM frames to `QuicStream` instances |
+| Recovery manager coordination | **DONE** — `RecoveryManager` integrated into `QuicConnection` |
+| Fuzz harness scaffold | **DONE** — `test/fuzz/fuzz_harness.dart` |
+| Benchmark harness scaffold | **DONE** — `test/benchmark/benchmark_harness.dart` |
+
+### Remaining
 
 | Gap | Impact | ETA |
 |-----|--------|-----|
-| Packet pipeline not wired | Cannot process real encrypted packets | Alpha.2 |
-| Handshake not wired | Cannot complete TLS 1.3 over QUIC | Alpha.2 |
-| Stream manager missing | STREAM frames not routed to streams | Alpha.2 |
-| Recovery manager missing | ACK/loss/PTO/congestion not coordinated | Alpha.2 |
+| AEAD encryption in pipeline | `PacketProtector.encrypt` not wired into `buildPacket` | Alpha.3 |
+| AEAD decryption in pipeline | `PacketProtector.decrypt` not wired into `processPacket` | Alpha.3 |
+| Header protection in pipeline | `HeaderProtection.apply/remove` not wired | Alpha.3 |
+| Handshake message parsing | CRYPTO bytes not parsed into TLS message types for `HandshakeStateMachine.onMessage()` | Alpha.3 |
 | `QuicEndpoint.connect` unimplemented | Cannot initiate connections | Alpha.3 |
 | WebTransport stream bridging | Capsules not mapped to QUIC streams | Alpha.3 |
 | DCUtR protocol orchestration | NAT hole punching logic missing | Alpha.4 |
-| HTTP/3 request/response lifecycle | No `Http3Connection` or request routing | Alpha.3 |
+| HTTP/3 request/response lifecycle | `Http3Connection` scaffold only | Alpha.3 |
 | QPACK dynamic table | Only static table lookups implemented | Alpha.4 |
-| Fuzzing harness | No automated fuzz testing yet | Alpha.4 |
-| Benchmark harness | No performance regression testing yet | Alpha.4 |
+| Packet number reconstruction | Short-header PN inference from truncated PNs | Alpha.3 |
 
 ---
 

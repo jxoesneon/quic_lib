@@ -28,9 +28,17 @@ class WebTransportSession {
   bool get isActive => !_isDraining && !_isClosed;
 
   final List<Uint8List> _receivedDatagrams = [];
+  final List<int> _registeredBidirectionalStreams = [];
+  final List<int> _registeredUnidirectionalStreams = [];
 
   /// Datagrams received via [CapsuleType.datagram] capsules.
   List<Uint8List> get receivedDatagrams => List.unmodifiable(_receivedDatagrams);
+
+  /// Bidirectional stream IDs registered via [CapsuleType.registerBidirectionalStream] capsules.
+  List<int> get registeredBidirectionalStreams => List.unmodifiable(_registeredBidirectionalStreams);
+
+  /// Unidirectional stream IDs registered via [CapsuleType.registerUnidirectionalStream] capsules.
+  List<int> get registeredUnidirectionalStreams => List.unmodifiable(_registeredUnidirectionalStreams);
 
   /// Process an incoming capsule received on the session's control stream.
   void onCapsuleReceived(Capsule capsule) {
@@ -42,6 +50,12 @@ class WebTransportSession {
         QuicLogger.log('WebTransportSession($_sessionId): received CLOSE');
       case CapsuleType.drainWebTransportSession:
         _isDraining = true;
+      case CapsuleType.registerBidirectionalStream:
+        final streamId = VarInt.decode(Uint8List.fromList(capsule.payload).buffer);
+        _registeredBidirectionalStreams.add(streamId);
+      case CapsuleType.registerUnidirectionalStream:
+        final streamId = VarInt.decode(Uint8List.fromList(capsule.payload).buffer);
+        _registeredUnidirectionalStreams.add(streamId);
       default:
         // Unknown/extension capsules are ignored per RFC 9220.
         break;

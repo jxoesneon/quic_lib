@@ -1,8 +1,6 @@
 /// A libp2p PeerId represented as the raw multihash bytes of a public key.
 ///
-/// Per the libp2p spec, a PeerId is the multihash of a public key. For now
-/// base58/base36 encoding is not implemented; [toString] returns a hex
-/// representation instead.
+/// Per the libp2p spec, a PeerId is the multihash of a public key.
 class PeerId {
   /// The raw multihash bytes (identity hash of the public key).
   final List<int> bytes;
@@ -16,17 +14,17 @@ class PeerId {
 
   /// Create from a base58-encoded string.
   factory PeerId.fromBase58(String base58) {
-    throw UnimplementedError('Base58 decoding is not yet implemented');
+    return decodeBase58(base58);
   }
 
   /// Convert to base58 string.
   String toBase58() {
-    throw UnimplementedError('Base58 encoding is not yet implemented');
+    return encodeBase58();
   }
 
   /// Convert to base36 string.
   String toBase36() {
-    throw UnimplementedError('Base36 encoding is not yet implemented');
+    return encodeBase36();
   }
 
   /// Encodes this PeerId's raw bytes using standard Base58 (no multibase prefix).

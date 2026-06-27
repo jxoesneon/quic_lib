@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import '../wire/packet_header.dart';
+import '../wire/quic_versions.dart';
 import '../wire/coalesced_packet.dart';
 import '../wire/frame.dart';
 import '../recovery/packet_number_space.dart';
@@ -32,6 +33,14 @@ class PacketReceiver {
 
     if (space == null) {
       return null; // Retry or Version Negotiation
+    }
+
+    // Version check: allow QUIC v1 and v2. Unsupported versions are dropped
+    // (in a full implementation this would trigger version negotiation).
+    if (header is LongHeader) {
+      if (!QuicVersions.isSupported(header.version)) {
+        return null;
+      }
     }
 
     // For now, assume the rest of the packet is frame payload

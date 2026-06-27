@@ -218,27 +218,23 @@ void main() {
       expect(a.hashCode, equals(b.hashCode));
     });
 
-    test('fromBase58 throws UnimplementedError', () {
-      expect(
-        () => PeerId.fromBase58(''),
-        throwsA(isA<UnimplementedError>()),
-      );
+    test('fromBase58 round-trips with toBase58', () {
+      final peerId = PeerId.fromBytes(<int>[1, 2, 3]);
+      final encoded = peerId.toBase58();
+      final decoded = PeerId.fromBase58(encoded);
+      expect(decoded, equals(peerId));
     });
 
-    test('toBase58 throws UnimplementedError', () {
+    test('toBase58 produces non-empty string', () {
       final peerId = PeerId.fromBytes(<int>[1, 2, 3]);
-      expect(
-        () => peerId.toBase58(),
-        throwsA(isA<UnimplementedError>()),
-      );
+      final encoded = peerId.toBase58();
+      expect(encoded, isNotEmpty);
     });
 
-    test('toBase36 throws UnimplementedError', () {
+    test('toBase36 produces non-empty string', () {
       final peerId = PeerId.fromBytes(<int>[1, 2, 3]);
-      expect(
-        () => peerId.toBase36(),
-        throwsA(isA<UnimplementedError>()),
-      );
+      final encoded = peerId.toBase36();
+      expect(encoded, isNotEmpty);
     });
 
     test('equality with non-PeerId object returns false', () {

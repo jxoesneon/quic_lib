@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'cancel_push_frame.dart';
 import 'data_frame.dart';
 import 'frame_types.dart';
 import 'headers_frame.dart';
 import 'http3_request.dart';
 import 'http3_response.dart';
+import 'push_promise_frame.dart';
 import 'settings_frame.dart';
 
 /// Placeholder for an HTTP/3 request stream.
@@ -35,6 +37,7 @@ class Http3Connection {
   bool _isClosing = false;
   final Map<int, HeadersFrame> _pendingHeaders = {};
   final Map<int, List<DataFrame>> _pendingData = {};
+  final Map<int, Http3PushPromiseFrame> _pushPromises = {};
 
   Http3Connection({
     required Object quicConnection,
@@ -168,6 +171,14 @@ class Http3Connection {
     return Http3Response.decodeHeaders(encoded);
   }
 
+  /// Register a push promise manually.
+  void registerPushPromise(int pushId, Http3PushPromiseFrame frame) {
+    _pushPromises[pushId] = frame;
+  }
+
+  /// Check if a push promise with [pushId] is registered.
+  bool hasPushPromise(int pushId) => _pushPromises.containsKey(pushId);
+
   /// Process received frames on a QUIC stream.
   void onStreamFrame(int streamId, Http3Frame frame) {
     switch (frame.type) {
@@ -186,6 +197,18 @@ class Http3Connection {
       case Http3FrameType.goaway:
         _isClosing = true;
         break;
+      case Http3FrameType.pushPromise:
+        final pushFrame = Http3PushPromiseFrame.parsePayload(
+          Uint8List.fromList(frame.payload),
+        );
+        _pushPromises[pushFrame.pushId] = pushFrame;
+        break;
+      case Http3FrameType.cancelPush:
+        final cancelFrame = Http3CancelPushFrame.parsePayload(
+          Uint8List.fromList(frame.payload),
+        );
+        _pushPromises.remove(cancelFrame.pushId);
+        break;
       default:
         // No-op for unhandled frame types.
         break;
@@ -194,6 +217,7 @@ class Http3Connection {
 
   /// Gracefully close the HTTP/3 connection.
   void close() {
+    _isClosing = true;
     // TODO: Send GOAWAY frame, drain streams, close QUIC connection.
   }
 }

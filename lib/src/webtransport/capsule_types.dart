@@ -7,6 +7,8 @@ enum CapsuleType {
   datagram(0x00),
   closeWebTransportSession(0x1a4),
   drainWebTransportSession(0x78ae),
+  registerBidirectionalStream(0x41),
+  registerUnidirectionalStream(0x42),
   // Extension capsules (GREASE)
   grease0(0x1b),
   grease1(0x2a);

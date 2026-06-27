@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import '../connection/connection_state_machine.dart';
@@ -70,6 +71,8 @@ class QuicConnection {
   PathChallengeFrame? _lastPendingChallenge;
   late final RecoveryManager _recoveryManager;
   int _validatedPathCount = 0;
+  Uint8List? _lastProbePacket;
+  Completer<void>? _probeCompleter;
 
   // Frame-dispatch subsystems (nullable until handshake pipeline is fully wired).
   final CryptoFrameAssembler? _cryptoAssembler;
@@ -231,6 +234,29 @@ class QuicConnection {
   /// Number of paths that have been successfully validated.
   int get validatedPathCount => _validatedPathCount;
 
+  /// Probe a new path by sending a PATH_CHALLENGE frame.
+  ///
+  /// Generates a challenge, builds an Application-space packet containing a
+  /// [PathChallengeFrame], and returns a [Future] that completes when the
+  /// corresponding PATH_RESPONSE is received and the path is validated.
+  Future<void> probeNewPath(List<int> dcid) {
+    final challenge = (_migrationHelper as _QuicMigrationHelper).generateChallenge();
+    _lastProbePacket = buildPacket(
+      space: PacketNumberSpace.application,
+      frames: [challenge],
+      dcid: dcid,
+    );
+    _probeCompleter = Completer<void>();
+    return _probeCompleter!.future;
+  }
+
+  /// The most recent packet built by [probeNewPath], or null if no probe has
+  /// been initiated.
+  Uint8List? get lastProbePacket => _lastProbePacket;
+
+  /// True while a path probe initiated by [probeNewPath] is pending.
+  bool get isProbingPath => _probeCompleter != null && !_probeCompleter!.isCompleted;
+
   // -----------------------------------------------------------------------
   // Incoming packet pipeline
   // -----------------------------------------------------------------------
@@ -283,6 +309,9 @@ class QuicConnection {
               (_migrationHelper as _QuicMigrationHelper).removeChallenge(f.data);
               onAddressValidated();
               onPathValidated();
+              if (_probeCompleter != null && !_probeCompleter!.isCompleted) {
+                _probeCompleter!.complete();
+              }
             }
           }
           break;

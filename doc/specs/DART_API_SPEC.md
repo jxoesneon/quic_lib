@@ -1,7 +1,7 @@
 ---
 title: "Dart API Surface Specification"
 category: spec
-version: "1.0-draft"
+version: "1.0"
 status: "Specification"
 subsystem: "Public API Design"
 rfc_basis: []

@@ -1,7 +1,7 @@
 ---
 title: "Versioning Policy"
 category: spec
-version: "1.0-draft"
+version: "1.0"
 status: "Specification"
 subsystem: "Release Management"
 rfc_basis: []

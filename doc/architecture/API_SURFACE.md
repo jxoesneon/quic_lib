@@ -1,7 +1,7 @@
 ---
 title: "API Surface Architecture"
 category: architecture
-version: "1.0-draft"
+version: "1.0"
 status: "Draft"
 subsystem: "Class-Level Design"
 ---

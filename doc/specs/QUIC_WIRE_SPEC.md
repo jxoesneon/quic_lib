@@ -1,7 +1,7 @@
 ---
 title: "QUIC Wire Format Specification"
 category: spec
-version: "1.0-draft"
+version: "1.0"
 status: "Specification"
 subsystem: "Wire Encoding"
 rfc_basis:

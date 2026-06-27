@@ -1,7 +1,7 @@
 ---
 title: "Fuzzing Specification"
 category: spec
-version: "1.0-draft"
+version: "1.0"
 status: "Specification"
 subsystem: "Fuzz Testing"
 rfc_basis: []

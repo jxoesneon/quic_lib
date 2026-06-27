@@ -1,7 +1,7 @@
 ---
 title: "Crypto Backend Abstraction"
 category: architecture
-version: "1.0-draft"
+version: "1.0"
 status: "Draft"
 subsystem: "Crypto Backend"
 ---

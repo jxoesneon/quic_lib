@@ -1,7 +1,7 @@
 ---
 title: "QUIC RFC Test Vectors"
 category: spec
-version: "1.0-draft"
+version: "1.0"
 status: "Specification"
 subsystem: "Test Data"
 rfc_basis: []

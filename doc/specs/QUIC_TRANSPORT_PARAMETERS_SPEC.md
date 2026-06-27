@@ -1,7 +1,7 @@
 ---
 title: "QUIC Transport Parameters Specification"
 category: spec
-version: "1.0-draft"
+version: "1.0"
 status: "Specification"
 subsystem: "Transport Parameters"
 rfc_basis:

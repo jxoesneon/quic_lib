@@ -1,7 +1,7 @@
 ---
 title: "CUBIC Congestion Control Specification"
 category: spec
-version: "1.0-draft"
+version: "1.0"
 status: "Specification"
 subsystem: "Congestion Control"
 rfc_basis: []

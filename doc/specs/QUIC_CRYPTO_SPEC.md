@@ -1,7 +1,7 @@
 ---
 title: "QUIC Cryptographic Specification"
 category: spec
-version: "1.0-draft"
+version: "1.0"
 status: "Specification"
 subsystem: "Packet Protection & Key Management"
 rfc_basis:

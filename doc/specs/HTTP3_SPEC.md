@@ -1,7 +1,7 @@
 ---
 title: "HTTP/3 Specification"
 category: spec
-version: "1.0-draft"
+version: "1.0"
 status: "Specification"
 subsystem: "HTTP/3 Protocol Layer"
 rfc_basis:
@@ -155,25 +155,19 @@ Client tells server the maximum Push ID it will accept.
 
 #### 2.4.1 Encoding Request Headers
 
-```dart
-// Pseudo-headers (required for requests)
+```
 :method = GET
 :scheme = https
 :authority = example.com
 :path = /resource
-
-// Regular headers
 accept = application/json
 user-agent = dart_quic/1.0
 ```
 
 #### 2.4.2 Encoding Response Headers
 
-```dart
-// Pseudo-header
+```
 :status = 200
-
-// Regular headers
 content-type = application/json
 content-length = 1234
 ```

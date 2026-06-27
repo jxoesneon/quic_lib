@@ -1,7 +1,7 @@
 ---
 title: "QUIC Streams Specification"
 category: spec
-version: "1.0-draft"
+version: "1.0"
 status: "Specification"
 subsystem: "Stream Multiplexing & Flow Control"
 rfc_basis:

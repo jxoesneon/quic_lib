@@ -23,3 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - dart_ipfs integration contract.
 - Seven Architecture Decision Records (ADRs).
 - GitHub Actions CI workflow template.
+
+### Changed
+- All 21 specifications graduated from `1.0-draft` to `1.0` (stable specification release).
+- All cross-references verified and resolved (zero broken links).
+- Dart API consolidated into `DART_API_SPEC.md` as the single authoritative source.
+- Architecture Decision Records (ADRs) accepted and locked.

@@ -1,7 +1,7 @@
 ---
 title: "QUIC Datagram Specification"
 category: spec
-version: "1.0-draft"
+version: "1.0"
 status: "Specification"
 subsystem: "Datagram Extension"
 rfc_basis: []

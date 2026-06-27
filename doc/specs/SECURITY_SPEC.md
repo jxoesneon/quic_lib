@@ -1,7 +1,7 @@
 ---
 title: "Security Specification"
 category: spec
-version: "1.0-draft"
+version: "1.0"
 status: "Specification"
 subsystem: "Security Model & Threat Mitigation"
 rfc_basis:

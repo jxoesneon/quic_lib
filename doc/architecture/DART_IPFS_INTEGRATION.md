@@ -1,7 +1,7 @@
 ---
 title: "DART-IPFS Integration Contract"
 category: architecture
-version: "1.0-draft"
+version: "1.0"
 status: "Draft"
 subsystem: "Integration Contract"
 ---
@@ -51,28 +51,11 @@ The contract is four public Dart classes consumed by `dart_ipfs` and implemented
 
 ### 2.4 Events `dart_ipfs` Needs
 
-```dart
-abstract class Libp2pEvent {
-  final PeerId peerId;
-  Libp2pEvent(this.peerId);
-}
+The event API is defined in [DART_API_SPEC.md §2.8](../specs/DART_API_SPEC.md#28-libp2p-api). `dart_ipfs` consumes the following event types:
 
-class PeerConnected extends Libp2pEvent {
-  final Libp2pConnection connection;
-  PeerConnected(super.peerId, this.connection);
-}
-
-class PeerDisconnected extends Libp2pEvent {
-  final String? reason;
-  PeerDisconnected(super.peerId, {this.reason});
-}
-
-class StreamError extends Libp2pEvent {
-  final Libp2pStream? stream;
-  final Object error;
-  StreamError(super.peerId, {this.stream, required this.error});
-}
-```
+- `PeerConnected`: emitted when a new peer connection is established.
+- `PeerDisconnected`: emitted when a peer connection closes, with an optional reason string.
+- `StreamError`: emitted when a stream error occurs, carrying the affected stream (if any) and the error object.
 
 
 ### 2.5 Constraints

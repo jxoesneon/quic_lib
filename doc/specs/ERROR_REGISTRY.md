@@ -1,7 +1,7 @@
 ---
 title: "Unified Error Code Registry"
 category: spec
-version: "1.0-draft"
+version: "1.0"
 status: "Specification"
 subsystem: "Error Handling"
 rfc_basis: []

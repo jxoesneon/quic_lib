@@ -1,7 +1,7 @@
 ---
 title: "Performance Benchmarking Specification"
 category: spec
-version: "1.0-draft"
+version: "1.0"
 status: "Specification"
 subsystem: "Performance"
 rfc_basis: []

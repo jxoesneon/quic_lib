@@ -1,7 +1,7 @@
 ---
 title: "libp2p QUIC Transport Specification"
 category: spec
-version: "1.0-draft"
+version: "1.0"
 status: "Specification"
 subsystem: "libp2p QUIC Integration"
 rfc_basis:

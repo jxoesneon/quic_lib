@@ -1,7 +1,7 @@
 ---
 title: "Implementation Phase Architecture"
 category: architecture
-version: "1.0-draft"
+version: "1.0"
 status: "Draft"
 subsystem: "Build Order & Integration Plan"
 ---

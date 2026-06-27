@@ -1,7 +1,7 @@
 ---
 title: "QUIC Loss Detection and Recovery Specification"
 category: spec
-version: "1.0-draft"
+version: "1.0"
 status: "Specification"
 subsystem: "Loss Detection & Congestion Control"
 rfc_basis:

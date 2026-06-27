@@ -1,7 +1,7 @@
 ---
 title: "Data Flow Architecture"
 category: architecture
-version: "1.0-draft"
+version: "1.0"
 status: "Draft"
 subsystem: "Packet Processing Pipelines"
 ---

@@ -1,7 +1,7 @@
 ---
 title: "Implementation Roadmap"
 category: spec
-version: "1.0-draft"
+version: "1.0"
 status: "Specification"
 subsystem: "Project Planning"
 rfc_basis: []
@@ -40,7 +40,7 @@ Phase 6: dart_ipfs Integration
 
 - [x] Project charter and scope (README.md)
 - [x] Research notes (9 documents in `doc/research/`)
-- [x] Formal specifications (18 documents in `doc/specs/`)
+- [x] Formal specifications (21 documents in `doc/specs/`)
 - [x] Architecture documents (6 documents in `doc/architecture/`)
 - [x] Internal consistency review
 - [ ] External review (domain experts)

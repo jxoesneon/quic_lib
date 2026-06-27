@@ -1,7 +1,7 @@
 ---
 title: "QPACK Codec Specification"
 category: spec
-version: "1.0-draft"
+version: "1.0"
 status: "Specification"
 subsystem: "QPACK"
 rfc_basis:

@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # Nightly fuzz tests at 02:00 UTC
+    - cron: '0 2 * * *'
+    # Weekly performance benchmarks at 03:00 UTC on Sundays
+    - cron: '0 3 * * 0'
   workflow_dispatch:
 
 permissions:
@@ -15,12 +20,133 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  analyze-and-lint:
-    name: Analyze & Lint
-    runs-on: ubuntu-latest
+  lint:
+    name: Lint
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 3
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        sdk: [stable]
+        include:
+          - os: ubuntu-latest
+            sdk: beta
+    continue-on-error: ${{ matrix.sdk == 'beta' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ matrix.sdk }}
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Run dart analyze
+        run: dart analyze
+
+      - name: Check formatting
+        run: dart format --set-exit-if-changed .
+
+  unit:
+    name: Unit Tests
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    needs: lint
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        sdk: [stable]
+        include:
+          - os: ubuntu-latest
+            sdk: beta
+    continue-on-error: ${{ matrix.sdk == 'beta' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ matrix.sdk }}
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Run unit tests
+        run: dart test --concurrency=4
+
+  component:
+    name: Component Tests
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    needs: unit
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        sdk: [stable]
+        include:
+          - os: ubuntu-latest
+            sdk: beta
+    continue-on-error: ${{ matrix.sdk == 'beta' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ matrix.sdk }}
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Run component tests
+        run: dart test --concurrency=4
+
+  integration:
+    name: Integration Tests
+    if: github.event_name == 'pull_request'
+    needs: component
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    continue-on-error: ${{ matrix.os != 'ubuntu-latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
         sdk: [stable]
     steps:
       - name: Checkout repository
@@ -31,54 +157,177 @@ jobs:
         with:
           sdk: ${{ matrix.sdk }}
 
-      - name: Detect Dart project
-        id: detect
-        run: |
-          if [ -f "pubspec.yaml" ]; then
-            echo "has_dart=true" >> "$GITHUB_OUTPUT"
-            if [ -d "test" ]; then
-              echo "has_tests=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "has_tests=false" >> "$GITHUB_OUTPUT"
-            fi
-          else
-            echo "has_dart=false" >> "$GITHUB_OUTPUT"
-            echo "has_tests=false" >> "$GITHUB_OUTPUT"
-          fi
-        shell: bash
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
 
       - name: Install dependencies
-        if: steps.detect.outputs.has_dart == 'true'
         run: dart pub get
 
-      - name: Run dart analyze
-        if: steps.detect.outputs.has_dart == 'true'
-        run: dart analyze
-
-      - name: Check formatting
-        if: steps.detect.outputs.has_dart == 'true'
-        run: dart format --set-exit-if-changed .
-
-      - name: Run tests
-        if: steps.detect.outputs.has_dart == 'true' && steps.detect.outputs.has_tests == 'true'
-        run: dart test
-
-      - name: Lint documentation (spec-only repo)
-        if: steps.detect.outputs.has_dart != 'true'
+      - name: Check Docker availability
+        id: docker
+        shell: bash
         run: |
-          echo "No Dart project detected. This is a specification/documentation repository."
-          echo "Uncomment the lines below to enable Markdown linting with markdownlint-cli."
-          # npm install -g markdownlint-cli
-          # markdownlint 'doc/**/*.md' 'README.md' || true
+          if command -v docker &> /dev/null && docker info &> /dev/null; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Verify spec completeness
-        if: steps.detect.outputs.has_dart != 'true'
+      - name: Run integration tests
+        if: steps.docker.outputs.available == 'true'
+        run: dart test --tags integration --concurrency=4
+
+      - name: Skip integration tests (no Docker)
+        if: steps.docker.outputs.available == 'false'
         run: |
-          echo "Checking that all required specification files exist..."
-          for file in README.md LICENSE doc/INDEX.md doc/specs/ROADMAP.md; do
-            if [ ! -f "$file" ]; then
-              echo "Missing required file: $file"
+          echo "Docker is unavailable on this runner (${{ matrix.os }})."
+          echo "Skipping integration tests that require external containers."
+
+  coverage:
+    name: Coverage
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    needs: [unit, component]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Run tests with coverage
+        run: dart run coverage:test_with_coverage --out coverage
+
+      - name: Format coverage to LCOV
+        run: |
+          dart run coverage:format_coverage \
+            --lcov \
+            --in=coverage \
+            --out=coverage/lcov.info \
+            --packages=.dart_tool/package_config.json \
+            --report-on=lib
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ github.run_id }}
+          path: coverage/lcov.info
+
+      # Uncomment the step below to upload to Codecov once the repository is configured.
+      # - name: Upload coverage to Codecov
+      #   uses: codecov/codecov-action@v4
+      #   with:
+      #     files: coverage/lcov.info
+      #     fail_ci_if_error: false
+
+  fuzz:
+    name: Fuzz Tests
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'schedule' && github.event.schedule == '0 2 * * *')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Run fuzz harness
+        run: dart run test/fuzz/fuzz_harness.dart
+
+  performance:
+    name: Performance Benchmarks
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'schedule' && github.event.schedule == '0 3 * * 0')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Run benchmark harness
+        run: dart run test/benchmark/benchmark_harness.dart
+
+  changelog:
+    name: Check CHANGELOG.md
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')) ||
+      (github.event_name == 'pull_request' && startsWith(github.base_ref, 'release/'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify CHANGELOG.md was updated
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git fetch origin ${{ github.base_ref }} --depth=1
+            if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "CHANGELOG.md"; then
+              echo "CHANGELOG.md was updated in this PR."
+            else
+              echo "ERROR: CHANGELOG.md must be updated on release branches."
               exit 1
             fi
-          done
-          echo "All required files present."
+          else
+            if git diff --name-only HEAD^ HEAD | grep -q "CHANGELOG.md"; then
+              echo "CHANGELOG.md was updated in the latest commit."
+            else
+              echo "ERROR: CHANGELOG.md must be updated on release branches."
+              exit 1
+            fi
+          fi

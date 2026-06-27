@@ -66,6 +66,7 @@ class QuicConnection {
   final MigrationHelper _migrationHelper = _QuicMigrationHelper();
   PathChallengeFrame? _lastPendingChallenge;
   late final RecoveryManager _recoveryManager;
+  int _validatedPathCount = 0;
 
   // Frame-dispatch subsystems (nullable until handshake pipeline is fully wired).
   final CryptoFrameAssembler? _cryptoAssembler;
@@ -204,6 +205,14 @@ class QuicConnection {
   /// Check if a path is validated.
   bool isPathValidated(List<int> pathId) => _migrationHelper.isPathValidated(pathId);
 
+  /// Called when a path is validated; increments a counter for stats.
+  void onPathValidated() {
+    _validatedPathCount++;
+  }
+
+  /// Number of paths that have been successfully validated.
+  int get validatedPathCount => _validatedPathCount;
+
   // -----------------------------------------------------------------------
   // Incoming packet pipeline
   // -----------------------------------------------------------------------
@@ -255,6 +264,7 @@ class QuicConnection {
             if (_migrationHelper.onResponseReceived(response)) {
               (_migrationHelper as _QuicMigrationHelper).removeChallenge(f.data);
               onAddressValidated();
+              onPathValidated();
             }
           }
           break;

@@ -167,6 +167,17 @@ See `SECURITY_FIXES.md` for the complete list.
 
 ## Known Gaps
 
+### Completed in v0.3.0
+
+| Gap | Status |
+|-----|--------|
+| DCUtR real NAT hole punching | **DONE** — `DCUtRUdpCoordinator` wires `DCUtRStateMachine` into `UdpSocket` with magic-prefixed datagrams |
+| 0-RTT resumption | **DONE** — `PacketNumberSpace.zeroRtt`, `KeyManager.deriveZeroRtt()`, `SessionTicketStore` with expiry and eviction |
+| Connection migration (full) | **DONE** — `QuicEndpoint.migrateConnection()`, `QuicConnection.onPathValidated()`, remote address tracking |
+| HTTP/3 body streaming | **DONE** — `Http3BodyStream` with chunk delivery/EOF, `Http3Connection.sendBody()`/`getBody()` |
+| TLS certificate verification | **DONE** — `CertificateVerifier` with `verifySignature()` dispatch and `verifyCertificateChain()` scaffold |
+| Retry token generation | **DONE** — `RetryTokenGenerator` with HMAC-SHA256, timestamp validation, and tamper detection |
+
 ### Completed in v0.2.0
 
 | Gap | Status |
@@ -219,12 +230,12 @@ See `SECURITY_FIXES.md` for the complete list.
 
 | Gap | Impact | ETA |
 |-----|--------|-----|
-| DCUtR real NAT hole punching | No actual UDP socket coordination yet | v0.3.0 |
-| 0-RTT resumption | Session ticket and early data not implemented | v0.3.0 |
-| Connection migration (full) | PATH_CHALLENGE/RESPONSE wired but no actual address change handling | v0.3.0 |
-| HTTP/3 body streaming | DATA frames not fully streamed through QUIC | v0.3.0 |
-| TLS certificate verification | No real certificate parsing or verification chain | v0.3.0 |
-| Retry token generation | RetryIntegrityTag exists but not wired into packet flow | v0.3.0 |
+| TLS certificate chain verification | No real ASN.1 parsing, validity dates, or revocation checks | v0.4.0 |
+| DCUtR real hole punching | UDP coordinator exists but no actual NAT traversal with real peers | v0.4.0 |
+| 0-RTT early data | No actual 0-RTT application data transmission | v0.4.0 |
+| Connection ID rotation | `ConnectionIdManager` exists but not wired into migration | v0.4.0 |
+| Flow control integration | `FlowController` exists but not wired into `StreamManager` | v0.4.0 |
+| Congestion control integration | `CongestionController` exists but not wired into packet pacing | v0.4.0 |
 
 ---
 

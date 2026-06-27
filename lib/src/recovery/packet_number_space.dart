@@ -6,7 +6,8 @@
 enum PacketNumberSpace {
   initial(0),
   handshake(1),
-  application(2);
+  application(2),
+  zeroRtt(3);
 
   final int spaceIndex;
   const PacketNumberSpace(this.spaceIndex);

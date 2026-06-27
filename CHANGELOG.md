@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.0] — 2026-06-27
+
+### Added
+- **DCUtR NAT hole punching** — `DCUtRUdpCoordinator` wires `DCUtRStateMachine` into `UdpSocket` for real UDP-based NAT hole punching with magic-prefixed datagrams
+- **0-RTT resumption** — `PacketNumberSpace.zeroRtt` enum value, `KeyManager.deriveZeroRtt()`, `SessionTicketStore` with expiry and max-capacity eviction
+- **Full connection migration** — `QuicEndpoint.migrateConnection()`, `QuicConnection.onPathValidated()`, remote address tracking per connection
+- **HTTP/3 body streaming** — `Http3BodyStream` with chunk delivery and EOF detection, `Http3Connection.sendBody()`/`getBody()` for DATA frame concatenation
+- **TLS certificate verification scaffold** — `CertificateVerifier` with `verifySignature()` dispatching to ed25519/ecdsaP256/rsaPkcs1, `verifyCertificateChain()` structured for future ASN.1/CRL checks
+- **Retry token generation** — `RetryTokenGenerator` with HMAC-SHA256 timestamped tokens, expiry validation, and tamper detection
+- Integration tests: `test/libp2p/dcutr_udp_coordinator_test.dart` (3 tests), `test/crypto/zero_rtt_test.dart` (9 tests), `test/connection/full_migration_test.dart` (4 tests), `test/http3/http3_body_stream_test.dart` (9 tests), `test/crypto/tls/certificate_verifier_test.dart` (7 tests), `test/crypto/retry_token_generator_test.dart` (5 tests), `test/integration/v030_features_test.dart` (5 tests)
+
+### Changed
+- `PacketNumberSpace` enum extended with `zeroRtt(3)`
+- `PacketSender.buildPacket` switch handles `PacketNumberSpace.zeroRtt`
+
+---
+
 ## [0.2.0] — 2026-06-27
 
 ### Added

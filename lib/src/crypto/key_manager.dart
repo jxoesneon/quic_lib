@@ -2,6 +2,7 @@ import 'package:dart_quic/src/crypto/cipher_suites.dart';
 import 'package:dart_quic/src/crypto/crypto_backend.dart';
 import 'package:dart_quic/src/crypto/initial_secrets.dart';
 import 'package:dart_quic/src/crypto/packet/key_derivation.dart';
+import 'package:dart_quic/src/crypto/zero_rtt_helper.dart';
 import 'package:dart_quic/src/crypto/packet/header_protection.dart';
 import 'package:dart_quic/src/crypto/packet/packet_protector.dart';
 import 'package:dart_quic/src/crypto/packet/space_keys.dart';
@@ -170,6 +171,49 @@ class KeyManager {
     return manager;
   }
 
+  /// Derive 0-RTT keys from a PSK (pre-shared key).
+  ///
+  /// 0-RTT keys are used before the handshake completes to send early data.
+  /// They are derived using the same labels as 1-RTT keys but from the PSK
+  /// instead of the handshake traffic secret.
+  ///
+  /// Uses AES-128-GCM (mandatory QUIC cipher suite) with a 16-byte key and
+  /// 16-byte header-protection key per RFC 9001 Section 5.1.
+  ///
+  /// **IMPORTANT:** 0-RTT keys MUST be discarded once 1-RTT (Application) keys
+  /// are available. Call [discardZeroRttKeys] after the handshake completes.
+  static Future<KeyManager> deriveZeroRtt(
+    SecretKey psk,
+    CryptoBackend backend,
+  ) async {
+    final manager = KeyManager._();
+    final aead = Aes128Gcm();
+    final keyLength = aead.keyLength; // 16 bytes
+    const hpKeyLength = 16; // AES-128 header protection key
+
+    final keys = await ZeroRttHelper.deriveKeys(
+      psk: psk,
+      keyLength: keyLength,
+      hpKeyLength: hpKeyLength,
+      backend: backend,
+    );
+
+    manager._keys[PacketNumberSpace.zeroRtt] = PacketNumberSpaceKeys(
+      protector: PacketProtector(
+        backend: backend,
+        aead: aead,
+        key: SimpleSecretKey(keys.key),
+        iv: keys.iv,
+      ),
+      headerProtection: HeaderProtection(
+        hpKey: keys.hpKey,
+        isChaCha20: false,
+      ),
+    );
+
+    return manager;
+  }
+
   /// Discard Initial keys after the handshake is confirmed.
   ///
   /// Per RFC 9001 Section 4.1.4, endpoints MUST discard Initial keys once
@@ -185,6 +229,16 @@ class KeyManager {
   /// the TLS handshake is complete and 1-RTT (Application) keys are available.
   void discardHandshakeKeys() {
     _keys.remove(PacketNumberSpace.handshake);
+  }
+
+  /// Discard 0-RTT keys after the 1-RTT handshake completes.
+  ///
+  /// 0-RTT keys are used before the handshake completes and MUST be discarded
+  /// once 1-RTT (Application) keys are available. Per RFC 9001, endpoints
+  /// must not retain 0-RTT keys beyond the handshake to prevent replay
+  /// attacks and key confusion.
+  void discardZeroRttKeys() {
+    _keys.remove(PacketNumberSpace.zeroRtt);
   }
 
   /// Remove keys for a space (e.g., after handshake completion, Initial keys

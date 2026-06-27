@@ -19,6 +19,8 @@ class QuicEndpoint {
   final UdpSocket _udpSocket;
   final _connectionsController = StreamController<Object>.broadcast();
   final List<QuicConnection> _connections = [];
+  final Map<QuicConnection, InternetAddress> _remoteAddresses = {};
+  final Map<QuicConnection, int> _remotePorts = {};
 
   QuicEndpoint._(this._localAddress, this._localPort, this._udpSocket);
 
@@ -71,7 +73,21 @@ class QuicEndpoint {
     stateMachine.transitionTo(ConnectionState.handshaking, reason: 'Connect to $address:$port');
 
     _connections.add(connection);
+    _remoteAddresses[connection] = address;
+    _remotePorts[connection] = port;
     return connection;
+  }
+
+  /// Returns the remote address for a given connection, or null if unknown.
+  InternetAddress? getRemoteAddress(QuicConnection conn) => _remoteAddresses[conn];
+
+  /// Returns the remote port for a given connection, or null if unknown.
+  int? getRemotePort(QuicConnection conn) => _remotePorts[conn];
+
+  /// Migrate a connection to a new remote address and port.
+  Future<void> migrateConnection(QuicConnection conn, InternetAddress newAddress, int newPort) async {
+    _remoteAddresses[conn] = newAddress;
+    _remotePorts[conn] = newPort;
   }
 
   /// Close the endpoint and all associated connections.

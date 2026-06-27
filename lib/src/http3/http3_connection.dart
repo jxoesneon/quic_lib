@@ -67,6 +67,44 @@ class Http3Connection {
   List<DataFrame> getPendingData(int streamId) =>
       List.unmodifiable(_pendingData[streamId] ?? []);
 
+  /// True if the stream has pending DATA frames.
+  bool hasBody(int streamId) =>
+      _pendingData.containsKey(streamId) && _pendingData[streamId]!.isNotEmpty;
+
+  /// Break [body] into DATA frames and store them for [streamId].
+  Future<void> sendBody(int streamId, Uint8List body) async {
+    const chunkSize = 4096;
+    if (body.isEmpty) {
+      // Empty body still emits an EOF marker (empty DATA frame).
+      _pendingData.putIfAbsent(streamId, () => []).add(Http3DataFrame.empty());
+      return;
+    }
+    for (var offset = 0; offset < body.length; offset += chunkSize) {
+      final end = (offset + chunkSize < body.length) ? offset + chunkSize : body.length;
+      final chunk = body.sublist(offset, end);
+      _pendingData.putIfAbsent(streamId, () => []).add(Http3DataFrame(data: chunk));
+    }
+  }
+
+  /// Concatenate all DATA frame payloads for [streamId] into a single buffer.
+  Uint8List? getBody(int streamId) {
+    final frames = _pendingData[streamId];
+    if (frames == null || frames.isEmpty) return null;
+
+    // Exclude empty EOF-marker frames from the returned body.
+    final nonEmptyFrames = frames.where((f) => f.data.isNotEmpty).toList();
+    if (nonEmptyFrames.isEmpty) return Uint8List(0);
+
+    final totalLength = nonEmptyFrames.fold<int>(0, (sum, f) => sum + f.data.length);
+    final result = Uint8List(totalLength);
+    var offset = 0;
+    for (final frame in nonEmptyFrames) {
+      result.setRange(offset, offset + frame.data.length, frame.data);
+      offset += frame.data.length;
+    }
+    return result;
+  }
+
   /// Initiate the HTTP/3 connection by sending a SETTINGS frame on the
   /// control stream.
   ///

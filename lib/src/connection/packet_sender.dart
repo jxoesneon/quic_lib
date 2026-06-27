@@ -44,6 +44,14 @@ class PacketSender {
           packetNumber: packetNumber,
           packetNumberLength: 1,
         );
+      case PacketNumberSpace.zeroRtt:
+        header = LongHeader(
+          version: 0x00000001,
+          packetType: LongHeader.typeZeroRtt,
+          destinationConnectionId: dcid,
+          sourceConnectionId: scid ?? [],
+          packetNumber: packetNumber,
+        );
     }
     return PacketBuilder.build(header, frames);
   }

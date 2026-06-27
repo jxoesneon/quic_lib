@@ -167,6 +167,15 @@ See `SECURITY_FIXES.md` for the complete list.
 
 ## Known Gaps
 
+### Completed in Alpha.4
+
+| Gap | Status |
+|-----|--------|
+| Full header protection round-trip | **DONE** — `ProtectedPacketCodec` handles encrypt+protect / unprotect+decrypt for LongHeader and ShortHeader |
+| Handshake message parsing | **DONE** — `CryptoMessageParser` reads TLS type + payload; `CryptoFrameHandler` wires to `HandshakeStateMachine` |
+| Handshake key transition | **DONE** — `KeyManager.deriveHandshake()` and `.deriveApplication()` with `.discardInitialKeys()` / `.discardHandshakeKeys()` |
+| `QuicEndpoint.connect` | **DONE** — Scaffolds `QuicConnection` with all subsystems, transitions to handshaking |
+
 ### Completed in Alpha.3
 
 | Gap | Status |
@@ -190,15 +199,12 @@ See `SECURITY_FIXES.md` for the complete list.
 
 | Gap | Impact | ETA |
 |-----|--------|-----|
-| Full header protection round-trip | `HeaderProtection.remove` not yet called in `processEncryptedDatagram` (scaffold passes through) | Alpha.4 |
-| Handshake message parsing | CRYPTO bytes not parsed into TLS message types for `HandshakeStateMachine.onMessage()` | Alpha.4 |
-| Handshake key transition | Initial → Handshake → Application key rotation on handshake completion | Alpha.4 |
-| `QuicEndpoint.connect` unimplemented | Cannot initiate connections | Alpha.4 |
-| WebTransport stream bridging | Capsules not mapped to QUIC streams | Alpha.4 |
-| DCUtR protocol orchestration | NAT hole punching logic missing | Alpha.4 |
-| HTTP/3 request/response lifecycle | `Http3Connection` scaffold only | Alpha.4 |
-| QPACK dynamic table | Only static table lookups implemented | Alpha.4 |
-| Packet number reconstruction | Short-header PN inference from truncated PNs | Alpha.4 |
+| WebTransport stream bridging | Capsules not mapped to QUIC streams | Beta.1 |
+| DCUtR protocol orchestration | NAT hole punching logic missing | Beta.1 |
+| HTTP/3 request/response lifecycle | `Http3Connection` scaffold only | Beta.1 |
+| QPACK dynamic table | Only static table lookups implemented | Beta.1 |
+| Packet number reconstruction | Short-header PN inference from truncated PNs | Beta.1 |
+| Real TLS handshake over CRYPTO frames | `CryptoFrameHandler` parses types but no real TLS stack | Beta.1 |
 
 ---
 

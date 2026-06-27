@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.0-alpha.4] — 2026-06-27
+
+### Added
+- **`ProtectedPacketCodec`** — full header protection + AEAD round-trip codec for LongHeader and ShortHeader packets
+- **`KeyManager.deriveHandshake()`** and **`.deriveApplication()`** — derive keys for Handshake and Application spaces per RFC 9001 §5.1
+- **`KeyManager.discardInitialKeys()`** and **`.discardHandshakeKeys()`** — key lifecycle management per RFC 9001 §4.1.4
+- **`CryptoMessageParser`** — parses TLS handshake message type and payload from CRYPTO frame bytes
+- **`CryptoFrameHandler`** — wires `CryptoFrameAssembler` → `CryptoMessageParser` → `HandshakeStateMachine.onMessage()`
+- **`QuicEndpoint.connect()`** — scaffolds a `QuicConnection` with all subsystems and transitions to handshaking
+- Integration tests: `test/crypto/packet/protected_packet_codec_test.dart` (3 tests), `test/crypto/key_manager_test.dart` (5 tests), `test/crypto/tls/crypto_message_parser_test.dart` (8 tests), `test/integration/alpha4_features_test.dart` (10 tests), `test/io/quic_endpoint_connect_test.dart` (4 tests)
+
+### Changed
+- `CryptoFrameHandler.onCryptoFrame()` catches invalid state transitions and marks handshake as failed
+- `QuicConnection._handleCryptoFrame()` now delegates to `CryptoFrameHandler` when available
+
+---
+
 ## [0.1.0-alpha.3] — 2026-06-27
 
 ### Added

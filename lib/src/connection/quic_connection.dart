@@ -6,6 +6,7 @@ import '../connection/packet_receiver.dart';
 import '../connection/packet_sender.dart';
 import '../crypto/key_manager.dart';
 import '../crypto/tls/crypto_frame_assembler.dart';
+import '../crypto/tls/crypto_frame_handler.dart';
 import '../crypto/tls/handshake_state_machine.dart';
 import '../streams/stream_id.dart';
 import '../streams/stream_manager.dart';
@@ -40,6 +41,7 @@ class QuicConnection {
   final HandshakeStateMachine? _handshakeMachine;
   final StreamManager _streamManager = StreamManager();
   final KeyManager? _keyManager;
+  CryptoFrameHandler? _cryptoFrameHandler;
 
   QuicConnection({
     required ConnectionStateMachine stateMachine,
@@ -71,6 +73,14 @@ class QuicConnection {
       rttEstimator: _rttEstimator,
       sentPacketTracker: _sentPacketTracker,
     );
+    final cryptoAssembler = _cryptoAssembler;
+    final handshakeMachine = _handshakeMachine;
+    if (cryptoAssembler != null && handshakeMachine != null) {
+      _cryptoFrameHandler = CryptoFrameHandler(
+        assembler: cryptoAssembler,
+        handshakeMachine: handshakeMachine,
+      );
+    }
   }
 
   ConnectionState get state => _stateMachine.state;
@@ -232,16 +242,15 @@ class QuicConnection {
   }
 
   void _handleCryptoFrame(CryptoFrame frame) {
+    final handler = _cryptoFrameHandler;
+    if (handler != null) {
+      handler.onCryptoFrame(frame);
+      return;
+    }
+    // Fallback: if no handler is wired, just deliver to the assembler.
     final assembler = _cryptoAssembler;
     if (assembler == null) return;
-    final messages = assembler.deliver(frame);
-    for (final _ in messages) {
-      // TODO: Parse TLS message type and pass to HandshakeStateMachine.onMessage().
-      // For now, if we're handshaking and get a CRYPTO message, assume progress.
-      if (_handshakeMachine != null && _stateMachine.isHandshaking) {
-        // Placeholder: real integration will parse TLS message type.
-      }
-    }
+    assembler.deliver(frame);
   }
 
   // -----------------------------------------------------------------------

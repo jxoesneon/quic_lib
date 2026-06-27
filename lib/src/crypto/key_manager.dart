@@ -86,6 +86,107 @@ class KeyManager {
   /// True if keys exist for the given space.
   bool hasKeysFor(PacketNumberSpace space) => _keys.containsKey(space);
 
+  /// Derive Handshake-space keys from the TLS handshake traffic secrets.
+  ///
+  /// Uses AES-256-GCM (TLS_AES_256_GCM_SHA384) per RFC 9001 Section 5.1.
+  /// The AEAD key is 32 bytes and the header-protection key is 16 bytes.
+  ///
+  /// Per RFC 9001 §4.1.4, endpoints MUST discard Initial keys once
+  /// Handshake keys are available.
+  static Future<KeyManager> deriveHandshake(
+    SecretKey clientSecret,
+    SecretKey serverSecret,
+    CryptoBackend backend,
+  ) async {
+    final manager = KeyManager._();
+    final aead = Aes256Gcm();
+    final keyLength = aead.keyLength; // 32 bytes
+    const hpKeyLength = 16; // AES-256 header protection key
+
+    // In a full implementation, client/server directionality is tracked
+    // separately. Here we use client keys for the pipeline scaffold.
+    final clientKeys = await KeyDerivation.deriveKeys(
+      secret: clientSecret,
+      keyLength: keyLength,
+      hpKeyLength: hpKeyLength,
+      backend: backend,
+    );
+
+    manager._keys[PacketNumberSpace.handshake] = PacketNumberSpaceKeys(
+      protector: PacketProtector(
+        backend: backend,
+        aead: aead,
+        key: SimpleSecretKey(clientKeys.key),
+        iv: clientKeys.iv,
+      ),
+      headerProtection: HeaderProtection(
+        hpKey: clientKeys.hpKey,
+        isChaCha20: false,
+      ),
+    );
+
+    return manager;
+  }
+
+  /// Derive Application-space keys from the TLS application traffic secrets.
+  ///
+  /// Uses AES-128-GCM (TLS_AES_128_GCM_SHA256) per RFC 9001 Section 5.1.
+  /// The AEAD key is 16 bytes and the header-protection key is 16 bytes.
+  ///
+  /// Per RFC 9001 §4.1.4, endpoints MUST discard Handshake keys once
+  /// the TLS handshake is complete and 1-RTT (Application) keys are available.
+  static Future<KeyManager> deriveApplication(
+    SecretKey clientSecret,
+    SecretKey serverSecret,
+    CryptoBackend backend,
+  ) async {
+    final manager = KeyManager._();
+    final aead = Aes128Gcm();
+    final keyLength = aead.keyLength; // 16 bytes
+    const hpKeyLength = 16; // AES-128 header protection key
+
+    // In a full implementation, client/server directionality is tracked
+    // separately. Here we use client keys for the pipeline scaffold.
+    final clientKeys = await KeyDerivation.deriveKeys(
+      secret: clientSecret,
+      keyLength: keyLength,
+      hpKeyLength: hpKeyLength,
+      backend: backend,
+    );
+
+    manager._keys[PacketNumberSpace.application] = PacketNumberSpaceKeys(
+      protector: PacketProtector(
+        backend: backend,
+        aead: aead,
+        key: SimpleSecretKey(clientKeys.key),
+        iv: clientKeys.iv,
+      ),
+      headerProtection: HeaderProtection(
+        hpKey: clientKeys.hpKey,
+        isChaCha20: false,
+      ),
+    );
+
+    return manager;
+  }
+
+  /// Discard Initial keys after the handshake is confirmed.
+  ///
+  /// Per RFC 9001 Section 4.1.4, endpoints MUST discard Initial keys once
+  /// they have received an ACK for all CRYPTO data sent in Initial packets
+  /// and all Handshake CRYPTO data has been sent.
+  void discardInitialKeys() {
+    _keys.remove(PacketNumberSpace.initial);
+  }
+
+  /// Discard Handshake keys after the handshake is complete.
+  ///
+  /// Per RFC 9001 Section 4.1.4, endpoints MUST discard Handshake keys once
+  /// the TLS handshake is complete and 1-RTT (Application) keys are available.
+  void discardHandshakeKeys() {
+    _keys.remove(PacketNumberSpace.handshake);
+  }
+
   /// Remove keys for a space (e.g., after handshake completion, Initial keys
   /// are discarded per RFC 9001 Section 4.1.4).
   void discardKeys(PacketNumberSpace space) {

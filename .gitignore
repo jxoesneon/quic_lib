@@ -1,0 +1,4 @@
+# Project .gitignore
+
+# Ciel local domain
+.ciel/

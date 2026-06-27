@@ -239,9 +239,25 @@ Phase 6: dart_ipfs Integration
 
 ---
 
+## 14. Future Extensions (Post-1.0)
+
+| Extension | RFC/Draft | Priority | Notes |
+|-----------|-----------|----------|-------|
+| QUIC Version 2 | RFC 9369 | Medium | Compatible version with new salt/labels; wire-compatible upgrade |
+| Multipath QUIC | draft-ietf-quic-multipath | Low | Multiple network paths simultaneously |
+| QUIC-LB | draft-ietf-quic-load-balancers | Low | Connection ID routing for load balancers |
+| QUIC Datagrams (standalone) | RFC 9221 | Medium | Non-WebTransport datagram use cases |
+| Accurate ECN | draft-ietf-quic-accurate-ecn | Low | Improved ECN feedback |
+
+These are intentionally deferred beyond 1.0.0 to maintain scope control.
+
+---
+
 ## References
 
 - dart_ipfs Roadmap v2.1: P0 — QUIC transport requirement
 - QUIC Interop Runner: https://interop.seemann.io/
 - pub.dev publishing guide: https://dart.dev/tools/pub/publishing
 - libp2p Interop Tests: https://github.com/libp2p/test-plans
+- RFC 9369 (QUIC Version 2): https://www.rfc-editor.org/rfc/rfc9369
+- RFC 9221 (QUIC Datagrams): https://www.rfc-editor.org/rfc/rfc9221

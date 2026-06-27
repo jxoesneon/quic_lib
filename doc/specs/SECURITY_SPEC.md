@@ -83,7 +83,16 @@ The implementation SHOULD support:
 - Validation is against the libp2p Public Key Extension, not CA chains.
 - Peer ID is the trust anchor.
 
-### 4.3 Certificate Storage
+### 4.3 Certificate Revocation
+
+- SHOULD support OCSP stapling (server provides freshness proof in TLS handshake).
+- MAY support CRL checking (cached, with configurable refresh interval).
+- If revocation status is unavailable (soft-fail vs hard-fail):
+  - Default: **soft-fail** (accept if OCSP/CRL is unreachable) for availability.
+  - Configurable: **hard-fail** mode for high-security deployments.
+- libp2p mode: revocation not applicable (self-signed, short-lived certificates).
+
+### 4.4 Certificate Storage
 
 - Private keys MUST be held in memory only during the connection lifetime.
 - No plaintext key material on disk.

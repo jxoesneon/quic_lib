@@ -3,7 +3,7 @@ title: "Versioning Policy"
 category: spec
 version: "1.0-draft"
 status: "Specification"
-subsystem: "Unknown"
+subsystem: "Release Management"
 rfc_basis: []
 dependencies:
   - "ROADMAP.md"
@@ -194,6 +194,25 @@ points are specified in [LIBP2P_QUIC_SPEC.md](LIBP2P_QUIC_SPEC.md) and
    patch release that would force an uncoordinated upgrade in `dart_ipfs`.
 5. Security fixes are exempt from the coordinated-upgrade rule but will be
    clearly labeled as such.
+
+---
+
+
+
+### 2.10 Specification Promotion Criteria
+
+All specifications are versioned `1.0-draft` during Phase 0. A spec graduates to `1.0-stable` when:
+
+1. **Implementation Complete**: At least one reference implementation exists that passes all acceptance criteria.
+2. **Interop Verified**: The implementation successfully interoperates with at least two independent QUIC/HTTP3/WebTransport stacks (e.g., quic-go, aioquic, ngtcp2, Chromium).
+3. **Review Gate**: The spec has been reviewed by at least one domain expert and all review feedback is resolved.
+4. **No Open Gaps**: All known RFC deviations are documented as intentional design decisions with ADRs.
+5. **Test Coverage**: The corresponding test suite achieves ≥80% coverage of the spec's acceptance criteria.
+6. **Stability Duration**: The spec has remained unchanged (except bug fixes) for at least one minor release cycle.
+
+A spec may be demoted from `stable` back to `draft` if:
+- A critical security vulnerability is discovered that requires breaking API changes.
+- An RFC update renders the spec non-compliant and the fix requires breaking changes.
 
 ---
 

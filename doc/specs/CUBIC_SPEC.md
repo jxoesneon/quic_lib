@@ -3,7 +3,7 @@ title: "CUBIC Congestion Control Specification"
 category: spec
 version: "1.0-draft"
 status: "Specification"
-subsystem: "Unknown"
+subsystem: "Congestion Control"
 rfc_basis: []
 dependencies:
   - "DART_API_SPEC.md"

@@ -160,7 +160,8 @@ Phase 6: dart_ipfs Integration
 |------|------|
 | Performance | Isolate-based crypto, minimize allocations, zero-copy paths |
 | Congestion | CUBIC implementation, BBR exploration |
-| Security | Full security audit, fuzz testing campaign |
+| Security | Full security audit, fuzz testing campaign ([FUZZING_SPEC.md](FUZZING_SPEC.md)) |
+| Benchmarking | Performance benchmarks and CI integration ([PERFORMANCE_BENCHMARKING.md](PERFORMANCE_BENCHMARKING.md)) |
 | Resilience | Chaos testing, recovery from every error condition |
 | API polish | Dartdoc, examples, changelog, semver stability |
 | Packaging | pub.dev publication, CI/CD pipeline |

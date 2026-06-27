@@ -2,7 +2,8 @@
 title: "Crypto Backend Abstraction"
 category: architecture
 version: "1.0-draft"
-subsystem: "Unknown"
+status: "Draft"
+subsystem: "Crypto Backend"
 ---
 
 # Crypto Backend Abstraction
@@ -41,7 +42,7 @@ The backend advertises support via `supportedCipherSuites()` so that the TLS eng
 
 ### 2.3 Backend Interface
 
-The following Dart-style interface is the contract between the crypto backend and the rest of the stack. It is documented as pseudocode; concrete implementations may add factory constructors, helper methods, or platform-specific optimizations.
+> **Note:** The public crypto backend API consumed by applications is defined in [DART_API_SPEC.md §2.9](../specs/DART_API_SPEC.md#29-crypto-backend-abstraction). The following interface documents the internal architecture contract between the crypto backend and the rest of the `dart_quic` stack. It is documented as pseudocode; concrete implementations may add factory constructors, helper methods, or platform-specific optimizations.
 
 ```dart
 /// Opaque handle to a secret key.

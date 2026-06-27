@@ -3,7 +3,7 @@ title: "Performance Benchmarking Specification"
 category: spec
 version: "1.0-draft"
 status: "Specification"
-subsystem: "Unknown"
+subsystem: "Performance"
 rfc_basis: []
 dependencies:
   - "ROADMAP.md"

@@ -3,7 +3,7 @@ title: "QUIC Datagram Specification"
 category: spec
 version: "1.0-draft"
 status: "Specification"
-subsystem: "Unknown"
+subsystem: "Datagram Extension"
 rfc_basis: []
 dependencies:
   - "ROADMAP.md"

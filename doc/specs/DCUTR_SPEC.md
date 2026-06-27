@@ -3,7 +3,7 @@ title: "Direct Connection Upgrade through Relay (DCUtR) Specification"
 category: spec
 version: "1.0-draft"
 status: "Specification"
-subsystem: "Unknown"
+subsystem: "NAT Traversal"
 rfc_basis: []
 dependencies:
   - "LIBP2P_QUIC_SPEC.md"
@@ -444,7 +444,7 @@ Before path validation completes, the QUIC server (Initiator) MUST respect the R
 1. **NAT Traversal Privacy**: DCUtR exposes internal IP addresses to the peer via the HOP and RSP addresses. Applications that require full IP privacy should disable DCUtR and remain on relayed connections.
 2. **Relay Trust**: The relay server observes both peers' internal addresses during the cutover. Use relays under the same administrative domain or run self-hosted relays for sensitive deployments.
 3. **No Authentication Bypass**: The direct connection established after DCUtR still performs the full libp2p TLS 1.3 handshake with peer certificate validation. DCUtR is purely an address-discovery mechanism; it does not bypass authentication.
-4. **Amplification Mitigation**: The DCUtR/CUT frame must include a 64-byte random nonce to prevent an attacker from using a relay to amplify traffic toward a victim address.
+4. **Amplification Mitigation**: The 4 KiB message size limit, per-peer rate limiting, and connection timeout mechanisms (\u00a72.3.1, \u00a72.6.9) prevent an attacker from using a relay to amplify traffic toward a victim address.
 5. **Timing and Replay**: Each DCUtR attempt uses a fresh nonce and a monotonically increasing ttempt counter. Replay of old DCUtR/RSP frames is rejected by checking the nonce and counter against the current session state.
 
 ## Used By

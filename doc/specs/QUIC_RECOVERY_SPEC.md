@@ -326,7 +326,7 @@ This limits amplification attacks. After address validation (receiving a handsha
 
 ### 2.9 Dart API
 
-The congestion control interface is defined in [DART_API_SPEC.md §2.3](DART_API_SPEC.md#23-core-quic-api). The following subsections describe the CUBIC algorithm implementation details.
+The congestion control interface is defined in [DART_API_SPEC.md §2.3](DART_API_SPEC.md#23-core-quic-api). CUBIC algorithm implementation details are specified in [CUBIC_SPEC.md](CUBIC_SPEC.md).
 
 ---
 

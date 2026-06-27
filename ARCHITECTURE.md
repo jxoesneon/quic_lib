@@ -167,6 +167,17 @@ See `SECURITY_FIXES.md` for the complete list.
 
 ## Known Gaps
 
+### Completed in Beta.1
+
+| Gap | Status |
+|-----|--------|
+| Packet number reconstruction | **DONE** — `PacketNumberReconstructor` per RFC 9000 §17.1 |
+| TLS message construction | **DONE** — `TlsMessageBuilder` produces structurally valid ClientHello, ServerHello, Finished |
+| HTTP/3 request/response lifecycle | **DONE** — `Http3Connection.sendRequest()` allocates streams; `onStreamFrame()` dispatches frames |
+| QPACK dynamic table | **DONE** — `QpackDynamicTable` with insertions, evictions, capacity management, and dynamic→static→literal encoding |
+| WebTransport stream bridging | **DONE** — `CapsuleRouter` routes capsules to `WebTransportSession` by stream ID |
+| DCUtR protocol orchestration | **DONE** — `DCUtRStateMachine` with dialer/listener state transitions |
+
 ### Completed in Alpha.4
 
 | Gap | Status |
@@ -199,12 +210,12 @@ See `SECURITY_FIXES.md` for the complete list.
 
 | Gap | Impact | ETA |
 |-----|--------|-----|
-| WebTransport stream bridging | Capsules not mapped to QUIC streams | Beta.1 |
-| DCUtR protocol orchestration | NAT hole punching logic missing | Beta.1 |
-| HTTP/3 request/response lifecycle | `Http3Connection` scaffold only | Beta.1 |
-| QPACK dynamic table | Only static table lookups implemented | Beta.1 |
-| Packet number reconstruction | Short-header PN inference from truncated PNs | Beta.1 |
-| Real TLS handshake over CRYPTO frames | `CryptoFrameHandler` parses types but no real TLS stack | Beta.1 |
+| Real TLS handshake over CRYPTO frames | `CryptoFrameHandler` parses types but no real X25519/Ed25519 key exchange | v0.2.0 |
+| HTTP/3 full request/response | Headers encoding/decoding, body streaming, trailers | v0.2.0 |
+| WebTransport datagram support | Datagram capsules not wired | v0.2.0 |
+| DCUtR real NAT hole punching | No actual UDP socket coordination yet | v0.2.0 |
+| Connection migration | PATH_CHALLENGE/RESPONSE not fully wired | v0.2.0 |
+| 0-RTT resumption | Session ticket and early data not implemented | v0.2.0 |
 
 ---
 

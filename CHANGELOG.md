@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.0-beta.1] — 2026-06-27
+
+### Added
+- **`PacketNumberReconstructor`** — reconstructs full packet numbers from truncated short-header PNs per RFC 9000 §17.1
+- **`TlsMessageBuilder`** — constructs structurally valid TLS 1.3 ClientHello, ServerHello, and Finished messages for testing
+- **HTTP/3 lifecycle scaffold** in `Http3Connection`: `sendRequest()` allocates streams, `onStreamFrame()` dispatches HEADERS/DATA/SETTINGS/GOAWAY frames
+- **`QpackDynamicTable`** — dynamic table insertions, evictions, capacity management, and `encodeWithDynamicTable()` with dynamic→static→literal fallback
+- **`CapsuleRouter`** — routes WebTransport capsules to `WebTransportSession` instances by stream ID
+- **`DCUtRStateMachine`** — DCUtR handshake state machine (idle → connectSent → syncReceived → connected/failed)
+- Integration tests: `test/wire/packet_number_reconstructor_test.dart` (5 tests), `test/crypto/tls/tls_message_builder_test.dart` (6 tests), `test/http3/http3_connection_test.dart` (5 tests), `test/http3/qpack_dynamic_table_test.dart` (11 tests), `test/webtransport/capsule_router_test.dart` (5 tests), `test/libp2p/dcutr_state_machine_test.dart` (14 tests)
+
+---
+
 ## [0.1.0-alpha.4] — 2026-06-27
 
 ### Added

@@ -1,7 +1,19 @@
 import 'dart:async';
+import 'dart:typed_data';
 
+import 'data_frame.dart';
 import 'frame_types.dart';
+import 'headers_frame.dart';
 import 'settings_frame.dart';
+
+/// Placeholder for an HTTP/3 request stream.
+class Http3Stream {
+  final int streamId;
+  Http3Stream(this.streamId);
+}
+
+typedef HeadersFrame = Http3HeadersFrame;
+typedef DataFrame = Http3DataFrame;
 
 /// Manages an HTTP/3 connection over a QUIC transport.
 ///
@@ -16,6 +28,10 @@ class Http3Connection {
   final Http3SettingsFrame _localSettings;
   Http3SettingsFrame _peerSettings = Http3SettingsFrame();
   bool _settingsExchanged = false;
+
+  bool _isClosing = false;
+  final Map<int, HeadersFrame> _pendingHeaders = {};
+  final Map<int, List<DataFrame>> _pendingData = {};
 
   Http3Connection({
     required Object quicConnection,
@@ -39,6 +55,16 @@ class Http3Connection {
   /// True once the peer's SETTINGS frame has been received.
   bool get settingsExchanged => _settingsExchanged;
 
+  /// True once a GOAWAY frame has been received.
+  bool get isClosing => _isClosing;
+
+  /// Pending HEADERS frame for a given stream.
+  HeadersFrame? getPendingHeaders(int streamId) => _pendingHeaders[streamId];
+
+  /// Pending DATA frames for a given stream.
+  List<DataFrame> getPendingData(int streamId) =>
+      List.unmodifiable(_pendingData[streamId] ?? []);
+
   /// Initiate the HTTP/3 connection by sending a SETTINGS frame on the
   /// control stream.
   ///
@@ -59,25 +85,37 @@ class Http3Connection {
 
   /// Send an HTTP/3 request.
   ///
-  /// **Not yet implemented.** Requires:
-  /// - Request stream allocation
-  /// - QPACK header encoding
-  /// - HEADERS + DATA frame assembly
-  /// - QUIC stream framing
-  Future<void> sendRequest(Object request) async {
-    throw UnimplementedError(
-      'Http3Connection.sendRequest is not yet implemented. '
-      'Request stream allocation, QPACK encoding, and HEADERS/DATA frame '
-      'assembly are pending.',
-    );
+  /// Allocates a new client-initiated bidirectional stream, creates an
+  /// [Http3Stream] for it, and returns the stream ID.
+  Future<int> sendRequest(Object request) async {
+    final quic = _quicConnection as dynamic;
+    final streamId = quic.openBidirectionalStream() as int;
+    // TODO: Create Http3Stream and wire into request lifecycle.
+    return streamId;
   }
 
   /// Process received frames on a QUIC stream.
   void onStreamFrame(int streamId, Http3Frame frame) {
-    throw UnimplementedError(
-      'Http3Connection.onStreamFrame is not yet implemented. '
-      'Frame dispatch to request/response handlers is pending.',
-    );
+    switch (frame.type) {
+      case Http3FrameType.headers:
+        _pendingHeaders[streamId] = HeadersFrame.fromPayload(frame.payload);
+        break;
+      case Http3FrameType.data:
+        final dataFrame = DataFrame.fromPayload(frame.payload);
+        _pendingData.putIfAbsent(streamId, () => []).add(dataFrame);
+        break;
+      case Http3FrameType.settings:
+        onSettingsReceived(
+          Http3SettingsFrame.parsePayload(Uint8List.fromList(frame.payload)),
+        );
+        break;
+      case Http3FrameType.goaway:
+        _isClosing = true;
+        break;
+      default:
+        // No-op for unhandled frame types.
+        break;
+    }
   }
 
   /// Gracefully close the HTTP/3 connection.

@@ -13,6 +13,34 @@ enum Http3StreamType {
   reserved,
 }
 
+/// Unidirectional stream type identifiers per RFC 9114 Section 6.2.
+///
+/// Each unidirectional stream begins with a single varint-encoded stream type.
+enum StreamType {
+  /// Control stream (RFC 9114 Section 6.2.1).
+  control(0x00),
+
+  /// Push stream (RFC 9114 Section 6.2.2).
+  push(0x01),
+
+  /// QPACK encoder stream (RFC 9204 Section 4.2).
+  qpackEncoder(0x02),
+
+  /// QPACK decoder stream (RFC 9204 Section 4.2).
+  qpackDecoder(0x03);
+
+  final int value;
+  const StreamType(this.value);
+
+  /// Looks up a stream type by its wire value.
+  static StreamType? fromValue(int value) {
+    for (final type in values) {
+      if (type.value == value) return type;
+    }
+    return null;
+  }
+}
+
 /// Handles classification of an HTTP/3 stream based on its QUIC stream ID.
 ///
 /// Per RFC 9114 §4.1:

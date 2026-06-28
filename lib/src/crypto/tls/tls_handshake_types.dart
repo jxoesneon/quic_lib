@@ -90,11 +90,25 @@ enum TlsExtensionType {
 /// Transport parameters are carried in the `quic_transport_parameters`
 /// TLS extension (RFC 9001) and negotiated during the handshake.
 enum QuicTransportParameterId {
-  ecn(0x01), // RFC 9000 Section 13.4
-  maxDatagramFrameSize(0x20), // RFC 9221
-  versionInformation(0x11), // RFC 9368
+  originalDestinationConnectionId(0x00),
+  maxIdleTimeout(0x01),
+  statelessResetToken(0x02),
+  maxUdpPayloadSize(0x03),
+  initialMaxData(0x04),
+  initialMaxStreamDataBidiLocal(0x05),
+  initialMaxStreamDataBidiRemote(0x06),
+  initialMaxStreamDataUni(0x07),
+  initialMaxStreamsBidi(0x08),
+  initialMaxStreamsUni(0x09),
+  ackDelayExponent(0x0a),
+  maxAckDelay(0x0b),
   disableActiveMigration(0x0c), // RFC 9000 Section 9
   preferredAddress(0x0d), // RFC 9000 Section 9.6
+  activeConnectionIdLimit(0x0e),
+  initialSourceConnectionId(0x0f),
+  retrySourceConnectionId(0x10),
+  versionInformation(0x11), // RFC 9368
+  maxDatagramFrameSize(0x20), // RFC 9221
   greaseQuicBit(0x2ab2), // RFC 9287
   earlyData(0x42); // RFC 9001
 

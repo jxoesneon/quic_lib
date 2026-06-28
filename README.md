@@ -34,6 +34,17 @@ A comprehensive, pure-Dart QUIC protocol stack specification and architecture.
 4. **libp2p QUIC** integration — multiaddr formats, security handshake, stream mapping.
 5. **Dart-native API** design — `dart:io` integration, `Stream`/`Future` idioms, no native dependencies.
 
+### Advanced features
+
+- **QPACK encoder/decoder stream instructions** (RFC 9204) — dynamic table capacity updates, insertions with name references, and duplicate instructions.
+- **ORIGIN and PRIORITY_UPDATE frames** (RFC 9412 / RFC 9218) — origin management and priority signalling for HTTP/3.
+- **RFC 9368 Compatible Version Negotiation** — negotiate QUIC versions without breaking the handshake.
+- **CUBIC congestion control** (RFC 8312) — production-grade congestion controller with pacing.
+- **QUIC bit greasing** (RFC 9287) — reserved bit randomisation for future extensibility.
+- **ECN processing** (RFC 9000 Section 13.4) — explicit congestion notification on supported paths.
+- **libp2p multistream-select and certificate generation** — TLS extension with Ed25519 peer authentication and ephemeral self-signed certificate generation.
+- **WebTransport session support** (RFC 9220) — Extended CONNECT, capsule protocol, and session establishment over HTTP/3.
+
 ## Platform support
 
 | Platform | Support | Notes |

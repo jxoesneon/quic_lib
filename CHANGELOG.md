@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## 1.2.4
+
+### Protocol Completeness
+- Fixed RFC 9000 errata (8240, 7861, 8410, 7702)
+- Implemented RFC 9221 unreliable DATAGRAM frames
+- Implemented RFC 9220 Extended CONNECT for WebTransport
+- Implemented RFC 9297 HTTP Datagrams + Capsule Protocol
+- Implemented RFC 9204 QPACK encoder/decoder stream instructions
+- Implemented RFC 9412 ORIGIN frame
+- Implemented RFC 9218 PRIORITY_UPDATE frame
+- Implemented RFC 9287 QUIC bit greasing
+- Implemented RFC 9368 Compatible Version Negotiation
+- Implemented ECN processing (RFC 9000 Section 13.4)
+- Implemented connection migration with preferred_address transport parameter
+- Implemented TLS extensions: SNI, supported_groups, ALPN
+- Implemented PSK session resumption (NewSessionTicket)
+- Implemented CUBIC congestion control (RFC 8312)
+- Implemented libp2p TLS extension with Ed25519 peer authentication
+- Implemented libp2p certificate generator
+- Implemented multistream-select protocol
+- Implemented WebTransport session establishment
+
+---
+
 ## [1.2.3] — 2026-06-28
 
 ### Platform Support

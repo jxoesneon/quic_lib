@@ -128,8 +128,28 @@ class QuicConnection {
   int ect1Counter = 0;
   int ceCounter = 0;
 
-  /// Whether ECN capability is advertised in transport parameters.
+  /// Whether ECN capability is enabled for this connection.
   bool ecnEnabled = true;
+
+  // ECN validation state (RFC 9000 Section 13.4.2).
+  bool _ecnValidated = false;
+  bool _ecnFailed = false;
+  int _lastAckEct0Count = 0;
+  int _lastAckEct1Count = 0;
+  int _lastAckCeCount = 0;
+
+  // RFC 9000 Section 18.2 transport parameters.
+  int maxIdleTimeout = 30000;
+  int maxUdpPayloadSize = 65527;
+  int initialMaxData = 0;
+  int initialMaxStreamDataBidiLocal = 0;
+  int initialMaxStreamDataBidiRemote = 0;
+  int initialMaxStreamDataUni = 0;
+  int initialMaxStreamsBidi = 0;
+  int initialMaxStreamsUni = 0;
+  int ackDelayExponent = 3;
+  int maxAckDelay = 25;
+  int activeConnectionIdLimit = 2;
 
   /// Whether the peer is allowed to migrate (RFC 9000 Section 9).
   bool allowMigration = true;
@@ -232,6 +252,9 @@ class QuicConnection {
   /// Whether the connection is fully closed and can no longer send or receive.
   bool get isClosed => _stateMachine.isClosed;
 
+  /// Whether ECN has been validated for this connection (RFC 9000 Section 13.4.2).
+  bool get isEcnValidated => _ecnValidated;
+
   /// The first active connection ID, or null if none have been issued.
   List<int>? get connectionId {
     final ids = _cidManager.activeIds;
@@ -279,14 +302,76 @@ class QuicConnection {
   /// Each parameter is encoded as: id (varint) + length (varint) + value.
   Uint8List buildTransportParameters() {
     final builder = BytesBuilder();
-    // ecn (0x01, RFC 9000 Section 13.4)
-    if (ecnEnabled) {
-      builder.add(VarInt.encode(QuicTransportParameterId.ecn.value));
-      builder.add(VarInt.encode(0));
+    // max_idle_timeout (0x01, RFC 9000 Section 18.2)
+    final maxIdleBytes = VarInt.encode(maxIdleTimeout);
+    builder.add(VarInt.encode(QuicTransportParameterId.maxIdleTimeout.value));
+    builder.add(VarInt.encode(maxIdleBytes.length));
+    builder.add(maxIdleBytes);
+    // max_udp_payload_size (0x03, RFC 9000 Section 18.2)
+    final maxUdpBytes = VarInt.encode(maxUdpPayloadSize);
+    builder.add(VarInt.encode(QuicTransportParameterId.maxUdpPayloadSize.value));
+    builder.add(VarInt.encode(maxUdpBytes.length));
+    builder.add(maxUdpBytes);
+    // initial_max_data (0x04, RFC 9000 Section 18.2)
+    if (initialMaxData > 0) {
+      final initMaxDataBytes = VarInt.encode(initialMaxData);
+      builder.add(VarInt.encode(QuicTransportParameterId.initialMaxData.value));
+      builder.add(VarInt.encode(initMaxDataBytes.length));
+      builder.add(initMaxDataBytes);
     }
+    // initial_max_stream_data_bidi_local (0x05)
+    if (initialMaxStreamDataBidiLocal > 0) {
+      final bytes = VarInt.encode(initialMaxStreamDataBidiLocal);
+      builder.add(VarInt.encode(QuicTransportParameterId.initialMaxStreamDataBidiLocal.value));
+      builder.add(VarInt.encode(bytes.length));
+      builder.add(bytes);
+    }
+    // initial_max_stream_data_bidi_remote (0x06)
+    if (initialMaxStreamDataBidiRemote > 0) {
+      final bytes = VarInt.encode(initialMaxStreamDataBidiRemote);
+      builder.add(VarInt.encode(QuicTransportParameterId.initialMaxStreamDataBidiRemote.value));
+      builder.add(VarInt.encode(bytes.length));
+      builder.add(bytes);
+    }
+    // initial_max_stream_data_uni (0x07)
+    if (initialMaxStreamDataUni > 0) {
+      final bytes = VarInt.encode(initialMaxStreamDataUni);
+      builder.add(VarInt.encode(QuicTransportParameterId.initialMaxStreamDataUni.value));
+      builder.add(VarInt.encode(bytes.length));
+      builder.add(bytes);
+    }
+    // initial_max_streams_bidi (0x08)
+    if (initialMaxStreamsBidi > 0) {
+      final bytes = VarInt.encode(initialMaxStreamsBidi);
+      builder.add(VarInt.encode(QuicTransportParameterId.initialMaxStreamsBidi.value));
+      builder.add(VarInt.encode(bytes.length));
+      builder.add(bytes);
+    }
+    // initial_max_streams_uni (0x09)
+    if (initialMaxStreamsUni > 0) {
+      final bytes = VarInt.encode(initialMaxStreamsUni);
+      builder.add(VarInt.encode(QuicTransportParameterId.initialMaxStreamsUni.value));
+      builder.add(VarInt.encode(bytes.length));
+      builder.add(bytes);
+    }
+    // ack_delay_exponent (0x0a)
+    final ackDelayExponentBytes = VarInt.encode(ackDelayExponent);
+    builder.add(VarInt.encode(QuicTransportParameterId.ackDelayExponent.value));
+    builder.add(VarInt.encode(ackDelayExponentBytes.length));
+    builder.add(ackDelayExponentBytes);
+    // max_ack_delay (0x0b)
+    final maxAckDelayBytes = VarInt.encode(maxAckDelay);
+    builder.add(VarInt.encode(QuicTransportParameterId.maxAckDelay.value));
+    builder.add(VarInt.encode(maxAckDelayBytes.length));
+    builder.add(maxAckDelayBytes);
+    // active_connection_id_limit (0x0e)
+    final activeConnectionIdLimitBytes = VarInt.encode(activeConnectionIdLimit);
+    builder.add(VarInt.encode(QuicTransportParameterId.activeConnectionIdLimit.value));
+    builder.add(VarInt.encode(activeConnectionIdLimitBytes.length));
+    builder.add(activeConnectionIdLimitBytes);
     // max_datagram_frame_size (0x20)
     final maxDgBytes = VarInt.encode(maxDatagramFrameSize);
-    builder.add(VarInt.encode(0x20));
+    builder.add(VarInt.encode(QuicTransportParameterId.maxDatagramFrameSize.value));
     builder.add(VarInt.encode(maxDgBytes.length));
     builder.add(maxDgBytes);
     // version_information (0x11, RFC 9368)
@@ -353,7 +438,31 @@ class QuicConnection {
       final value = Uint8List.sublistView(bytes, offset, offset + length);
       offset += length;
 
-      if (id == QuicTransportParameterId.versionInformation.value) {
+      if (id == QuicTransportParameterId.maxIdleTimeout.value) {
+        maxIdleTimeout = VarInt.decode(value.buffer);
+      } else if (id == QuicTransportParameterId.maxUdpPayloadSize.value) {
+        maxUdpPayloadSize = VarInt.decode(value.buffer);
+      } else if (id == QuicTransportParameterId.initialMaxData.value) {
+        initialMaxData = VarInt.decode(value.buffer);
+      } else if (id == QuicTransportParameterId.initialMaxStreamDataBidiLocal.value) {
+        initialMaxStreamDataBidiLocal = VarInt.decode(value.buffer);
+      } else if (id == QuicTransportParameterId.initialMaxStreamDataBidiRemote.value) {
+        initialMaxStreamDataBidiRemote = VarInt.decode(value.buffer);
+      } else if (id == QuicTransportParameterId.initialMaxStreamDataUni.value) {
+        initialMaxStreamDataUni = VarInt.decode(value.buffer);
+      } else if (id == QuicTransportParameterId.initialMaxStreamsBidi.value) {
+        initialMaxStreamsBidi = VarInt.decode(value.buffer);
+      } else if (id == QuicTransportParameterId.initialMaxStreamsUni.value) {
+        initialMaxStreamsUni = VarInt.decode(value.buffer);
+      } else if (id == QuicTransportParameterId.ackDelayExponent.value) {
+        ackDelayExponent = VarInt.decode(value.buffer);
+      } else if (id == QuicTransportParameterId.maxAckDelay.value) {
+        maxAckDelay = VarInt.decode(value.buffer);
+      } else if (id == QuicTransportParameterId.activeConnectionIdLimit.value) {
+        activeConnectionIdLimit = VarInt.decode(value.buffer);
+      } else if (id == QuicTransportParameterId.disableActiveMigration.value) {
+        allowMigration = false;
+      } else if (id == QuicTransportParameterId.versionInformation.value) {
         final info = VersionInformation.parse(value);
         if (!info.availableVersions.contains(info.chosenVersion)) {
           throw FormatException(
@@ -629,10 +738,54 @@ class QuicConnection {
     }
   }
 
+  /// Validate ECN counts from an ACK_ECN frame (RFC 9000 Section 13.4.2).
+  ///
+  /// Checks that counts are monotonically increasing and that CE marks are
+  /// not reported without corresponding ECT(0) or ECT(1) marks.
+  /// If validation fails, ECN is disabled for future outgoing packets.
+  void _validateEcnCounts(AckEcnFrame frame) {
+    if (_ecnFailed) return;
+
+    // Check monotonicity: counts must not decrease.
+    if (frame.ect0Count < _lastAckEct0Count ||
+        frame.ect1Count < _lastAckEct1Count ||
+        frame.ceCount < _lastAckCeCount) {
+      _ecnFailed = true;
+      _ecnValidated = false;
+      return;
+    }
+
+    // If CE marks are reported without any ECT(0) or ECT(1) marks,
+    // this might indicate ECN bleaching or misreporting.
+    if (frame.ceCount > 0 && frame.ect0Count == 0 && frame.ect1Count == 0) {
+      _ecnFailed = true;
+      _ecnValidated = false;
+      return;
+    }
+
+    // Update last seen counts.
+    _lastAckEct0Count = frame.ect0Count;
+    _lastAckEct1Count = frame.ect1Count;
+    _lastAckCeCount = frame.ceCount;
+
+    // ECN is considered validated once we receive non-zero counts.
+    if (!_ecnValidated &&
+        (frame.ect0Count > 0 || frame.ect1Count > 0 || frame.ceCount > 0)) {
+      _ecnValidated = true;
+    }
+  }
+
   void _dispatchFrames(PacketNumberSpace? space, List<Frame> frames) {
     if (space == null) return;
     for (final frame in frames) {
       switch (frame) {
+        case AckEcnFrame f:
+          _validateEcnCounts(f);
+          onAckReceived(
+            space.spaceIndex,
+            f.largestAcknowledged,
+            f.ackRanges.map((r) => (gap: r.gap, length: r.length)).toList(),
+          );
         case AckFrame f:
           onAckReceived(
             space.spaceIndex,

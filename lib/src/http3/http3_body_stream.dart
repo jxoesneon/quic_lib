@@ -13,7 +13,8 @@ class Http3BodyStream {
   final List<Uint8List> _bufferedChunks = [];
   bool _isComplete = false;
 
-  Http3BodyStream() : _chunkController = StreamController<Uint8List>.broadcast();
+  Http3BodyStream()
+      : _chunkController = StreamController<Uint8List>.broadcast();
 
   /// Yield each DATA frame's payload as it arrives.
   Stream<Uint8List> get chunks => _chunkController.stream;
@@ -48,7 +49,8 @@ class Http3BodyStream {
 
   Uint8List _concatenate() {
     if (_bufferedChunks.isEmpty) return Uint8List(0);
-    final totalLength = _bufferedChunks.fold<int>(0, (sum, c) => sum + c.length);
+    final totalLength =
+        _bufferedChunks.fold<int>(0, (sum, c) => sum + c.length);
     final result = Uint8List(totalLength);
     var offset = 0;
     for (final chunk in _bufferedChunks) {

@@ -1,19 +1,43 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/cipher_suites.dart';
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/initial_secrets.dart';
+import 'package:quic_lib/src/crypto/cipher_suites.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/initial_secrets.dart';
 
 /// QUIC Retry Integrity Tag computation and verification per RFC 9001 §5.8.
 class RetryIntegrityTag {
   /// QUIC v1 retry integrity key and nonce (RFC 9001 §5.8).
   static final List<int> retryKey = [
-    0xbe, 0x0c, 0x69, 0x0b, 0x9f, 0x66, 0x57, 0x5a,
-    0x1d, 0x76, 0x6b, 0x54, 0xe3, 0x68, 0xc8, 0x4e,
+    0xbe,
+    0x0c,
+    0x69,
+    0x0b,
+    0x9f,
+    0x66,
+    0x57,
+    0x5a,
+    0x1d,
+    0x76,
+    0x6b,
+    0x54,
+    0xe3,
+    0x68,
+    0xc8,
+    0x4e,
   ];
   static final List<int> retryNonce = [
-    0x46, 0x15, 0x99, 0xd3, 0x5d, 0x63, 0x2b, 0xf2,
-    0x23, 0x98, 0x25, 0xbb,
+    0x46,
+    0x15,
+    0x99,
+    0xd3,
+    0x5d,
+    0x63,
+    0x2b,
+    0xf2,
+    0x23,
+    0x98,
+    0x25,
+    0xbb,
   ];
 
   /// Build the pseudo-retry associated data.
@@ -26,7 +50,8 @@ class RetryIntegrityTag {
     );
     pseudoRetry[0] = originalDestinationConnectionId.length;
     pseudoRetry.setAll(1, originalDestinationConnectionId);
-    pseudoRetry.setAll(1 + originalDestinationConnectionId.length, retryPacketWithoutTag);
+    pseudoRetry.setAll(
+        1 + originalDestinationConnectionId.length, retryPacketWithoutTag);
     return pseudoRetry;
   }
 

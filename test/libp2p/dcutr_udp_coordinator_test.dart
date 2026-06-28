@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/io/udp_socket.dart';
-import 'package:dart_quic/src/libp2p/dcutr.dart';
-import 'package:dart_quic/src/libp2p/dcutr_state_machine.dart';
-import 'package:dart_quic/src/libp2p/dcutr_udp_coordinator.dart';
+import 'package:quic_lib/src/io/udp_socket.dart';
+import 'package:quic_lib/src/libp2p/dcutr.dart';
+import 'package:quic_lib/src/libp2p/dcutr_state_machine.dart';
+import 'package:quic_lib/src/libp2p/dcutr_udp_coordinator.dart';
 import 'package:test/test.dart';
 
 void main() {

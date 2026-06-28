@@ -1,7 +1,7 @@
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
-import 'package:dart_quic/src/crypto/initial_secrets.dart';
-import 'package:dart_quic/src/crypto/packet/key_update.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/initial_secrets.dart';
+import 'package:quic_lib/src/crypto/packet/key_update.dart';
 import 'package:test/test.dart';
 
 void main() {

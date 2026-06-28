@@ -1,19 +1,19 @@
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:dart_quic/src/connection/quic_connection.dart';
-import 'package:dart_quic/src/connection/connection_state_machine.dart';
-import 'package:dart_quic/src/connection/connection_id_manager.dart';
-import 'package:dart_quic/src/connection/migration_helper.dart';
-import 'package:dart_quic/src/streams/stream_id.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/recovery/rtt_estimator.dart';
-import 'package:dart_quic/src/recovery/loss_detector.dart';
-import 'package:dart_quic/src/recovery/pto_scheduler.dart';
-import 'package:dart_quic/src/recovery/congestion_controller.dart';
-import 'package:dart_quic/src/wire/frame.dart';
-import 'package:dart_quic/src/wire/packet_header.dart';
-import 'package:dart_quic/src/wire/packet_builder.dart';
+import 'package:quic_lib/src/connection/quic_connection.dart';
+import 'package:quic_lib/src/connection/connection_state_machine.dart';
+import 'package:quic_lib/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/connection/migration_helper.dart';
+import 'package:quic_lib/src/streams/stream_id.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/recovery/rtt_estimator.dart';
+import 'package:quic_lib/src/recovery/loss_detector.dart';
+import 'package:quic_lib/src/recovery/pto_scheduler.dart';
+import 'package:quic_lib/src/recovery/congestion_controller.dart';
+import 'package:quic_lib/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/packet_header.dart';
+import 'package:quic_lib/src/wire/packet_builder.dart';
 
 void main() {
   group('MigrationHelper integration', () {
@@ -62,11 +62,10 @@ void main() {
       expect(conn.getPendingChallenge()!.data.length, equals(8));
     });
 
-    test(
-        'processIncomingDatagram with PATH_RESPONSE validates the path',
-        () {
+    test('processIncomingDatagram with PATH_RESPONSE validates the path', () {
       final conn = _createConnection();
-      final challenge = conn.migrationHelper.generateChallenge(currentTimeUs: 0);
+      final challenge =
+          conn.migrationHelper.generateChallenge(currentTimeUs: 0);
       final responsePacket = _buildPacket([
         PathResponseFrame(data: challenge.data),
       ]);
@@ -78,7 +77,8 @@ void main() {
 
     test('isPathValidated returns true after response', () {
       final conn = _createConnection();
-      final challenge = conn.migrationHelper.generateChallenge(currentTimeUs: 0);
+      final challenge =
+          conn.migrationHelper.generateChallenge(currentTimeUs: 0);
       final responsePacket = _buildPacket([
         PathResponseFrame(data: challenge.data),
       ]);
@@ -92,7 +92,8 @@ void main() {
       final sm = ConnectionStateMachine();
       sm.transitionTo(ConnectionState.handshaking);
       final conn = _createConnection(stateMachine: sm);
-      final challenge = conn.migrationHelper.generateChallenge(currentTimeUs: 0);
+      final challenge =
+          conn.migrationHelper.generateChallenge(currentTimeUs: 0);
       final responsePacket = _buildPacket([
         PathResponseFrame(data: challenge.data),
       ]);
@@ -104,7 +105,8 @@ void main() {
 
     test('Expired challenges are cleaned up', () {
       final conn = _createConnection();
-      final challenge = conn.migrationHelper.generateChallenge(currentTimeUs: 0);
+      final challenge =
+          conn.migrationHelper.generateChallenge(currentTimeUs: 0);
 
       final expired = conn.migrationHelper.getExpiredChallenges(
         10000,

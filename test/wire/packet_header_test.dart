@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 import 'package:test/test.dart';
-import 'package:dart_quic/src/wire/packet_header.dart';
+import 'package:quic_lib/src/wire/packet_header.dart';
 
 void main() {
   group('LongHeader', () {
@@ -15,10 +15,13 @@ void main() {
         token: [0x99],
       );
       final bytes = header.serialize();
-      final parsed = PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 3) as LongHeader;
+      final parsed =
+          PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 3)
+              as LongHeader;
       expect(parsed.version, equals(header.version));
       expect(parsed.packetType, equals(header.packetType));
-      expect(parsed.destinationConnectionId, equals(header.destinationConnectionId));
+      expect(parsed.destinationConnectionId,
+          equals(header.destinationConnectionId));
       expect(parsed.sourceConnectionId, equals(header.sourceConnectionId));
       expect(parsed.token, equals(header.token));
     });
@@ -33,7 +36,9 @@ void main() {
         payload: [0xCC],
       );
       final bytes = header.serialize();
-      final parsed = PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 1) as LongHeader;
+      final parsed =
+          PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 1)
+              as LongHeader;
       expect(parsed.version, equals(header.version));
       expect(parsed.packetType, equals(header.packetType));
     });
@@ -47,7 +52,9 @@ void main() {
         payload: [0xDE, 0xAD, 0xBE, 0xEF],
       );
       final bytes = header.serialize();
-      final parsed = PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 1) as LongHeader;
+      final parsed =
+          PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 1)
+              as LongHeader;
       expect(parsed.packetType, equals(LongHeader.typeHandshake));
     });
 
@@ -60,7 +67,9 @@ void main() {
         payload: [0xEE, 0xFF],
       );
       final bytes = header.serialize();
-      final parsed = PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 1) as LongHeader;
+      final parsed =
+          PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 1)
+              as LongHeader;
       expect(parsed.packetType, equals(LongHeader.typeRetry));
       expect(parsed.payload, equals(header.payload));
     });
@@ -102,8 +111,11 @@ void main() {
         payload: [0xFF],
       );
       final bytes = header.serialize();
-      final parsed = PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 4) as ShortHeader;
-      expect(parsed.destinationConnectionId, equals(header.destinationConnectionId));
+      final parsed =
+          PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 4)
+              as ShortHeader;
+      expect(parsed.destinationConnectionId,
+          equals(header.destinationConnectionId));
       expect(parsed.packetNumber, equals(header.packetNumber));
       expect(parsed.spinBit, equals(header.spinBit));
       expect(parsed.keyPhase, equals(header.keyPhase));
@@ -118,7 +130,8 @@ void main() {
         payload: const [],
       );
       final bytes = header.serialize();
-      expect(bytes.length, equals(1 + 1 + 1)); // first byte + 1-byte DCID + 1-byte PN
+      expect(bytes.length,
+          equals(1 + 1 + 1)); // first byte + 1-byte DCID + 1-byte PN
     });
 
     test('invalid PN length throws', () {
@@ -147,9 +160,11 @@ void main() {
         supportedVersions: [0x00000001, 0x00000002],
       );
       final bytes = packet.serialize();
-      final parsed = PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 1)
-          as VersionNegotiationPacket;
-      expect(parsed.destinationConnectionId, equals(packet.destinationConnectionId));
+      final parsed =
+          PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 1)
+              as VersionNegotiationPacket;
+      expect(parsed.destinationConnectionId,
+          equals(packet.destinationConnectionId));
       expect(parsed.sourceConnectionId, equals(packet.sourceConnectionId));
       expect(parsed.supportedVersions, equals(packet.supportedVersions));
     });
@@ -167,14 +182,16 @@ void main() {
   group('PacketHeaderParser', () {
     test('empty packet throws', () {
       expect(
-        () => PacketHeaderParser.parse(Uint8List(0), destinationConnectionIdLength: 0),
+        () => PacketHeaderParser.parse(Uint8List(0),
+            destinationConnectionIdLength: 0),
         throwsArgumentError,
       );
     });
 
     test('too-short packet throws', () {
       expect(
-        () => PacketHeaderParser.parse(Uint8List.fromList([0x80]), destinationConnectionIdLength: 0),
+        () => PacketHeaderParser.parse(Uint8List.fromList([0x80]),
+            destinationConnectionIdLength: 0),
         throwsArgumentError,
       );
     });

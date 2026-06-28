@@ -63,8 +63,7 @@ class CertificateVerify {
     var offset = 0;
 
     // algorithm (uint16)
-    final signatureScheme =
-        (bytes[offset] << 8) | bytes[offset + 1];
+    final signatureScheme = (bytes[offset] << 8) | bytes[offset + 1];
     offset += 2;
 
     // signature length (uint16)
@@ -79,8 +78,7 @@ class CertificateVerify {
     }
 
     // signature bytes
-    final signature =
-        bytes.sublist(offset, offset + sigLength).toList();
+    final signature = bytes.sublist(offset, offset + sigLength).toList();
 
     return CertificateVerify(
       signatureScheme: signatureScheme,

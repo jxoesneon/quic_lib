@@ -1,9 +1,9 @@
-import 'package:dart_quic/src/http3/data_frame.dart';
-import 'package:dart_quic/src/http3/frame_types.dart';
-import 'package:dart_quic/src/http3/headers_frame.dart';
-import 'package:dart_quic/src/http3/http3_connection.dart';
-import 'package:dart_quic/src/http3/http3_request.dart';
-import 'package:dart_quic/src/http3/settings_frame.dart';
+import 'package:quic_lib/src/http3/data_frame.dart';
+import 'package:quic_lib/src/http3/frame_types.dart';
+import 'package:quic_lib/src/http3/headers_frame.dart';
+import 'package:quic_lib/src/http3/http3_connection.dart';
+import 'package:quic_lib/src/http3/http3_request.dart';
+import 'package:quic_lib/src/http3/settings_frame.dart';
 import 'package:test/test.dart';
 
 class FakeQuicConnection {

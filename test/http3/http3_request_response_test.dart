@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/http3/frame_types.dart';
-import 'package:dart_quic/src/http3/headers_frame.dart';
-import 'package:dart_quic/src/http3/http3_connection.dart';
-import 'package:dart_quic/src/http3/http3_request.dart';
-import 'package:dart_quic/src/http3/http3_response.dart';
+import 'package:quic_lib/src/http3/frame_types.dart';
+import 'package:quic_lib/src/http3/headers_frame.dart';
+import 'package:quic_lib/src/http3/http3_connection.dart';
+import 'package:quic_lib/src/http3/http3_request.dart';
+import 'package:quic_lib/src/http3/http3_response.dart';
 import 'package:test/test.dart';
 
 class FakeQuicConnection {
@@ -34,7 +34,8 @@ void main() {
     });
 
     test('encode and decode a POST request with body', () {
-      final body = Uint8List.fromList([0x48, 0x65, 0x6c, 0x6c, 0x6f]); // "Hello"
+      final body =
+          Uint8List.fromList([0x48, 0x65, 0x6c, 0x6c, 0x6f]); // "Hello"
       final request = Http3Request(
         method: 'POST',
         path: '/upload',
@@ -82,7 +83,8 @@ void main() {
       expect(streamId, equals(0));
     });
 
-    test('getResponse returns decoded response after onStreamFrame with HEADERS',
+    test(
+        'getResponse returns decoded response after onStreamFrame with HEADERS',
         () {
       final conn = Http3Connection(quicConnection: Object());
       final response = Http3Response(

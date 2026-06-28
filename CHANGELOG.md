@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.1] — 2026-06-28
+
+### Documentation
+- Comprehensive API documentation hardening for pub.dev
+- Fixed all 20 dart doc unresolved-reference warnings
+- Documented 16 previously undocumented public types with RFC-referenced docs
+- Added rich library-level docs with usage examples to all 5 barrel files
+- Enhanced README with TOC, feature matrix, platform support, and 4 complete examples
+- Added GitHub Actions automated publishing workflow
+
 ## [1.2.0] — 2026-06-27
 
 ### Security (Security Hardening)

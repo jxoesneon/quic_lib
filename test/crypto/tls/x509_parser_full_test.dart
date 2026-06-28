@@ -307,6 +307,11 @@ class _RecordingBackend implements CryptoBackend {
       [];
 
   @override
+  Future<List<int>> ecdsaP256Sign(
+          SecretKey privateKey, List<int> message) async =>
+      [];
+
+  @override
   Future<KeyPair> ecdsaP256GenerateKeyPair() async =>
       _SimpleKeyPair(_SimpleSecretKey([]), _SimplePublicKey([]));
 }

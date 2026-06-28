@@ -11,8 +11,11 @@ enum Http3FrameType {
   settings(0x04),
   pushPromise(0x05),
   goaway(0x07),
+  origin(0x0c),
   maxPushId(0x0d),
-  reserved(0x21); // GREASE
+  reserved(0x21), // GREASE
+  priorityUpdate(0xF0700),
+  priorityUpdatePush(0xF0701);
 
   final int value;
   const Http3FrameType(this.value);

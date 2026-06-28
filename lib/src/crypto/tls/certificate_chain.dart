@@ -1,6 +1,9 @@
 import 'dart:typed_data';
 
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
 import 'package:quic_lib/src/crypto/tls/x509_parser.dart';
+import 'package:quic_lib/src/libp2p/libp2p_tls_extension.dart';
+import 'package:quic_lib/src/libp2p/peer_id.dart';
 
 /// Parsed certificate metadata used for chain validation.
 class CertificateInfo {
@@ -78,4 +81,53 @@ class CertificateChain {
     }
     return true;
   }
+
+  /// Extracts the libp2p TLS extension from the end-entity certificate.
+  ///
+  /// Returns `null` if the extension is not present or cannot be parsed.
+  Libp2pExtension? extractLibp2pExtension() {
+    if (certs.isEmpty) return null;
+    final x509 = parseX509(certs.first.rawBytes);
+    return parseLibp2pExtension(x509);
+  }
+
+  /// Verifies the libp2p signature in the end-entity certificate and checks
+  /// that the derived [PeerId] matches [expectedPeerId].
+  ///
+  /// This method:
+  /// 1. Extracts the [SignedKey] from the libp2p TLS extension.
+  /// 2. Verifies the [SignedKey.signature] against [SignedKey.publicKey]
+  ///    using the [backend] (Ed25519 verification).
+  /// 3. Derives the [PeerId] from the public key.
+  /// 4. Compares the derived [PeerId] with [expectedPeerId].
+  ///
+  /// Returns `true` only if all steps succeed.
+  Future<bool> verifyLibp2pSignature(
+    PeerId expectedPeerId,
+    CryptoBackend backend,
+  ) async {
+    final ext = extractLibp2pExtension();
+    if (ext == null) return false;
+
+    final signedKey = ext.signedKey;
+
+    // Verify the signature using the public key in the extension.
+    final pubKey = _SimplePublicKey(signedKey.publicKey);
+    final signatureValid = await backend.ed25519Verify(
+      pubKey,
+      signedKey.publicKey,
+      signedKey.signature,
+    );
+    if (!signatureValid) return false;
+
+    // Derive PeerId from the public key.
+    final derivedPeerId = await PeerId.fromPublicKey(signedKey.publicKey);
+    return derivedPeerId == expectedPeerId;
+  }
+}
+
+class _SimplePublicKey implements PublicKey {
+  @override
+  final List<int> bytes;
+  _SimplePublicKey(this.bytes);
 }

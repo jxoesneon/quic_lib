@@ -9,8 +9,11 @@ import 'package:quic_lib/src/http3/extended_connect_request.dart';
 import 'package:quic_lib/src/http3/http3_connection.dart';
 import 'package:quic_lib/src/http3/http3_request.dart';
 import 'package:quic_lib/src/http3/http3_response.dart';
+import 'package:quic_lib/src/http3/origin_frame.dart';
+import 'package:quic_lib/src/http3/priority_update_frame.dart';
 import 'package:quic_lib/src/http3/push_promise_frame.dart';
 import 'package:quic_lib/src/http3/settings_frame.dart';
+import 'package:quic_lib/src/streams/round_robin_scheduler.dart';
 import 'package:test/test.dart';
 
 class FakeQuicConnection {
@@ -384,6 +387,69 @@ void main() {
       conn.onStreamFrame(
           2, Http3Frame(type: Http3FrameType.data, payload: [0x01]));
       expect(conn.lastAcceptedStreamId, equals(8));
+    });
+
+    test('onOriginFrameReceived stores origins', () {
+      final conn = Http3Connection(quicConnection: Object());
+      final originFrame = OriginFrame(
+        origins: ['https://example.com', 'https://example.org'],
+      );
+      conn.onOriginFrameReceived(originFrame);
+      expect(
+        conn.alternativeOrigins,
+        equals(['https://example.com', 'https://example.org']),
+      );
+    });
+
+    test('onStreamFrame with ORIGIN stores origins', () {
+      final conn = Http3Connection(quicConnection: Object());
+      final originFrame = OriginFrame(origins: ['https://foo.bar']);
+      conn.onStreamFrame(0, originFrame.toFrame());
+      expect(conn.alternativeOrigins, equals(['https://foo.bar']));
+    });
+
+    test('sendPriorityUpdate stages frame and packet', () {
+      final conn = Http3Connection(quicConnection: Object());
+      expect(conn.pendingPriorityUpdates, isEmpty);
+      conn.sendPriorityUpdate(42, 'u=3, i');
+      expect(conn.pendingPriorityUpdates, hasLength(1));
+      expect(conn.pendingPriorityUpdates.first.streamId, equals(42));
+      expect(conn.pendingPriorityUpdates.first.priorityFieldValue, equals('u=3, i'));
+      expect(conn.pendingQuicPackets, isNotEmpty);
+    });
+
+    test('onStreamFrame with PRIORITY_UPDATE stores update', () {
+      final conn = Http3Connection(quicConnection: Object());
+      final priorityFrame = PriorityUpdateFrame(
+        streamId: 7,
+        priorityFieldValue: 'u=0',
+      );
+      conn.onStreamFrame(0, priorityFrame.toFrame());
+      expect(conn.pendingPriorityUpdates, hasLength(1));
+      expect(conn.pendingPriorityUpdates.first.streamId, equals(7));
+    });
+
+    test('onStreamFrame with PRIORITY_UPDATE_PUSH stores update', () {
+      final conn = Http3Connection(quicConnection: Object());
+      final pushFrame = PriorityUpdatePushFrame(
+        streamId: 3,
+        priorityFieldValue: 'u=6',
+      );
+      conn.onStreamFrame(0, pushFrame.toFrame());
+      expect(conn.pendingPriorityUpdates, hasLength(1));
+      expect(conn.pendingPriorityUpdates.first.streamId, equals(3));
+      expect(
+        conn.pendingPriorityUpdates.first.priorityFieldValue,
+        equals('u=6'),
+      );
+    });
+
+    test('streamScheduler getter and setter', () {
+      final conn = Http3Connection(quicConnection: Object());
+      expect(conn.streamScheduler, isNull);
+      final scheduler = RoundRobinScheduler();
+      conn.streamScheduler = scheduler;
+      expect(conn.streamScheduler, same(scheduler));
     });
   });
 }

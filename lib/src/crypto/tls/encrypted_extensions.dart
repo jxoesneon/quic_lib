@@ -48,6 +48,23 @@ class EncryptedExtensions {
     return buffer.buffer.asUint8List();
   }
 
+  /// The negotiated ALPN protocol, if present.
+  ///
+  /// Parses the ALPN extension (type `0x0010`) from the server's
+  /// EncryptedExtensions. Returns `null` if the extension is absent or
+  /// malformed.
+  String? get alpnProtocol {
+    for (final ext in extensions) {
+      if (ext.type == 0x0010 && ext.data.isNotEmpty) {
+        final nameLen = ext.data[0];
+        if (1 + nameLen <= ext.data.length) {
+          return String.fromCharCodes(ext.data.sublist(1, 1 + nameLen));
+        }
+      }
+    }
+    return null;
+  }
+
   /// Parse from bytes.
   static EncryptedExtensions parse(Uint8List bytes) {
     if (bytes.length < 2) {

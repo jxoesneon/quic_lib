@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:quic_lib/src/crypto/cipher_suites.dart';
 import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/libp2p/libp2p_tls_extension.dart';
 
 /// A parsed X.509 certificate with all essential fields extracted.
 ///
@@ -36,6 +37,10 @@ class X509Certificate {
   /// DER-encoded SubjectPublicKeyInfo structure.
   final List<int> subjectPublicKeyInfo;
 
+  /// Parsed X.509 extensions as a map from OID dotted string to the raw
+  /// extension value bytes (the OCTET STRING contents).
+  final Map<String, List<int>> extensions;
+
   X509Certificate({
     required this.tbsCertificate,
     required this.signatureAlgorithm,
@@ -45,6 +50,7 @@ class X509Certificate {
     required this.notBefore,
     required this.notAfter,
     required this.subjectPublicKeyInfo,
+    this.extensions = const {},
   });
 }
 
@@ -142,16 +148,15 @@ List<_Asn1Node> _parseChildren(Uint8List bytes, int start, int end) {
 // OID -> algorithm name mapping
 // ---------------------------------------------------------------------------
 
-String _oidToAlgorithm(List<int> oidBytes) {
-  // Parse OID bytes to dotted string.
-  if (oidBytes.isEmpty) return 'unknown';
+String _oidBytesToDotted(List<int> oidBytes) {
+  if (oidBytes.isEmpty) return '';
   final parts = <String>[];
   parts.add('${oidBytes[0] ~/ 40}.${oidBytes[0] % 40}');
   var i = 1;
   while (i < oidBytes.length) {
     var value = 0;
     while (true) {
-      if (i >= oidBytes.length) return 'unknown';
+      if (i >= oidBytes.length) return parts.join('.');
       final b = oidBytes[i];
       i++;
       value = (value << 7) | (b & 0x7F);
@@ -159,7 +164,11 @@ String _oidToAlgorithm(List<int> oidBytes) {
     }
     parts.add(value.toString());
   }
-  final oid = parts.join('.');
+  return parts.join('.');
+}
+
+String _oidToAlgorithm(List<int> oidBytes) {
+  final oid = _oidBytesToDotted(oidBytes);
 
   // Common X.509 signature algorithm OIDs.
   switch (oid) {
@@ -326,6 +335,43 @@ X509Certificate parseX509(List<int> derBytes) {
     tbsIdx++;
   }
 
+  // Extensions [3] EXPLICIT
+  final extensions = <String, List<int>>{};
+  if (tbsIdx < tbsChildren.length && tbsChildren[tbsIdx].tag == 0xA3) {
+    final extWrapperNode = tbsChildren[tbsIdx];
+    final extWrapperChildren =
+        _parseChildren(bytes, extWrapperNode.valueStart, extWrapperNode.valueEnd);
+    // The [3] wrapper contains the Extensions SEQUENCE.
+    for (final extensionsSeqNode in extWrapperChildren) {
+      if (extensionsSeqNode.tag != 0x30) continue;
+      final extensionList =
+          _parseChildren(bytes, extensionsSeqNode.valueStart, extensionsSeqNode.valueEnd);
+      // Each child of the Extensions SEQUENCE is an individual Extension SEQUENCE.
+      for (final extSeqNode in extensionList) {
+        if (extSeqNode.tag != 0x30) continue;
+        final extChildren =
+            _parseChildren(bytes, extSeqNode.valueStart, extSeqNode.valueEnd);
+        if (extChildren.isEmpty) continue;
+        // First child must be OID
+        final oidNode = extChildren[0];
+        if (oidNode.tag != 0x06) continue;
+        final oidBytes = bytes.sublist(oidNode.valueStart, oidNode.valueEnd);
+        final oid = _oidBytesToDotted(oidBytes);
+        // Find the OCTET STRING value (skip optional critical BOOLEAN)
+        List<int> extValue = const <int>[];
+        for (var i = 1; i < extChildren.length; i++) {
+          final child = extChildren[i];
+          if (child.tag == 0x04) {
+            extValue = bytes.sublist(child.valueStart, child.valueEnd);
+            break;
+          }
+        }
+        extensions[oid] = Uint8List.fromList(extValue);
+      }
+    }
+    tbsIdx++;
+  }
+
   // 2. Signature AlgorithmIdentifier
   String sigAlg = 'unknown';
   final sigAlgNode = certChildren[1];
@@ -359,7 +405,22 @@ X509Certificate parseX509(List<int> derBytes) {
     notBefore: notBefore,
     notAfter: notAfter,
     subjectPublicKeyInfo: Uint8List.fromList(spkiBytes),
+    extensions: extensions,
   );
+}
+
+/// Looks for the libp2p TLS extension (OID `1.3.6.1.4.1.53594.1.1`) in the
+/// certificate's extension map and parses the [SignedKey] protobuf.
+///
+/// Returns `null` if the extension is not present or cannot be parsed.
+Libp2pExtension? parseLibp2pExtension(X509Certificate cert) {
+  final raw = cert.extensions[Libp2pExtension.oid];
+  if (raw == null || raw.isEmpty) return null;
+  try {
+    return Libp2pExtension.parse(Uint8List.fromList(raw));
+  } catch (_) {
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------

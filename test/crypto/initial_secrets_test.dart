@@ -157,6 +157,14 @@ class _TestCryptoBackend implements CryptoBackend {
   }
 
   @override
+  Future<List<int>> ecdsaP256Sign(
+    SecretKey privateKey,
+    List<int> message,
+  ) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<KeyPair> ecdsaP256GenerateKeyPair() {
     throw UnimplementedError();
   }

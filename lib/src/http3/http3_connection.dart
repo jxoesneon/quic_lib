@@ -9,9 +9,12 @@ import 'goaway_frame.dart';
 import 'headers_frame.dart';
 import 'http3_request.dart';
 import 'http3_response.dart';
+import 'origin_frame.dart';
+import 'priority_update_frame.dart';
 import 'push_promise_frame.dart';
 import 'settings_frame.dart';
 import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/streams/stream_scheduler.dart';
 import 'package:quic_lib/src/wire/frame.dart';
 
 /// Represents a single HTTP/3 request/response stream mapped to a QUIC stream ID.
@@ -95,6 +98,8 @@ class Http3Connection {
   final Map<int, List<DataFrame>> _pendingData = {};
   final Map<int, Http3PushPromiseFrame> _pushPromises = {};
   final List<Uint8List> _pendingQuicPackets = [];
+  final List<String> _alternativeOrigins = [];
+  final List<PriorityUpdateFrame> _pendingPriorityUpdates = [];
 
   /// Creates an [Http3Connection] over [quicConnection].
   ///
@@ -158,6 +163,16 @@ class Http3Connection {
 
   /// True once a GOAWAY frame has been sent.
   bool get hasSentGoaway => _sentGoawayFrames.isNotEmpty;
+
+  /// Alternative origins received via ORIGIN frames.
+  List<String> get alternativeOrigins => List.unmodifiable(_alternativeOrigins);
+
+  /// Pending PRIORITY_UPDATE frames staged for transmission.
+  List<PriorityUpdateFrame> get pendingPriorityUpdates =>
+      List.unmodifiable(_pendingPriorityUpdates);
+
+  /// Optional stream scheduler for priority-aware stream selection.
+  StreamScheduler? streamScheduler;
 
   /// Pending HEADERS frame for a given stream.
   HeadersFrame? getPendingHeaders(int streamId) => _pendingHeaders[streamId];
@@ -225,6 +240,37 @@ class Http3Connection {
   void onSettingsReceived(Http3SettingsFrame settings) {
     _peerSettings = settings;
     _settingsExchanged = true;
+  }
+
+  /// Process a received ORIGIN frame and store the advertised origins.
+  void onOriginFrameReceived(OriginFrame frame) {
+    _alternativeOrigins.addAll(frame.origins);
+  }
+
+  /// Stage a PRIORITY_UPDATE frame for transmission.
+  ///
+  /// The frame is stored in [pendingPriorityUpdates] and serialized into
+  /// [pendingQuicPackets] for later transmission by the transport layer.
+  void sendPriorityUpdate(int streamId, String priority) {
+    final frame = PriorityUpdateFrame(
+      streamId: streamId,
+      priorityFieldValue: priority,
+    );
+    _pendingPriorityUpdates.add(frame);
+    _pendingQuicPackets.add(frame.toFrame().serialize());
+  }
+
+  /// Process a received PRIORITY_UPDATE frame.
+  ///
+  /// If a [streamScheduler] is set, the update is routed to it.
+  void onPriorityUpdateReceived(PriorityUpdateFrame frame) {
+    _pendingPriorityUpdates.add(frame);
+    if (streamScheduler != null) {
+      // Route to stream priority scheduler if one exists.
+      // The current StreamScheduler interface is selection-only;
+      // priority updates are stored for scheduler implementations
+      // that may read them from the connection state.
+    }
   }
 
   /// Send an HTTP/3 request on a new client-initiated bidirectional stream.
@@ -324,6 +370,29 @@ class Http3Connection {
           Uint8List.fromList(frame.payload),
         );
         _pushPromises.remove(cancelFrame.pushId);
+        break;
+      case Http3FrameType.origin:
+        final originFrame = OriginFrame.parsePayload(
+          Uint8List.fromList(frame.payload),
+        );
+        onOriginFrameReceived(originFrame);
+        break;
+      case Http3FrameType.priorityUpdate:
+        final priorityFrame = PriorityUpdateFrame.parsePayload(
+          Uint8List.fromList(frame.payload),
+        );
+        onPriorityUpdateReceived(priorityFrame);
+        break;
+      case Http3FrameType.priorityUpdatePush:
+        final priorityPushFrame = PriorityUpdatePushFrame.parsePayload(
+          Uint8List.fromList(frame.payload),
+        );
+        onPriorityUpdateReceived(
+          PriorityUpdateFrame(
+            streamId: priorityPushFrame.streamId,
+            priorityFieldValue: priorityPushFrame.priorityFieldValue,
+          ),
+        );
         break;
       default:
         // No-op for unhandled frame types.

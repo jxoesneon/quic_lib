@@ -426,6 +426,26 @@ class DefaultCryptoBackend implements CryptoBackend {
   }
 
   @override
+  Future<List<int>> ecdsaP256Sign(SecretKey privateKey, List<int> message) async {
+    final domainParams = pc.ECCurve_prime256v1();
+
+    final d = _decodeBigInt(privateKey.extractSync());
+    final priv = pc.ECPrivateKey(d, domainParams);
+
+    final signer = pc.ECDSASigner(pc.SHA256Digest(), pc.HMac(pc.SHA256Digest(), 64));
+    final seed = Uint8List.fromList(await randomBytes(32));
+    final random = pc.FortunaRandom();
+    random.seed(pc.KeyParameter(seed));
+    signer.init(true, pc.ParametersWithRandom(pc.PrivateKeyParameter(priv), random));
+
+    final sig = signer.generateSignature(Uint8List.fromList(message)) as pc.ECSignature;
+
+    final rBytes = _encodeBigInt(sig.r, 32);
+    final sBytes = _encodeBigInt(sig.s, 32);
+    return Uint8List.fromList([...rBytes, ...sBytes]);
+  }
+
+  @override
   Future<bool> ecdsaP256Verify(
     PublicKey publicKey,
     List<int> message,

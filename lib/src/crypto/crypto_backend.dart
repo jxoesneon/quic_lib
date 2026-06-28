@@ -170,6 +170,9 @@ abstract class CryptoBackend {
   /// Generates a new ECDSA P-256 key pair.
   Future<KeyPair> ecdsaP256GenerateKeyPair();
 
+  /// Signs [message] with the ECDSA P-256 private key using SHA-256.
+  Future<List<int>> ecdsaP256Sign(SecretKey privateKey, List<int> message);
+
   /// Verifies an ECDSA P-256 signature using SHA-256.
   Future<bool> ecdsaP256Verify(
     PublicKey publicKey,

@@ -1,3 +1,5 @@
+import 'package:cryptography/cryptography.dart';
+
 /// A libp2p PeerId represented as the raw multihash bytes of a public key.
 ///
 /// In the libp2p network stack, a [PeerId] uniquely identifies a peer.
@@ -34,6 +36,16 @@ class PeerId {
   /// The returned instance stores an unmodifiable copy of [bytes].
   factory PeerId.fromBytes(List<int> bytes) {
     return PeerId._(List<int>.unmodifiable(List<int>.from(bytes)));
+  }
+
+  /// Derives a [PeerId] from raw public key bytes using SHA-256 multihash.
+  ///
+  /// Computes the SHA-256 digest of [publicKeyBytes] and wraps it in a
+  /// multihash prefix (`0x12 0x20` for sha2-256, 32 bytes).
+  static Future<PeerId> fromPublicKey(List<int> publicKeyBytes) async {
+    final hash = await Sha256().hash(publicKeyBytes);
+    final multihash = <int>[0x12, 0x20, ...hash.bytes];
+    return PeerId.fromBytes(multihash);
   }
 
   /// Creates a [PeerId] from a Base58-encoded string.

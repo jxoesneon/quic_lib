@@ -26,3 +26,7 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr, MultiaddrComponent;
 export 'src/libp2p/dcutr_state_machine.dart' show DCUtRStateMachine;
 export 'src/libp2p/libp2p_quic_transport.dart'
     show Libp2pQuicTransport, Libp2pQuicConnection;
+export 'src/libp2p/libp2p_tls_extension.dart'
+    show SignedKey, Libp2pExtension;
+export 'src/libp2p/libp2p_certificate_generator.dart'
+    show Libp2pCertificateGenerator;

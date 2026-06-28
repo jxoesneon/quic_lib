@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import '../crypto/crypto_backend.dart';
+import '../crypto/tls/x509_parser.dart';
 import '../io/platform_address.dart';
 import '../io/quic_endpoint.dart';
 import 'multiaddr.dart';
+import 'peer_id.dart';
 
 /// A libp2p transport backed by QUIC.
 ///
@@ -49,10 +52,17 @@ class Libp2pQuicTransport {
   final _listeners = <Multiaddr, StreamController<Libp2pQuicConnection>>{};
   bool _closed = false;
 
+  /// ALPN protocols advertised during the TLS handshake.
+  ///
+  /// Defaults to `['libp2p']` per the libp2p QUIC specification.
+  final List<String> alpnProtocols;
+
   /// Whether the transport has been closed.
   ///
   /// Once true, [listen] and [dial] will throw [StateError].
   bool get isClosed => _closed;
+
+  Libp2pQuicTransport({this.alpnProtocols = const ['libp2p']});
 
   /// Extract an [InternetAddress] and port from [multiaddr].
   static (InternetAddress? address, int? port) _parseMultiaddr(
@@ -176,17 +186,58 @@ class Libp2pQuicTransport {
 class Libp2pQuicConnection {
   final Object _quicConnection;
 
+  /// The authenticated libp2p [PeerId] of the remote peer.
+  ///
+  /// This is set after the TLS handshake completes and the peer's
+  /// certificate has been verified to contain the libp2p extension.
+  PeerId? peerId;
+
   /// Creates a libp2p wrapper around [quicConnection].
   ///
   /// [quicConnection] is expected to be a [QuicConnection] or an object
   /// that implements `openUnidirectionalStream()` and `close()`.
-  Libp2pQuicConnection(this._quicConnection);
+  Libp2pQuicConnection(this._quicConnection, {this.peerId});
 
   /// The underlying QUIC connection object.
   ///
   /// In typical usage this is a [QuicConnection]. Cast to access
   /// QUIC-specific methods such as `openBidirectionalStream()`.
   Object get quicConnection => _quicConnection;
+
+  /// Verifies that [certBytes] contains the libp2p TLS extension, derives
+  /// the remote [PeerId] from the embedded public key, and assigns it to
+  /// [peerId].
+  ///
+  /// Returns `true` if the certificate is valid and the derived peer
+  /// identity matches [expectedPeerId] (when provided).
+  Future<bool> verifyPeerCertificate(
+    List<int> certBytes, {
+    PeerId? expectedPeerId,
+    required CryptoBackend backend,
+  }) async {
+    final x509 = parseX509(certBytes);
+    final ext = parseLibp2pExtension(x509);
+    if (ext == null) return false;
+
+    final signedKey = ext.signedKey;
+
+    // Verify the signature using the public key in the extension.
+    final pubKey = _SimplePublicKey(signedKey.publicKey);
+    final signatureValid = await backend.ed25519Verify(
+      pubKey,
+      signedKey.publicKey,
+      signedKey.signature,
+    );
+    if (!signatureValid) return false;
+
+    // Derive PeerId from the public key.
+    final derived = await PeerId.fromPublicKey(signedKey.publicKey);
+    if (expectedPeerId != null && derived != expectedPeerId) {
+      return false;
+    }
+    peerId = derived;
+    return true;
+  }
 
   /// Send [data] on a new unidirectional stream.
   ///
@@ -220,4 +271,10 @@ class Libp2pQuicConnection {
       // Ignore if the connection doesn't support close.
     }
   }
+}
+
+class _SimplePublicKey implements PublicKey {
+  @override
+  final List<int> bytes;
+  _SimplePublicKey(this.bytes);
 }

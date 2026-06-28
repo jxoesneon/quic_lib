@@ -23,14 +23,41 @@ class ClientHello {
   /// List of extensions.
   final List<TlsExtension> extensions;
 
+  /// ALPN protocol names to advertise (e.g. `['libp2p']`).
+  ///
+  /// When non-empty an ALPN extension (type `0x0010`) is automatically
+  /// appended to the serialized extension list.
+  final List<String> alpnProtocols;
+
   ClientHello({
     required this.random,
     required this.cipherSuites,
     required this.extensions,
+    this.alpnProtocols = const [],
     this.legacyVersion = 0x0303,
     this.legacySessionId = const [],
     this.legacyCompressionMethods = const [0x00],
   });
+
+  /// Builds the ALPN extension data for a ClientHello.
+  ///
+  /// Format: `uint16 list_length + (uint8 name_length + name_bytes)...`
+  static Uint8List _buildAlpnData(List<String> protocols) {
+    final builder = BytesBuilder();
+    var listLength = 0;
+    for (final p in protocols) {
+      final nameBytes = p.codeUnits;
+      listLength += 1 + nameBytes.length;
+    }
+    builder.addByte((listLength >> 8) & 0xFF);
+    builder.addByte(listLength & 0xFF);
+    for (final p in protocols) {
+      final nameBytes = p.codeUnits;
+      builder.addByte(nameBytes.length);
+      builder.add(nameBytes);
+    }
+    return Uint8List.fromList(builder.toBytes());
+  }
 
   /// Serializes the ClientHello to bytes in network (big-endian) order.
   Uint8List serialize() {
@@ -38,8 +65,18 @@ class ClientHello {
     final cipherSuitesLength = cipherSuites.length * 2;
     final compressionMethodsLength = legacyCompressionMethods.length;
 
+    // Merge manually-provided extensions with auto-generated ALPN.
+    final merged = List<TlsExtension>.from(extensions);
+    final hasAlpn = merged.any((e) => e.type == 0x0010);
+    if (alpnProtocols.isNotEmpty && !hasAlpn) {
+      merged.add(TlsExtension(
+        type: 0x0010,
+        data: _buildAlpnData(alpnProtocols),
+      ));
+    }
+
     var extensionsLength = 0;
-    for (final ext in extensions) {
+    for (final ext in merged) {
       extensionsLength += 4 + ext.data.length; // type (2) + length (2) + data
     }
 
@@ -102,7 +139,7 @@ class ClientHello {
     offset += 2;
 
     // extensions
-    for (final ext in extensions) {
+    for (final ext in merged) {
       buffer.setUint16(offset, ext.type, Endian.big);
       offset += 2;
       buffer.setUint16(offset, ext.data.length, Endian.big);

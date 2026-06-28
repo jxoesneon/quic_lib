@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/recovery/congestion_controller.dart';
+import 'package:quic_lib/src/recovery/congestion_controller.dart';
 
 void main() {
   group('CongestionController', () {

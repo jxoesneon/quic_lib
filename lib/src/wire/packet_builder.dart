@@ -71,7 +71,8 @@ class PacketBuilder {
     if (header.keyPhase) firstByte |= 0x04;
     builder.addByte(firstByte);
     builder.add(header.destinationConnectionId);
-    builder.add(PacketNumber.encode(header.packetNumber, header.packetNumberLength));
+    builder.add(
+        PacketNumber.encode(header.packetNumber, header.packetNumberLength));
     builder.add(frameBytes);
     return Uint8List.fromList(builder.toBytes());
   }

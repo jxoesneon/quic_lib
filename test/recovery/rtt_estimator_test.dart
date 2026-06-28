@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/recovery/rtt_estimator.dart';
+import 'package:quic_lib/src/recovery/rtt_estimator.dart';
 
 void main() {
   group('RttEstimator', () {

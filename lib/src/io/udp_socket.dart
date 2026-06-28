@@ -12,9 +12,8 @@ class UdpSocket {
 
   final RawDatagramSocket _socket;
   late final StreamSubscription<RawSocketEvent> _subscription;
-  final _incomingController =
-      StreamController<({Uint8List data, InternetAddress address, int port})>
-          .broadcast();
+  final _incomingController = StreamController<
+      ({Uint8List data, InternetAddress address, int port})>.broadcast();
 
   /// Per-source IP rate tracking: ip_string → List<timestamp_ms>.
   final Map<String, List<int>> _ipTimestamps = {};
@@ -43,7 +42,8 @@ class UdpSocket {
     final ipKey = address.address;
 
     // SECURITY: Evict oldest tracked IP if at capacity.
-    if (_ipTimestamps.length >= _maxTrackedIps && !_ipTimestamps.containsKey(ipKey)) {
+    if (_ipTimestamps.length >= _maxTrackedIps &&
+        !_ipTimestamps.containsKey(ipKey)) {
       _evictOldestIp();
     }
 
@@ -80,8 +80,8 @@ class UdpSocket {
   }
 
   /// Stream of incoming UDP datagrams.
-  Stream<({Uint8List data, InternetAddress address, int port})>
-      get incoming => _incomingController.stream;
+  Stream<({Uint8List data, InternetAddress address, int port})> get incoming =>
+      _incomingController.stream;
 
   /// Sends [data] to the specified [address] and [port].
   void send(Uint8List data, InternetAddress address, int port) {

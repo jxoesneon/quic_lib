@@ -1,15 +1,15 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/http3/cancel_push_frame.dart';
-import 'package:dart_quic/src/http3/data_frame.dart';
-import 'package:dart_quic/src/http3/goaway_frame.dart';
-import 'package:dart_quic/src/http3/headers_frame.dart';
-import 'package:dart_quic/src/http3/max_push_id_frame.dart';
-import 'package:dart_quic/src/http3/push_promise_frame.dart';
-import 'package:dart_quic/src/http3/settings_frame.dart';
-import 'package:dart_quic/src/http3/frame_types.dart';
-import 'package:dart_quic/src/webtransport/capsule_types.dart';
-import 'package:dart_quic/src/webtransport/webtransport_session.dart';
+import 'package:quic_lib/src/http3/cancel_push_frame.dart';
+import 'package:quic_lib/src/http3/data_frame.dart';
+import 'package:quic_lib/src/http3/goaway_frame.dart';
+import 'package:quic_lib/src/http3/headers_frame.dart';
+import 'package:quic_lib/src/http3/max_push_id_frame.dart';
+import 'package:quic_lib/src/http3/push_promise_frame.dart';
+import 'package:quic_lib/src/http3/settings_frame.dart';
+import 'package:quic_lib/src/http3/frame_types.dart';
+import 'package:quic_lib/src/webtransport/capsule_types.dart';
+import 'package:quic_lib/src/webtransport/webtransport_session.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -216,7 +216,8 @@ void main() {
         pushId: 0,
         encodedFieldSection: [],
       );
-      final parsed = Http3PushPromiseFrame.parsePayload(frame.serializePayload());
+      final parsed =
+          Http3PushPromiseFrame.parsePayload(frame.serializePayload());
       expect(parsed, equals(frame));
     });
 
@@ -226,7 +227,8 @@ void main() {
         pushId: 4611686018427387903,
         encodedFieldSection: large,
       );
-      final parsed = Http3PushPromiseFrame.parsePayload(frame.serializePayload());
+      final parsed =
+          Http3PushPromiseFrame.parsePayload(frame.serializePayload());
       expect(parsed, equals(frame));
     });
   });

@@ -29,7 +29,8 @@ class PacketNumber {
 
     var candidate = (largestAcked & ~mask) | truncated;
 
-    if (candidate <= largestAcked - halfWindow && candidate < (1 << 62) - window) {
+    if (candidate <= largestAcked - halfWindow &&
+        candidate < (1 << 62) - window) {
       candidate += window;
     } else if (candidate > largestAcked + halfWindow && candidate >= window) {
       candidate -= window;
@@ -43,7 +44,8 @@ class PacketNumber {
   static int minEncodingLength(int packetNumber, int largestAcked) {
     for (var len = 1; len <= 4; len++) {
       final numBits = len * 8;
-      final reconstructed = reconstruct(packetNumber & ((1 << numBits) - 1), numBits, largestAcked);
+      final reconstructed = reconstruct(
+          packetNumber & ((1 << numBits) - 1), numBits, largestAcked);
       if (reconstructed == packetNumber) {
         return len;
       }

@@ -21,7 +21,8 @@ class Http3Connection {
     required Object quicConnection,
     Http3SettingsFrame? localSettings,
   })  : _quicConnection = quicConnection,
-        _localSettings = localSettings ?? Http3SettingsFrame.from(
+        _localSettings = localSettings ??
+            Http3SettingsFrame.from(
               maxFieldSectionSize: 16384,
               maxTableCapacity: 0,
               blockedStreams: 0,

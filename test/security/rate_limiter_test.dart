@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/security/rate_limiter.dart';
+import 'package:quic_lib/src/security/rate_limiter.dart';
 
 void main() {
   group('RateLimiter', () {

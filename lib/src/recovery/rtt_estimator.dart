@@ -40,9 +40,8 @@ class RttEstimator {
   int get maxAckDelay => _maxAckDelay;
 
   set maxAckDelay(int value) {
-    _maxAckDelay = value < 0
-        ? 0
-        : (value > maxAckDelayUs ? maxAckDelayUs : value);
+    _maxAckDelay =
+        value < 0 ? 0 : (value > maxAckDelayUs ? maxAckDelayUs : value);
   }
 
   /// Update with a new RTT sample.
@@ -87,7 +86,8 @@ class RttEstimator {
   /// Get the PTO duration in microseconds.
   /// pto = smoothed_rtt + max(4 * rttvar, kGranularity) + max_ack_delay
   int getPtoDuration() {
-    final varComponent = (_rttVar * 4 > kGranularity) ? _rttVar * 4 : kGranularity;
+    final varComponent =
+        (_rttVar * 4 > kGranularity) ? _rttVar * 4 : kGranularity;
     return _smoothedRtt + varComponent + maxAckDelay;
   }
 

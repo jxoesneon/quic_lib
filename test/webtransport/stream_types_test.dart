@@ -1,11 +1,13 @@
-import 'package:dart_quic/src/webtransport/stream_types.dart';
+import 'package:quic_lib/src/webtransport/stream_types.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('WebTransportStreamType', () {
     test('has expected values', () {
-      expect(WebTransportStreamType.values, contains(WebTransportStreamType.bidirectional));
-      expect(WebTransportStreamType.values, contains(WebTransportStreamType.unidirectional));
+      expect(WebTransportStreamType.values,
+          contains(WebTransportStreamType.bidirectional));
+      expect(WebTransportStreamType.values,
+          contains(WebTransportStreamType.unidirectional));
     });
   });
 
@@ -15,7 +17,8 @@ void main() {
         type: WebTransportStreamId.typeClientBidi,
         sequence: 0,
       );
-      expect(WebTransportStreamId.getType(id), WebTransportStreamType.bidirectional);
+      expect(WebTransportStreamId.getType(id),
+          WebTransportStreamType.bidirectional);
       expect(WebTransportStreamId.isClientInitiated(id), isTrue);
       expect(WebTransportStreamId.isServerInitiated(id), isFalse);
     });
@@ -25,7 +28,8 @@ void main() {
         type: WebTransportStreamId.typeServerUni,
         sequence: 0,
       );
-      expect(WebTransportStreamId.getType(id), WebTransportStreamType.unidirectional);
+      expect(WebTransportStreamId.getType(id),
+          WebTransportStreamType.unidirectional);
       expect(WebTransportStreamId.isClientInitiated(id), isFalse);
       expect(WebTransportStreamId.isServerInitiated(id), isTrue);
     });
@@ -75,21 +79,25 @@ void main() {
     test('first few IDs match expected values', () {
       // Client bidi: 0, 4, 8, 12, ...
       expect(
-        WebTransportStreamId.encode(type: WebTransportStreamId.typeClientBidi, sequence: 0),
+        WebTransportStreamId.encode(
+            type: WebTransportStreamId.typeClientBidi, sequence: 0),
         equals(0),
       );
       expect(
-        WebTransportStreamId.encode(type: WebTransportStreamId.typeClientBidi, sequence: 1),
+        WebTransportStreamId.encode(
+            type: WebTransportStreamId.typeClientBidi, sequence: 1),
         equals(4),
       );
 
       // Server uni: 3, 7, 11, 15, ...
       expect(
-        WebTransportStreamId.encode(type: WebTransportStreamId.typeServerUni, sequence: 0),
+        WebTransportStreamId.encode(
+            type: WebTransportStreamId.typeServerUni, sequence: 0),
         equals(3),
       );
       expect(
-        WebTransportStreamId.encode(type: WebTransportStreamId.typeServerUni, sequence: 1),
+        WebTransportStreamId.encode(
+            type: WebTransportStreamId.typeServerUni, sequence: 1),
         equals(7),
       );
     });

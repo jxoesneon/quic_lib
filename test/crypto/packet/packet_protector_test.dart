@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/cipher_suites.dart';
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
-import 'package:dart_quic/src/crypto/packet/packet_protector.dart';
+import 'package:quic_lib/src/crypto/cipher_suites.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/packet/packet_protector.dart';
 import 'package:test/test.dart';
 
 import '../../helpers/hex.dart';
@@ -49,7 +49,8 @@ void main() {
       final header = Uint8List.fromList([0x40, 0x01, 0x02, 0x03]);
       final payload = Uint8List.fromList([0x01, 0x02, 0x03, 0x04, 0x05]);
 
-      final ciphertext = Uint8List.fromList(await protector.encrypt(1, header, payload));
+      final ciphertext =
+          Uint8List.fromList(await protector.encrypt(1, header, payload));
       ciphertext[0] ^= 0xFF; // tamper
 
       expect(

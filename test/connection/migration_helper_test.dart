@@ -1,5 +1,5 @@
-import 'package:dart_quic/src/connection/migration_helper.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/connection/migration_helper.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 import 'package:test/test.dart';
 
 void main() {

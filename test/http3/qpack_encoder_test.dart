@@ -1,6 +1,6 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/http3/qpack_encoder.dart';
-import 'package:dart_quic/src/http3/qpack_static_table.dart';
+import 'package:quic_lib/src/http3/qpack_encoder.dart';
+import 'package:quic_lib/src/http3/qpack_static_table.dart';
 
 void main() {
   group('QpackEncoder', () {

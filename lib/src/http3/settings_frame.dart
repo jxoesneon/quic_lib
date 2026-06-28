@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/wire/varint.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 
 /// HTTP/3 SETTINGS identifiers per RFC 9114 Section 7.2.4.
 enum Http3SettingsId {

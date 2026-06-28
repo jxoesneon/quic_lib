@@ -1,4 +1,4 @@
-import 'package:dart_quic/src/streams/stream_id.dart';
+import 'package:quic_lib/src/streams/stream_id.dart';
 import 'package:test/test.dart';
 
 void main() {

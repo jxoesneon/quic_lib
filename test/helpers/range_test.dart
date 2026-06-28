@@ -22,7 +22,13 @@ void main() {
 
   group('concat', () {
     test('concatenates multiple parts', () {
-      expect(concat([[1, 2], [3], [4, 5, 6]]), [1, 2, 3, 4, 5, 6]);
+      expect(
+          concat([
+            [1, 2],
+            [3],
+            [4, 5, 6]
+          ]),
+          [1, 2, 3, 4, 5, 6]);
     });
 
     test('returns empty list for no parts', () {

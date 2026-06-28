@@ -1,10 +1,10 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
-import 'package:dart_quic/src/crypto/initial_secrets.dart';
-import 'package:dart_quic/src/crypto/packet/key_derivation.dart';
-import 'package:dart_quic/src/wire/frame.dart';
-import 'package:dart_quic/src/wire/packet_builder.dart';
-import 'package:dart_quic/src/wire/packet_header.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/initial_secrets.dart';
+import 'package:quic_lib/src/crypto/packet/key_derivation.dart';
+import 'package:quic_lib/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/packet_builder.dart';
+import 'package:quic_lib/src/wire/packet_header.dart';
 
 void main() {
   group('Initial packet exchange', () {
@@ -13,7 +13,8 @@ void main() {
       final dcid = [0x83, 0x94, 0xc8, 0xf0, 0x3e, 0x51, 0x57, 0x08];
 
       // 2. Derive initial secrets
-      final secrets = await InitialSecrets.derive(dcid, backend: DefaultCryptoBackend());
+      final secrets =
+          await InitialSecrets.derive(dcid, backend: DefaultCryptoBackend());
 
       // 3. Derive keys
       final keys = await KeyDerivation.deriveKeys(
@@ -35,7 +36,9 @@ void main() {
       );
 
       // 5. Build a CRYPTO frame with ClientHello bytes (or dummy bytes for now)
-      final frames = [CryptoFrame(offset: 0, data: [0x01, 0x00, 0x00, 0x05, 0x01])];
+      final frames = [
+        CryptoFrame(offset: 0, data: [0x01, 0x00, 0x00, 0x05, 0x01])
+      ];
 
       // 6. Build the packet
       final packet = PacketBuilder.build(header, frames);
@@ -54,8 +57,10 @@ void main() {
 
     test('client Initial secrets are deterministic', () async {
       final dcid = [0x01, 0x02, 0x03];
-      final secrets1 = await InitialSecrets.derive(dcid, backend: DefaultCryptoBackend());
-      final secrets2 = await InitialSecrets.derive(dcid, backend: DefaultCryptoBackend());
+      final secrets1 =
+          await InitialSecrets.derive(dcid, backend: DefaultCryptoBackend());
+      final secrets2 =
+          await InitialSecrets.derive(dcid, backend: DefaultCryptoBackend());
 
       final key1 = secrets1.clientSecret.extractSync();
       final key2 = secrets2.clientSecret.extractSync();

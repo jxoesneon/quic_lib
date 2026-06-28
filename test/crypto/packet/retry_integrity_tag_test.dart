@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
-import 'package:dart_quic/src/crypto/packet/retry_integrity_tag.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/packet/retry_integrity_tag.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -10,7 +10,8 @@ void main() {
   group('RetryIntegrityTag', () {
     test('compute produces a 16-byte tag', () async {
       final originalDcid = [0xab, 0xcd, 0xef, 0x01];
-      final retryPacketWithoutTag = Uint8List.fromList([0xf0, 0x00, 0x00, 0x00]);
+      final retryPacketWithoutTag =
+          Uint8List.fromList([0xf0, 0x00, 0x00, 0x00]);
 
       final tag = await RetryIntegrityTag.compute(
         originalDestinationConnectionId: originalDcid,
@@ -23,7 +24,8 @@ void main() {
 
     test('verify succeeds for correctly computed tag', () async {
       final originalDcid = [0xab, 0xcd, 0xef, 0x01];
-      final retryPacketWithoutTag = Uint8List.fromList([0xf0, 0x00, 0x00, 0x00]);
+      final retryPacketWithoutTag =
+          Uint8List.fromList([0xf0, 0x00, 0x00, 0x00]);
 
       final tag = await RetryIntegrityTag.compute(
         originalDestinationConnectionId: originalDcid,
@@ -47,7 +49,8 @@ void main() {
 
     test('verify fails for tampered packet', () async {
       final originalDcid = [0xab, 0xcd, 0xef, 0x01];
-      final retryPacketWithoutTag = Uint8List.fromList([0xf0, 0x00, 0x00, 0x00]);
+      final retryPacketWithoutTag =
+          Uint8List.fromList([0xf0, 0x00, 0x00, 0x00]);
 
       final tag = await RetryIntegrityTag.compute(
         originalDestinationConnectionId: originalDcid,

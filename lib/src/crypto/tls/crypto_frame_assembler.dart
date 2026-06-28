@@ -1,11 +1,12 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 
 /// Assembles out-of-order CRYPTO frames into contiguous TLS message bytes.
 class CryptoFrameAssembler {
   // SECURITY: Limits to prevent memory exhaustion DoS via pathological CRYPTO frames.
-  static const int maxBufferSize = 4 * 1024 * 1024; // 4 MB for TLS handshake data
+  static const int maxBufferSize =
+      4 * 1024 * 1024; // 4 MB for TLS handshake data
   static const int maxOffsetGap = 4 * 1024 * 1024; // 4 MB
   static const int maxFragmentCount = 256;
 
@@ -45,14 +46,17 @@ class CryptoFrameAssembler {
 
     // SECURITY: Validate against limits before storing.
     if (storeOffset - _readOffset > maxOffsetGap) {
-      throw StateError('CryptoFrameAssembler: offset gap exceeds max ($maxOffsetGap)');
+      throw StateError(
+          'CryptoFrameAssembler: offset gap exceeds max ($maxOffsetGap)');
     }
     if (_bufferedBytes + storeData.length > maxBufferSize) {
-      throw StateError('CryptoFrameAssembler: size limit ($maxBufferSize) exceeded');
+      throw StateError(
+          'CryptoFrameAssembler: size limit ($maxBufferSize) exceeded');
     }
     final newFragment = !_buffer.containsKey(storeOffset);
     if (newFragment && _buffer.length >= maxFragmentCount) {
-      throw StateError('CryptoFrameAssembler: fragment limit ($maxFragmentCount) exceeded');
+      throw StateError(
+          'CryptoFrameAssembler: fragment limit ($maxFragmentCount) exceeded');
     }
 
     _buffer[storeOffset] = storeData;

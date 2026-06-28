@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/streams/flow_controller.dart';
+import 'package:quic_lib/src/streams/flow_controller.dart';
 
 void main() {
   group('FlowController', () {

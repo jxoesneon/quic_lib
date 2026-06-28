@@ -7,7 +7,8 @@ import 'dart:typed_data';
 /// Incoming datagrams are delivered via [incoming].  Outgoing datagrams
 /// are captured in [sent].
 class MockUdpSocket {
-  final StreamController<Datagram> _incoming = StreamController<Datagram>.broadcast();
+  final StreamController<Datagram> _incoming =
+      StreamController<Datagram>.broadcast();
   final List<Datagram> sent = <Datagram>[];
   bool _closed = false;
 

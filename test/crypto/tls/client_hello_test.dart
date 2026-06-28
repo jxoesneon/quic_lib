@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/crypto/tls/client_hello.dart';
+import 'package:quic_lib/src/crypto/tls/client_hello.dart';
 
 void main() {
   group('ClientHello', () {

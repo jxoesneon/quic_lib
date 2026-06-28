@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:dart_quic/src/io/quic_endpoint.dart';
+import 'package:quic_lib/src/io/quic_endpoint.dart';
 import 'package:test/test.dart';
 
 void main() {

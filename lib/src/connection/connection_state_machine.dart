@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:dart_quic/src/logging/quic_logger.dart';
-import 'package:dart_quic/src/security/rate_limiter.dart';
+import 'package:quic_lib/src/logging/quic_logger.dart';
+import 'package:quic_lib/src/security/rate_limiter.dart';
 
 /// The states of a QUIC connection lifecycle.
 ///
@@ -49,10 +49,12 @@ class ConnectionStateMachine {
   bool get isDraining => _state == ConnectionState.draining;
 
   bool get canSendData =>
-      _state == ConnectionState.established || _state == ConnectionState.closing;
+      _state == ConnectionState.established ||
+      _state == ConnectionState.closing;
 
   bool get canReceiveData =>
-      _state == ConnectionState.established || _state == ConnectionState.handshaking;
+      _state == ConnectionState.established ||
+      _state == ConnectionState.handshaking;
 
   /// Listen to state changes.
   Stream<ConnectionState> get onStateChanged => _stateController.stream;
@@ -100,9 +102,11 @@ class ConnectionStateMachine {
   static bool _isValidTransition(ConnectionState from, ConnectionState to) {
     switch (from) {
       case ConnectionState.idle:
-        return to == ConnectionState.handshaking || to == ConnectionState.closed;
+        return to == ConnectionState.handshaking ||
+            to == ConnectionState.closed;
       case ConnectionState.handshaking:
-        return to == ConnectionState.established || to == ConnectionState.closed;
+        return to == ConnectionState.established ||
+            to == ConnectionState.closed;
       case ConnectionState.established:
         return to == ConnectionState.closing ||
             to == ConnectionState.draining ||

@@ -12,11 +12,13 @@ class SendStateMachine {
 
   SendStreamState get state => _state;
   bool get isTerminal =>
-      _state == SendStreamState.received || _state == SendStreamState.resetReceived;
+      _state == SendStreamState.received ||
+      _state == SendStreamState.resetReceived;
   bool get canSend =>
       _state == SendStreamState.ready || _state == SendStreamState.send;
   bool get wasReset =>
-      _state == SendStreamState.resetSent || _state == SendStreamState.resetReceived;
+      _state == SendStreamState.resetSent ||
+      _state == SendStreamState.resetReceived;
 
   /// Valid transitions:
   /// ready → send (on first data sent)

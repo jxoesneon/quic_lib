@@ -220,6 +220,7 @@ class PeerId {
   }
 
   @override
+
   /// Whether two [PeerId]s represent the same raw byte sequence.
   ///
   /// Compares the lengths and contents of [bytes] element by element.
@@ -234,6 +235,7 @@ class PeerId {
   }
 
   @override
+
   /// A 32-bit hash code derived from the raw bytes using an FNV-1a algorithm.
   ///
   /// Suitable for use in [HashMap], [HashSet], and other Dart collections.

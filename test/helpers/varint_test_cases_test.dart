@@ -53,16 +53,16 @@ void main() {
     test('case 1073741824 encodes to 8-byte width', () {
       final caseMin8 =
           varintTestCases.firstWhere((c) => c['value'] == 1073741824);
-      expect(caseMin8['bytes'],
-          [0xc0, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00]);
+      expect(
+          caseMin8['bytes'], [0xc0, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00]);
       expect(caseMin8['width'], 8);
     });
 
     test('case 4611686018427387903 encodes to all 0xff', () {
-      final caseMax8 = varintTestCases
-          .firstWhere((c) => c['value'] == 4611686018427387903);
-      expect(caseMax8['bytes'],
-          [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]);
+      final caseMax8 =
+          varintTestCases.firstWhere((c) => c['value'] == 4611686018427387903);
+      expect(
+          caseMax8['bytes'], [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]);
       expect(caseMax8['width'], 8);
     });
   });

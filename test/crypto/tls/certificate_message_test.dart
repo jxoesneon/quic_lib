@@ -1,6 +1,6 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/crypto/tls/certificate_message.dart';
-import 'package:dart_quic/src/crypto/tls/client_hello.dart' show TlsExtension;
+import 'package:quic_lib/src/crypto/tls/certificate_message.dart';
+import 'package:quic_lib/src/crypto/tls/client_hello.dart' show TlsExtension;
 
 void main() {
   group('CertificateMessage', () {

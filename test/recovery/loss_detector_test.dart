@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/recovery/loss_detector.dart';
+import 'package:quic_lib/src/recovery/loss_detector.dart';
 
 void main() {
   group('LossDetector', () {
@@ -18,9 +18,12 @@ void main() {
       final sentTime = 0;
       final ackTime = 100000; // 100ms
       final srtt = 10000; // 10ms
-      final threshold = ((LossDetector.timeThreshold * srtt) + LossDetector.kGranularity).toInt();
+      final threshold =
+          ((LossDetector.timeThreshold * srtt) + LossDetector.kGranularity)
+              .toInt();
       expect(ld.isPacketLostByTime(0, sentTime, ackTime, srtt), isTrue);
-      expect(ld.isPacketLostByTime(0, ackTime - threshold + 1, ackTime, srtt), isFalse);
+      expect(ld.isPacketLostByTime(0, ackTime - threshold + 1, ackTime, srtt),
+          isFalse);
     });
 
     test('ACK processing returns correct lost packets', () {

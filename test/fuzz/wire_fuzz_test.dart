@@ -1,8 +1,8 @@
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:test/test.dart';
-import 'package:dart_quic/src/wire/varint.dart';
-import 'package:dart_quic/src/wire/packet_header.dart';
+import 'package:quic_lib/src/wire/varint.dart';
+import 'package:quic_lib/src/wire/packet_header.dart';
 
 void _fillBytes(Random rng, Uint8List bytes) {
   for (var i = 0; i < bytes.length; i++) {
@@ -19,7 +19,7 @@ void main() {
         // Random.nextInt is limited to 2^32, so build a 62-bit value from
         // two parts to cover the full VarInt range.
         final high = rng.nextInt(1 << 30); // 30 bits
-        final low = rng.nextInt(1 << 32);  // 32 bits
+        final low = rng.nextInt(1 << 32); // 32 bits
         final value = (high << 32) | low;
         final encoded = VarInt.encode(value);
         final decoded = VarInt.decode(encoded.buffer);

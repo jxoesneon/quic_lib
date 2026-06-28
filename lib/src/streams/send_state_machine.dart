@@ -1,3 +1,14 @@
+/// Lifecycle states for the sending half of a QUIC stream (RFC 9000 Section 3.1).
+///
+/// These states track how much of the stream's data has been sent and
+/// acknowledged, from the initial [ready] state through terminal states
+/// [received] (success) or [resetReceived] (aborted). The [SendStateMachine]
+/// enforces valid transitions and prevents illegal state changes.
+///
+/// See also:
+/// - [SendStateMachine] — manages transitions between these states.
+/// - [QuicStream] — the stream that owns this send state machine.
+/// - RFC 9000 Section 3.1 — stream states.
 enum SendStreamState {
   /// Stream is ready to send data.
   ready,
@@ -18,15 +29,50 @@ enum SendStreamState {
   resetReceived,
 }
 
+/// Manages the lifecycle of the sending half of a QUIC stream (RFC 9000 Section 3.1).
+///
+/// [SendStateMachine] tracks whether a stream is ready to send, has unacknowledged
+/// data, or has reached a terminal state. It is owned by a [QuicStream] and is
+/// driven by packet-level events such as transmission, acknowledgment, and reset.
+///
+/// ## Example
+/// ```dart
+/// final sm = SendStateMachine();
+/// sm.onDataSent();
+/// sm.onFinSent();
+/// sm.onAllDataAcked();
+/// assert(sm.isTerminal);
+/// ```
+///
+/// See also:
+/// - [SendStreamState] — the individual states this machine tracks.
+/// - [QuicStream] — the stream that embeds this state machine.
+/// - [ReceiveStateMachine] — the corresponding receive-side state machine.
+/// - RFC 9000 Section 3.1 — QUIC stream states.
 class SendStateMachine {
   SendStreamState _state = SendStreamState.ready;
 
+  /// The current state of the send side.
   SendStreamState get state => _state;
+
+  /// Whether the stream has reached a terminal state.
+  ///
+  /// Terminal states are [SendStreamState.received] and
+  /// [SendStreamState.resetReceived].
   bool get isTerminal =>
       _state == SendStreamState.received ||
       _state == SendStreamState.resetReceived;
+
+  /// Whether the stream is allowed to send new data.
+  ///
+  /// Returns `true` when in [SendStreamState.ready] or [SendStreamState.send].
   bool get canSend =>
       _state == SendStreamState.ready || _state == SendStreamState.send;
+
+  /// Whether the stream has been or is being reset.
+  ///
+  /// Returns `true` when in [SendStreamState.resetSent] or
+  /// [SendStreamState.resetReceived].
   bool get wasReset =>
       _state == SendStreamState.resetSent ||
       _state == SendStreamState.resetReceived;

@@ -1,9 +1,31 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+/// A self-describing network address following the libp2p multiaddr format.
+///
+/// [Multiaddr] encodes a stack of network protocols and their values (e.g.,
+/// `/ip4/127.0.0.1/udp/1234/quic-v1`) as an ordered list of [MultiaddrComponent]s.
+/// It supports parsing from human-readable strings or compact binary bytes, and
+/// can serialize back to either form.
+///
+/// This type is used by the libp2p transport layer to identify peers and
+/// endpoints without ambiguity about which protocols are in use.
+///
+/// ## Example
+/// ```dart
+/// final addr = Multiaddr.parse('/ip4/127.0.0.1/udp/1234/quic-v1');
+/// final bytes = addr.toBytes();
+/// ```
+///
+/// See also:
+/// - [MultiaddrComponent] — a single protocol/value pair inside a multiaddr.
+/// - [Libp2pQuicTransport] — the transport that uses these addresses.
 class Multiaddr {
   final List<MultiaddrComponent> components;
 
+  /// Creates a [Multiaddr] from an explicit list of [components].
+  ///
+  /// Most callers should use [Multiaddr.parse] or [Multiaddr.fromBytes] instead.
   Multiaddr({required this.components});
 
   /// Parse from human-readable string (e.g., "/ip4/127.0.0.1/udp/1234/quic-v1").
@@ -124,7 +146,7 @@ class Multiaddr {
     return builder.toBytes();
   }
 
-  /// Get the protocol path (e.g., ["ip4", "udp", "quic-v1"]).
+  /// Get the protocol path (e.g., `["ip4", "udp", "quic-v1"]`).
   List<String> get protocols => components.map((c) => c.protocol).toList();
 
   @override
@@ -145,10 +167,21 @@ class Multiaddr {
   int get hashCode => Object.hashAll(components);
 }
 
+/// A single protocol/value pair within a [Multiaddr].
+///
+/// Each component describes one layer of the network stack, such as `ip4`,
+/// `udp`, or `quic-v1`. Some protocols (e.g., `quic-v1`) have no value and
+/// are represented with a `null` [value].
+///
+/// See also:
+/// - [Multiaddr] — the aggregate address composed of these components.
 class MultiaddrComponent {
   final String protocol;
   final String? value;
 
+  /// Creates a [MultiaddrComponent] for [protocol] with an optional [value].
+  ///
+  /// The [protocol] must be a known protocol name (e.g., `ip4`, `udp`, `p2p`).
   const MultiaddrComponent({required this.protocol, this.value});
 
   @override

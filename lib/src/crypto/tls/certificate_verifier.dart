@@ -21,9 +21,33 @@ class _SimplePublicKey implements PublicKey {
   _SimplePublicKey(this.bytes);
 }
 
+/// Verifies X.509 certificate chains during the TLS 1.3 handshake (RFC 8446 Section 4.4.2).
+///
+/// [CertificateVerifier] performs end-to-end validation of a peer's certificate chain,
+/// including ASN.1 parsing, validity-date checking, name chaining, and signature
+/// verification against issuer public keys. It is used by the [HandshakeStateMachine]
+/// once the [CertificateMessage] and [CertificateVerify] messages have been received.
+///
+/// Callers typically instantiate this class once per connection and invoke
+/// [verifyCertificateChain] when the handshake reaches the certificate-validation stage.
+///
+/// ## Example
+/// ```dart
+/// final verifier = CertificateVerifier(cryptoBackend);
+/// final valid = await verifier.verifyCertificateChain(chain, trustedRoot);
+/// ```
+///
+/// See also:
+/// - [CertificateMessage] — the TLS message carrying the raw certificate chain.
+/// - [HandshakeStateMachine] — drives the handshake phases that lead to verification.
+/// - RFC 8446 Section 4.4.2 — Certificate message structure.
 class CertificateVerifier {
   final CryptoBackend _backend;
 
+  /// Creates a [CertificateVerifier] backed by the given [CryptoBackend].
+  ///
+  /// The crypto backend provides Ed25519, ECDSA P-256, and RSA signature
+  /// verification routines required by [verifySignature].
   CertificateVerifier(this._backend);
 
   /// Verifies a certificate chain.

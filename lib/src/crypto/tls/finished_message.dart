@@ -23,7 +23,7 @@ class FinishedMessage {
 
   FinishedMessage({required this.verifyData});
 
-  /// Serialize: uint8[verify_data.length] verify_data
+  /// Serialize: uint8 array of verify_data field length, followed by verify_data.
   ///
   /// Returns a [Uint8List] containing the raw verify_data bytes.
   /// No length prefix is emitted; the length is implicit per the negotiated hash.

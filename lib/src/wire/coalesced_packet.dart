@@ -1,14 +1,36 @@
 import 'dart:typed_data';
 
 /// Splits UDP datagrams that may contain multiple QUIC coalesced packets.
+///
+/// QUIC endpoints may combine multiple packets into a single UDP datagram
+/// during the handshake to reduce round-trips (RFC 9000 Section 12.2).
+/// This utility identifies the boundaries between long-header packets
+/// using their Length fields. A short-header packet, if present, always
+/// consumes the remainder of the datagram and must appear last.
+///
+/// ## Example
+/// ```dart
+/// final datagram = await socket.receive();
+/// if (CoalescedPacket.isCoalesced(datagram)) {
+///   for (final packet in CoalescedPacket.split(datagram)) {
+///     processPacket(packet);
+///   }
+/// }
+/// ```
+///
+/// See also:
+/// - [PacketHeaderParser] — for parsing individual packets after splitting
+/// - [PacketBuilder] — for building packets that may be coalesced
+/// - RFC 9000 Section 12.2
 class CoalescedPacket {
   CoalescedPacket._();
 
   /// Check if a datagram likely contains coalesced packets.
   ///
-  /// A datagram is coalesced if:
-  /// - It contains a long header packet AND there are bytes remaining after it
-  /// - Or it contains multiple long header packets
+  /// A datagram is considered coalesced when [split] would return more
+  /// than one packet. This happens when a long-header packet is followed
+  /// by additional bytes (either another long-header packet or a trailing
+  /// short-header packet).
   static bool isCoalesced(Uint8List datagram) {
     if (datagram.isEmpty) return false;
     final packets = split(datagram);
@@ -19,6 +41,8 @@ class CoalescedPacket {
   ///
   /// Long header packets are split using their Length field.
   /// Short header packets consume the remainder of the datagram.
+  ///
+  /// Returns an empty list if [datagram] cannot be parsed.
   static List<Uint8List> split(Uint8List datagram) {
     final result = <Uint8List>[];
     var offset = 0;
@@ -47,6 +71,7 @@ class CoalescedPacket {
   }
 
   /// Find the end of a long-header packet starting at [offset].
+  ///
   /// Returns the byte index after the packet, or [offset] if parsing fails.
   static int _findLongHeaderEnd(Uint8List bytes, int offset) {
     var pos = offset + 1; // skip first byte

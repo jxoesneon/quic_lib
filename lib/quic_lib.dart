@@ -1,4 +1,70 @@
-/// Public API barrel file for quic_lib.
+/// A comprehensive, pure-Dart implementation of the QUIC protocol stack.
+///
+/// **quic_lib** provides a fully Dart-native networking stack covering four
+/// major subsystems built on top of each other:
+///
+/// 1. **QUIC transport** — RFC 9000/9001/9002 compliant wire format, packet
+///    protection, handshake, stream multiplexing, flow control, congestion
+///    control, and connection migration.
+/// 2. **HTTP/3** — RFC 9114 mapping of HTTP semantics onto QUIC streams with
+///    QPACK header compression.
+/// 3. **WebTransport** — RFC 9220 datagram and stream sessions over HTTP/3.
+/// 4. **libp2p QUIC** — Transport, multiaddr parsing, and PeerId handling for
+///    libp2p networks.
+///
+/// ## Quick start
+///
+/// Import the full public API in one line:
+///
+/// ```dart
+/// import 'package:quic_lib/quic_lib.dart';
+/// ```
+///
+/// Create an endpoint, connect to a peer, and open a bidirectional stream:
+///
+/// ```dart
+/// import 'dart:io';
+/// import 'dart:typed_data';
+/// import 'package:quic_lib/quic_lib.dart';
+///
+/// Future<void> main() async {
+///   final endpoint = await QuicEndpoint.bind(InternetAddress.anyIPv4, 0);
+///   final connection = await endpoint.connect(
+///     InternetAddress.loopbackIPv4,
+///     4433,
+///   );
+///
+///   final streamId = connection.openBidirectionalStream();
+///   final frame = StreamFrame(
+///     streamId: streamId,
+///     data: Uint8List.fromList([1, 2, 3]),
+///     fin: true,
+///   );
+///   // Packetize and send via PacketSender...
+///
+///   connection.close();
+///   endpoint.close();
+/// }
+/// ```
+///
+/// ## Subsystem barrel files
+///
+/// If you only need a subset of the API, import one of the focused barrel
+/// files instead:
+///
+/// | Barrel file | Exports |
+/// |-------------|---------|
+/// | `quic_lib.dart` | **Everything** — wire format, crypto, connection, streams, recovery, HTTP/3, WebTransport, libp2p |
+/// | `quic.dart` | QUIC transport core only — endpoint, connection, stream scheduler, isolates |
+/// | `http3.dart` | HTTP/3 layer — connection, request, response, frames, QPACK |
+/// | `webtransport.dart` | WebTransport sessions, capsules, and stream types |
+/// | `libp2p.dart` | libp2p transport — multiaddr, peer IDs, QUIC dial/listen |
+///
+/// See also:
+/// * `quic.dart` — QUIC transport only.
+/// * `http3.dart` — HTTP/3 client and server.
+/// * `webtransport.dart` — WebTransport sessions.
+/// * `libp2p.dart` — libp2p QUIC transport.
 library quic_lib;
 
 // ---------------------------------------------------------------------------

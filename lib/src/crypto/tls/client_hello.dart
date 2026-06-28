@@ -17,7 +17,7 @@ class ClientHello {
   /// List of supported cipher suites.
   final List<CipherSuite> cipherSuites;
 
-  /// Legacy compression methods (always [0x00] for TLS 1.3).
+  /// Legacy compression methods (always `0x00` for TLS 1.3).
   final List<int> legacyCompressionMethods;
 
   /// List of extensions.

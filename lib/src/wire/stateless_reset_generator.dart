@@ -1,13 +1,38 @@
 import 'dart:math';
 import 'dart:typed_data';
 
-/// Generates and validates QUIC stateless reset packets per RFC 9000 §10.3.
+/// Generates and validates QUIC stateless reset packets per RFC 9000 Section 10.3.
+///
+/// A stateless reset allows an endpoint that loses state (for example, due to
+/// a crash or restart) to signal to the peer that the connection is no longer
+/// viable. The packet contains random padding and a 16-byte stateless reset
+/// token that the receiver compares against tokens it has previously received
+/// in [NewConnectionIdFrame] tokens.
+///
+/// ## Example
+/// ```dart
+/// final token = connectionIdFrame.statelessResetToken;
+/// final packet = StatelessResetGenerator.generate(token: token);
+/// socket.send(packet);
+/// ```
+///
+/// See also:
+/// - [NewConnectionIdFrame] — carries the stateless reset token
+/// - RFC 9000 Section 10.3
 class StatelessResetGenerator {
   static final Random _random = Random.secure();
 
   /// Generate a stateless reset packet.
+  ///
   /// [token] is the 16-byte stateless reset token.
   /// [minPacketSize] is the minimum total packet size (default 5).
+  ///
+  /// The padding length is randomized between 5 and 22 bytes so the total
+  /// packet size is between 21 and 38 bytes, making the packet difficult to
+  /// distinguish from normal traffic.
+  ///
+  /// Throws [ArgumentError] if [token] is not exactly 16 bytes.
+  /// Throws [StateError] if the generated packet is smaller than [minPacketSize].
   static Uint8List generate({
     required List<int> token,
     int minPacketSize = 5,
@@ -40,6 +65,7 @@ class StatelessResetGenerator {
   }
 
   /// Validate that a packet could be a stateless reset.
+  ///
   /// Checks: size >= 5, first byte has header form = 1 but invalid type bits.
   static bool isValidFormat(Uint8List packet) {
     if (packet.length < 5) return false;
@@ -53,7 +79,8 @@ class StatelessResetGenerator {
     // The RFC means: if you parse it as a long header, the version is not
     // a supported QUIC version, OR the type bits don't correspond to a known type
     // For simplicity: check if it could be a real long header packet
-    // by seeing if the version looks like QUIC v1
+    // by seeing if the version field (bytes 1-4) is not QUIC v1 (0x00000001)
+    // or draft versions
     if (packet.length < 5) return false;
     // Check if first byte looks like a long header
     // and if the version field (bytes 1-4) is not QUIC v1 (0x00000001)

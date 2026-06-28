@@ -19,13 +19,66 @@ class Http3Stream {
   Http3Stream(this.streamId);
 }
 
+/// HTTP/3 HEADERS frame alias for [Http3HeadersFrame] (RFC 9114 Section 7.2.2).
+///
+/// This typedef exists for brevity inside [Http3Connection] and related
+/// HTTP/3 types. It represents a QPACK-encoded field section carried on
+/// a request or response stream.
+///
+/// See also:
+/// - [Http3HeadersFrame] — the underlying concrete type.
+/// - [DataFrame] — the corresponding DATA frame alias.
+/// - [Http3Connection] — the connection that buffers and routes these frames.
 typedef HeadersFrame = Http3HeadersFrame;
+
+/// HTTP/3 DATA frame alias for [Http3DataFrame] (RFC 9114 Section 7.2.1).
+///
+/// This typedef exists for brevity inside [Http3Connection] and related
+/// HTTP/3 types. It represents the raw octet payload of an HTTP/3 message.
+///
+/// See also:
+/// - [Http3DataFrame] — the underlying concrete type.
+/// - [HeadersFrame] — the corresponding HEADERS frame alias.
+/// - [Http3Connection] — the connection that buffers and routes these frames.
 typedef DataFrame = Http3DataFrame;
 
 /// Manages an HTTP/3 connection over a QUIC transport.
 ///
-/// Per RFC 9114, an HTTP/3 connection operates on a QUIC connection and
-/// exchanges frames on QUIC streams. Stream 0 is the control stream.
+/// An [Http3Connection] maps HTTP/3 semantics (requests, responses, headers,
+/// and settings) onto QUIC streams and frames. Per RFC 9114, the first
+/// client-initiated bidirectional stream (stream ID 0) is reserved as the
+/// control stream, where SETTINGS and GOAWAY frames are exchanged. All other
+/// streams carry individual request/response exchanges.
+///
+/// Use [sendRequest] to initiate an outbound request, [getResponse] to read
+/// a received response, and [close] to send a GOAWAY and gracefully terminate
+/// the connection. The underlying QUIC transport is exposed via
+/// [quicConnection] for advanced use cases.
+///
+/// ## Example
+/// ```dart
+/// final quicConn = await endpoint.connect(remoteAddress, remotePort);
+/// final http3 = Http3Connection(quicConnection: quicConn);
+///
+/// final request = Http3Request(
+///   method: 'GET',
+///   path: '/index.html',
+///   headers: {'host': 'example.com'},
+/// );
+/// final streamId = await http3.sendRequest(request);
+///
+/// // Later, when the response arrives...
+/// final response = http3.getResponse(streamId);
+/// print('Status: ${response?.statusCode}');
+///
+/// http3.close();
+/// ```
+///
+/// See also:
+/// - [Http3Request] — an HTTP/3 request with QPACK-encoded headers.
+/// - [Http3Response] — an HTTP/3 response with status and headers.
+/// - [QuicConnection] — the underlying QUIC transport.
+/// - RFC 9114 — HTTP/3.
 class Http3Connection {
   final Object _quicConnection; // Will be QuicConnection once fully wired.
 
@@ -42,6 +95,15 @@ class Http3Connection {
   final Map<int, Http3PushPromiseFrame> _pushPromises = {};
   final List<Uint8List> _pendingQuicPackets = [];
 
+  /// Creates an [Http3Connection] over [quicConnection].
+  ///
+  /// [quicConnection] must support `openBidirectionalStream()`,
+  /// `openUnidirectionalStream()`, `buildEncryptedPacket()`, and
+  /// `connectionId` (typically a [QuicConnection]).
+  ///
+  /// [localSettings] defaults to a conservative profile:
+  /// `maxFieldSectionSize: 16384`, `maxTableCapacity: 0`,
+  /// `blockedStreams: 0`.
   Http3Connection({
     required Object quicConnection,
     Http3SettingsFrame? localSettings,
@@ -54,9 +116,16 @@ class Http3Connection {
             );
 
   /// The underlying QUIC connection.
+  ///
+  /// In typical usage this is a [QuicConnection]. Cast to [QuicConnection]
+  /// to access stream allocation, packet building, or connection state.
   Object get quicConnection => _quicConnection;
 
-  /// Local SETTINGS that will be sent to the peer.
+  /// Local SETTINGS that will be sent to the peer on the control stream.
+  ///
+  /// These limits govern how much header data the peer can send and whether
+  /// QPACK dynamic table capacity is enabled. Use [sendSettings] to enqueue
+  /// the frame for transmission.
   Http3SettingsFrame get localSettings => _localSettings;
 
   /// SETTINGS received from the peer.
@@ -149,10 +218,14 @@ class Http3Connection {
     _settingsExchanged = true;
   }
 
-  /// Send an HTTP/3 request.
+  /// Send an HTTP/3 request on a new client-initiated bidirectional stream.
   ///
-  /// Allocates a new client-initiated bidirectional stream, encodes the
-  /// request headers and optional body, and returns the stream ID.
+  /// Encodes the request headers using QPACK, optionally writes the body
+  /// as DATA frames, and stores both in the pending outbound queue. The
+  /// returned stream ID uniquely identifies this request/response exchange.
+  ///
+  /// The caller must flush the pending frames to the QUIC transport; this
+  /// method only stages them internally.
   Future<int> sendRequest(Http3Request request) async {
     final quic = _quicConnection as dynamic;
     final streamId = quic.openBidirectionalStream() as int;
@@ -235,6 +308,11 @@ class Http3Connection {
   }
 
   /// Gracefully close the HTTP/3 connection.
+  ///
+  /// Sends a GOAWAY frame on the control stream with the last accepted
+  /// stream ID, transitions the connection to the closing state, and queues
+  /// the resulting QUIC packet in [pendingQuicPackets]. After calling this
+  /// method no new requests should be initiated.
   void close() {
     _isClosing = true;
     final goaway =

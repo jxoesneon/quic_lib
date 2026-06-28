@@ -7,8 +7,39 @@ import 'package:quic_lib/src/wire/varint.dart';
 
 /// Manages the state of a single WebTransport session over HTTP/3.
 ///
-/// Per RFC 9220, a session is identified by its bidirectional stream ID and
-/// communicates via capsules on that stream.
+/// A [WebTransportSession] represents one WebTransport session mapped onto
+/// a QUIC bidirectional stream (the session's control stream). Per RFC 9220,
+/// endpoints exchange typed capsules on this stream to open streams, send
+/// datagrams, drain, or close the session.
+///
+/// The session tracks incoming capsules via [onCapsuleReceived], surfacing
+/// registered stream IDs and received datagrams. Callers can initiate a
+/// graceful close with [initiateClose], or send a drain signal with
+/// [initiateDrain].
+///
+/// ## Example
+/// ```dart
+/// final session = WebTransportSession(0);
+///
+/// // Process an incoming datagram capsule.
+/// session.onCapsuleReceived(Capsule(
+///   type: CapsuleType.datagram,
+///   payload: Uint8List.fromList([1, 2, 3]),
+/// ));
+/// print('Datagrams: ${session.receivedDatagrams.length}');
+///
+/// // Gracefully close the session with an error code.
+/// final closeCapsule = session.initiateClose(
+///   errorCode: 0,
+///   reasonPhrase: 'done',
+/// );
+/// print('Session closed: ${session.isClosed}');
+/// ```
+///
+/// See also:
+/// - [Http3Connection] — the HTTP/3 layer that carries WebTransport capsules.
+/// - [Capsule] — a typed capsule exchanged on the session's control stream.
+/// - RFC 9220 — WebTransport over HTTP/3.
 class WebTransportSession {
   final int _sessionId;
   bool _isDraining = false;
@@ -18,18 +49,30 @@ class WebTransportSession {
   WebTransportSession(this._sessionId);
 
   /// The QUIC stream ID that serves as this session's identifier.
+  ///
+  /// Per RFC 9220, the session ID is the stream ID of the bidirectional
+  /// control stream on which capsules are exchanged.
   int get sessionId => _sessionId;
 
   /// Whether the peer has initiated a drain.
+  ///
+  /// Set to true when a `DRAIN_WEBTRANSPORT_SESSION` capsule is received.
+  /// A draining session should finish existing streams but not open new ones.
   bool get isDraining => _isDraining;
 
   /// Whether the session is fully closed.
+  ///
+  /// True once either a `CLOSE_WEBTRANSPORT_SESSION` capsule has been
+  /// received, or [initiateClose] has been called and acknowledged.
   bool get isClosed => _isClosed;
 
   /// Whether the session is still active (not draining and not closed).
   bool get isActive => !_isDraining && !_isClosed;
 
   /// Whether a GOAWAY capsule has been received from the peer.
+  ///
+  /// A GOAWAY signals that the server will no longer accept new sessions.
+  /// Existing sessions and streams may continue until they complete.
   bool get receivedGoaway => _receivedGoaway;
 
   final List<Uint8List> _receivedDatagrams = [];
@@ -37,18 +80,39 @@ class WebTransportSession {
   final List<int> _registeredUnidirectionalStreams = [];
 
   /// Datagrams received via [CapsuleType.datagram] capsules.
+  ///
+  /// Each entry is a copy of the capsule payload. The list is unmodifiable;
+  /// use [onCapsuleReceived] to append new datagrams.
   List<Uint8List> get receivedDatagrams =>
       List.unmodifiable(_receivedDatagrams);
 
-  /// Bidirectional stream IDs registered via [CapsuleType.registerBidirectionalStream] capsules.
+  /// Bidirectional stream IDs registered by the peer.
+  ///
+  /// Populated when `REGISTER_BIDIRECTIONAL_STREAM` capsules are received.
+  /// The returned list is unmodifiable.
   List<int> get registeredBidirectionalStreams =>
       List.unmodifiable(_registeredBidirectionalStreams);
 
-  /// Unidirectional stream IDs registered via [CapsuleType.registerUnidirectionalStream] capsules.
+  /// Unidirectional stream IDs registered by the peer.
+  ///
+  /// Populated when `REGISTER_UNIDIRECTIONAL_STREAM` capsules are received.
+  /// The returned list is unmodifiable.
   List<int> get registeredUnidirectionalStreams =>
       List.unmodifiable(_registeredUnidirectionalStreams);
 
-  /// Process an incoming capsule received on the session's control stream.
+  /// Handle an incoming capsule on the session's control stream.
+  ///
+  /// Routes the capsule to the appropriate internal state based on its type:
+  /// - [CapsuleType.datagram] — appends payload to [receivedDatagrams].
+  /// - [CapsuleType.closeWebTransportSession] — marks [isClosed] true.
+  /// - [CapsuleType.drainWebTransportSession] — marks [isDraining] true.
+  /// - [CapsuleType.registerBidirectionalStream] — adds stream ID to
+  ///   [registeredBidirectionalStreams].
+  /// - [CapsuleType.registerUnidirectionalStream] — adds stream ID to
+  ///   [registeredUnidirectionalStreams].
+  /// - [CapsuleType.goaway] — sets [receivedGoaway] true.
+  ///
+  /// Unknown or extension capsules are silently ignored per RFC 9220.
   void onCapsuleReceived(Capsule capsule) {
     switch (capsule.type) {
       case CapsuleType.datagram:
@@ -76,9 +140,17 @@ class WebTransportSession {
 
   /// Initiate a graceful close of this session.
   ///
-  /// Returns a [Capsule] of type [CapsuleType.closeWebTransportSession] whose
-  /// payload is encoded per RFC 9220 Section 4.2:
-  ///   Error Code (i), [Error Phrase Length (i), Error Phrase (..)]
+  /// Builds a [Capsule] of type [CapsuleType.closeWebTransportSession] whose
+  /// payload is a varint [errorCode] followed by an optional reason phrase
+  /// encoded per RFC 9220 Section 4.2:
+  ///
+  /// ```
+  /// Error Code (i), [Error Phrase Length (i), Error Phrase (..)]
+  /// ```
+  ///
+  /// The caller must send the returned capsule on the session's control
+  /// stream. [isClosed] is not set to true until [onCloseAcknowledged] is
+  /// called (or the peer sends its own close capsule).
   Capsule initiateClose({int errorCode = 0, String? reasonPhrase}) {
     final builder = BytesBuilder();
 

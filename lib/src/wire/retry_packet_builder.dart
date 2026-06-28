@@ -4,6 +4,28 @@ import 'package:quic_lib/src/crypto/crypto_backend.dart';
 import 'package:quic_lib/src/crypto/packet/retry_integrity_tag.dart';
 
 /// Builds QUIC Retry packets per RFC 9000 Section 17.2.5.
+///
+/// A Retry packet is sent by a server in response to an Initial packet
+/// when it wishes to perform a stateless address validation. The packet
+/// carries an opaque [retryToken] and a 16-byte integrity tag computed
+/// over the entire packet excluding the tag itself.
+///
+/// ## Example
+/// ```dart
+/// final retry = await RetryPacketBuilder.build(
+///   version: QuicVersions.v1,
+///   originalDestinationConnectionId: clientDcid,
+///   retrySourceConnectionId: newCid,
+///   retryToken: token,
+///   backend: cryptoBackend,
+/// );
+/// socket.send(retry);
+/// ```
+///
+/// See also:
+/// - [RetryIntegrityTag] — computes the integrity tag
+/// - [LongHeader] — general long header structure
+/// - RFC 9000 Section 17.2.5
 class RetryPacketBuilder {
   RetryPacketBuilder._();
 
@@ -13,7 +35,9 @@ class RetryPacketBuilder {
   /// [originalDestinationConnectionId] is the DCID from the client's Initial.
   /// [retrySourceConnectionId] is the new CID the server wants the client to use.
   /// [retryToken] is opaque data for the server to validate.
-  /// Returns the complete Retry packet bytes including integrity tag.
+  /// [backend] provides the AEAD implementation for the integrity tag.
+  ///
+  /// Returns the complete Retry packet bytes including the 16-byte integrity tag.
   static Future<Uint8List> build({
     required int version,
     required List<int> originalDestinationConnectionId,

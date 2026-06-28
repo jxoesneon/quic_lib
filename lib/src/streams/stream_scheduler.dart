@@ -4,7 +4,7 @@
 /// may prioritize certain streams; a libp2p node may want fair bandwidth
 /// sharing; a media client may prioritize video over metadata. Implementing
 /// this interface allows custom schedulers to be injected into
-/// [StreamManager].
+/// StreamManager.
 abstract class StreamScheduler {
   /// Select the next stream ID to process from [activeStreamIds].
   ///

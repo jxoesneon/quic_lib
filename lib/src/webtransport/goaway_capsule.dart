@@ -12,7 +12,7 @@ class GoawayCapsule {
 
   GoawayCapsule({this.streamId});
 
-  /// Serialize to bytes: VarInt(type) + [optional VarInt(streamId)].
+  /// Serialize to bytes: VarInt(type) + optional VarInt(streamId).
   ///
   /// The type is 0x1d (goaway).
   Uint8List serialize() {

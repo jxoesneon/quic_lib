@@ -16,7 +16,51 @@ import 'package:quic_lib/src/recovery/pto_scheduler.dart';
 import 'package:quic_lib/src/recovery/congestion_controller.dart';
 import 'package:quic_lib/src/streams/stream_id.dart';
 
-/// A QUIC endpoint that can listen for and initiate connections.
+/// A QUIC endpoint that listens for and initiates connections over UDP.
+///
+/// A [QuicEndpoint] is the primary entry point for both QUIC clients and
+/// servers. It binds to a local UDP socket and manages the full lifecycle of
+/// QUIC connections, including handshake routing, connection ID registry,
+/// and optional connection migration.
+///
+/// On the server side, call [bind] to start listening, then subscribe to
+/// [connections] to accept incoming handshakes. On the client side, call
+/// [connect] to initiate an outbound connection. All active connections are
+/// tracked by the endpoint and can be inspected via [activeConnections].
+///
+/// Each connection runs its own isolate (supervised by [isolateSupervisor])
+/// so that packet processing does not block the event loop.
+///
+/// ## Example
+/// ```dart
+/// // Server-side: bind and accept connections.
+/// final endpoint = await QuicEndpoint.bind(InternetAddress.anyIPv4, 4433);
+/// await for (final conn in endpoint.connections) {
+///   if (conn is QuicConnection) {
+///     print('New connection from ${endpoint.getRemoteAddress(conn)}');
+///     // Open a bidirectional stream and send data...
+///     final streamId = conn.openBidirectionalStream();
+///     print('Opened stream $streamId');
+///   }
+/// }
+///
+/// // Client-side: connect to a remote endpoint.
+/// final client = await QuicEndpoint.bind(InternetAddress.anyIPv4, 0);
+/// final conn = await client.connect(
+///   InternetAddress.loopbackIPv4,
+///   4433,
+/// );
+/// if (conn.isEstablished) {
+///   final streamId = conn.openBidirectionalStream();
+///   print('Client opened stream $streamId');
+/// }
+/// ```
+///
+/// See also:
+/// - [QuicConnection] — the connection object returned by [connect] and
+///   emitted on the [connections] stream.
+/// - [IsolateSupervisor] — tracks isolates spawned for each connection.
+/// - RFC 9000 Section 5 — UDP and Endpoint Behavior.
 class QuicEndpoint {
   static const int _maxConnections = 1000;
 
@@ -38,27 +82,53 @@ class QuicEndpoint {
   }
 
   /// Binds a [QuicEndpoint] to the given [address] and [port].
+  ///
+  /// Creates a UDP socket and begins listening for incoming QUIC packets.
+  /// Use `InternetAddress.anyIPv4` (or `anyIPv6`) and port `0` to let the OS
+  /// assign an ephemeral address and port.
+  ///
+  /// Once bound, the endpoint is ready to accept connections (server mode) or
+  /// initiate outbound connections (client mode).
   static Future<QuicEndpoint> bind(InternetAddress address, int port) async {
     final socket = await UdpSocket.bind(address, port);
     return QuicEndpoint._(socket.localAddress, socket.localPort, socket);
   }
 
-  /// Incoming connections (server-side).
+  /// A broadcast stream of incoming server-side connections.
   ///
-  /// Returns a [Stream] of connection objects. The concrete type is
-  /// [QuicConnection].
+  /// Each time a client completes a QUIC handshake, a new [QuicConnection]
+  /// is emitted on this stream. Subscribe before calling [bind] to ensure no
+  /// connection is missed.
+  ///
+  /// The stream emits `Object` because the isolate bridge may wrap the raw
+  /// connection handle; cast to [QuicConnection] before use.
   Stream<Object> get connections => _connectionsController.stream;
 
-  /// All active connections.
+  /// All currently active connections managed by this endpoint.
+  ///
+  /// Returns an unmodifiable snapshot of the connections list. Connections
+  /// remain in this list until [close] is called or the connection is aborted.
   List<QuicConnection> get activeConnections => List.unmodifiable(_connections);
 
-  /// The isolate supervisor tracking connection isolates.
+  /// The [IsolateSupervisor] tracking connection isolates.
+  ///
+  /// Each accepted or dialed connection spawns a dedicated isolate for
+  /// packet processing. The supervisor provides visibility into running
+  /// isolates and can be used to unregister or restart them if needed.
   IsolateSupervisor get isolateSupervisor => _isolateSupervisor;
 
-  /// Connect to a remote endpoint.
+  /// Connect to a remote endpoint and begin the QUIC handshake.
   ///
-  /// Creates a [QuicConnection] with all required subsystems, transitions it
-  /// to handshaking, and begins the QUIC handshake.
+  /// Creates a [QuicConnection] with all required subsystems (state machine,
+  /// connection ID manager, recovery manager, congestion controller, etc.),
+  /// transitions it to the handshaking state, and registers it with the
+  /// endpoint's connection registry.
+  ///
+  /// The returned connection is not yet established; wait for the handshake
+  /// to complete by polling [QuicConnection.isEstablished] or subscribing
+  /// to connection state changes via the connection's state machine.
+  ///
+  /// Throws [StateError] if the endpoint has already been closed.
   Future<QuicConnection> connect(InternetAddress address, int port) async {
     // Create all subsystems required for a QUIC connection.
     final stateMachine = ConnectionStateMachine();
@@ -290,7 +360,15 @@ class QuicEndpoint {
   /// Stop all registered connection isolates.
   void stopAllIsolates() => _isolateSupervisor.unregisterAll();
 
-  /// Close the endpoint and all associated connections.
+  /// Close the endpoint and abort all associated connections.
+  ///
+  /// Cancels the UDP listener, aborts every active connection, unregisters
+  /// all connection IDs, stops all connection isolates, and closes the
+  /// underlying UDP socket. After calling this method the endpoint can no
+  /// longer be used.
+  ///
+  /// This is an abrupt shutdown; for graceful closure of an individual
+  /// connection, use [QuicConnection.close] instead.
   void close() {
     _incomingSubscription?.cancel();
     for (final conn in _connections) {

@@ -226,37 +226,45 @@ class HandshakeCoordinator {
       offset += 34;
 
       // legacy_session_id
-      if (offset >= payload.length)
+      if (offset >= payload.length) {
         throw StateError('Failed to parse ClientHello');
+      }
       final sessionIdLen = payload[offset++];
-      if (offset + sessionIdLen > payload.length)
+      if (offset + sessionIdLen > payload.length) {
         throw StateError('Failed to parse ClientHello');
+      }
       offset += sessionIdLen;
 
       // cipher_suites
-      if (offset + 2 > payload.length)
+      if (offset + 2 > payload.length) {
         throw StateError('Failed to parse ClientHello');
+      }
       final csLen = (payload[offset] << 8) | payload[offset + 1];
       offset += 2;
-      if (offset + csLen > payload.length)
+      if (offset + csLen > payload.length) {
         throw StateError('Failed to parse ClientHello');
+      }
       offset += csLen;
 
       // legacy_compression_methods
-      if (offset >= payload.length)
+      if (offset >= payload.length) {
         throw StateError('Failed to parse ClientHello');
+      }
       final cmLen = payload[offset++];
-      if (offset + cmLen > payload.length)
+      if (offset + cmLen > payload.length) {
         throw StateError('Failed to parse ClientHello');
+      }
       offset += cmLen;
 
       // extensions
-      if (offset + 2 > payload.length)
+      if (offset + 2 > payload.length) {
         throw StateError('Failed to parse ClientHello');
+      }
       final extLen = (payload[offset] << 8) | payload[offset + 1];
       offset += 2;
-      if (offset + extLen > payload.length)
+      if (offset + extLen > payload.length) {
         throw StateError('Failed to parse ClientHello');
+      }
       final extEnd = offset + extLen;
 
       while (offset + 4 <= extEnd) {
@@ -266,8 +274,9 @@ class HandshakeCoordinator {
 
         if (extType == 0x0033) {
           // key_share
-          if (offset + 2 > extEnd)
+          if (offset + 2 > extEnd) {
             throw StateError('Failed to parse ClientHello');
+          }
           final ksListLen = (payload[offset] << 8) | payload[offset + 1];
           var ksOffset = offset + 2;
           final ksEnd = ksOffset + ksListLen;
@@ -277,8 +286,9 @@ class HandshakeCoordinator {
             final group = (payload[ksOffset] << 8) | payload[ksOffset + 1];
             final keyLen = (payload[ksOffset + 2] << 8) | payload[ksOffset + 3];
             ksOffset += 4;
-            if (ksOffset + keyLen > ksEnd)
+            if (ksOffset + keyLen > ksEnd) {
               throw StateError('Failed to parse ClientHello');
+            }
 
             if (group == 0x001d) {
               // x25519

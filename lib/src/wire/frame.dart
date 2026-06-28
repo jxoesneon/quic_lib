@@ -472,8 +472,9 @@ class PathChallengeFrame implements Frame {
   final List<int> data; // 8 bytes
 
   PathChallengeFrame({required this.data}) {
-    if (data.length != 8)
+    if (data.length != 8) {
       throw ArgumentError('PATH_CHALLENGE data must be 8 bytes');
+    }
   }
 
   @override
@@ -490,8 +491,9 @@ class PathResponseFrame implements Frame {
   final List<int> data; // 8 bytes
 
   PathResponseFrame({required this.data}) {
-    if (data.length != 8)
+    if (data.length != 8) {
       throw ArgumentError('PATH_RESPONSE data must be 8 bytes');
+    }
   }
 
   @override

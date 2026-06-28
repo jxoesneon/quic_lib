@@ -1,8 +1,8 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/connection/packet_sender.dart';
-import 'package:dart_quic/src/wire/packet_header.dart';
-import 'package:dart_quic/src/wire/frame.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/connection/packet_sender.dart';
+import 'package:quic_lib/src/wire/packet_header.dart';
+import 'package:quic_lib/src/wire/frame.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
 
 void main() {
   group('PacketSender.buildPacket', () {
@@ -40,7 +40,9 @@ void main() {
 
     test('includes frames correctly', () {
       final bytes = PacketSender.buildPacket(
-        frames: [CryptoFrame(offset: 0, data: [0xAB, 0xCD])],
+        frames: [
+          CryptoFrame(offset: 0, data: [0xAB, 0xCD])
+        ],
         space: PacketNumberSpace.initial,
         dcid: [0x01],
         packetNumber: 0,

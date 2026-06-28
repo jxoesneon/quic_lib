@@ -1,4 +1,4 @@
-import 'package:dart_quic/src/connection/connection_state_machine.dart';
+import 'package:quic_lib/src/connection/connection_state_machine.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -28,7 +28,8 @@ void main() {
       expect(sm.state, ConnectionState.handshaking);
       expect(sm.isHandshaking, isTrue);
 
-      sm.transitionTo(ConnectionState.established, reason: 'handshake complete');
+      sm.transitionTo(ConnectionState.established,
+          reason: 'handshake complete');
       expect(sm.state, ConnectionState.established);
       expect(sm.isEstablished, isTrue);
     });
@@ -50,7 +51,8 @@ void main() {
       sm.transitionTo(ConnectionState.handshaking);
       sm.transitionTo(ConnectionState.established);
 
-      sm.transitionTo(ConnectionState.draining, reason: 'CONNECTION_CLOSE received');
+      sm.transitionTo(ConnectionState.draining,
+          reason: 'CONNECTION_CLOSE received');
       expect(sm.state, ConnectionState.draining);
       expect(sm.isDraining, isTrue);
 

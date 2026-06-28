@@ -1,7 +1,7 @@
-import 'package:dart_quic/src/crypto/tls/crypto_frame_assembler.dart';
-import 'package:dart_quic/src/crypto/tls/crypto_message_parser.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_state_machine.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/crypto/tls/crypto_frame_assembler.dart';
+import 'package:quic_lib/src/crypto/tls/crypto_message_parser.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_state_machine.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 
 /// Receives CRYPTO frames, assembles them, and forwards parsed TLS handshake
 /// messages to the [HandshakeStateMachine].

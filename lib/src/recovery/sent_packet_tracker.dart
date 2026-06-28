@@ -47,7 +47,8 @@ class SentPacketTracker {
   ///
   /// SECURITY: [largestAcked] is clamped to the highest sent packet number
   /// to prevent a malicious ACK from falsely acknowledging unsent packets.
-  List<SentPacketInfo> onAck(int space, int largestAcked, List<({int gap, int length})> ackRanges) {
+  List<SentPacketInfo> onAck(
+      int space, int largestAcked, List<({int gap, int length})> ackRanges) {
     // SECURITY: Validate space is a known packet number space.
     if (space < 0 || space > 2) {
       throw ArgumentError('Invalid packet number space: $space');

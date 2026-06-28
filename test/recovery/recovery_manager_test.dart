@@ -86,5 +86,42 @@ void main() {
       expect(manager.rttEstimator, same(rtt));
       expect(manager.sentPacketTracker, same(tracker));
     });
+
+    test('persistent congestion not declared before first ack', () {
+      expect(manager.checkPersistentCongestion(1000000), isFalse);
+    });
+
+    test('persistent congestion declared when duration exceeds 3*PTO', () {
+      // Send and ack a packet so largestAckedSentTime is known.
+      manager.onPacketSent(0, 1, 1000, 100);
+      manager.onAckReceived(0, 1, 2000, 100);
+
+      // With default RTT values, PTO = smoothed_rtt + max(4*rttvar, granularity) + max_ack_delay
+      // Default smoothed = 333000, rttvar = 166500, max_ack_delay = 25000
+      // PTO = 333000 + max(666000, 1000) + 25000 = 333000 + 666000 + 25000 = 1_024_000 us
+      // Persistent duration = 3 * 1_024_000 = 3_072_000 us
+      final pto = rtt.getPtoDuration();
+      final persistentDuration = 3 * pto;
+
+      // Just under the threshold (duration starts from sent time = 1000).
+      expect(manager.checkPersistentCongestion(1000 + persistentDuration),
+          isFalse);
+
+      // Just over the threshold.
+      expect(
+          manager.checkPersistentCongestion(1000 + persistentDuration + 1),
+          isTrue);
+
+      // cwnd should be reset to initial window.
+      expect(congestion.congestionWindow,
+          equals(CongestionController.initialWindow));
+    });
+
+    test('reset clears persistent congestion state', () {
+      manager.onPacketSent(0, 1, 1000, 100);
+      manager.onAckReceived(0, 1, 2000, 100);
+      manager.reset();
+      expect(manager.checkPersistentCongestion(10000000), isFalse);
+    });
   });
 }

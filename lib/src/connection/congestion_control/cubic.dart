@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'congestion_controller.dart';
+import 'hystart.dart';
 
 /// RFC 8312 / RFC 9002 CUBIC congestion controller.
 ///
@@ -24,6 +25,8 @@ class CubicCongestionController implements CongestionController {
   bool _inFastRecovery = false;
   int _recoveryStartPacket = 0;
   int _smoothedRttUs = 1000000; // Default 1s until first RTT sample
+  bool _appLimited = false;
+  final Hystart _hystart = Hystart();
 
   CubicCongestionController({int initialCwnd = 2, int packetSize = 1200})
       : _cwnd = initialCwnd,
@@ -42,8 +45,20 @@ class CubicCongestionController implements CongestionController {
   int get bytesInFlight => _bytesInFlight;
 
   @override
+  bool get appLimited => _appLimited;
+
+  @override
+  void setAppLimited(bool limited) {
+    _appLimited = limited;
+  }
+
+  @override
   void onPacketSent(int packetNumber, int size) {
     _bytesInFlight += size;
+    // Exit app-limited when cwnd is fully utilized.
+    if (_bytesInFlight >= _cwnd * _packetSize) {
+      _appLimited = false;
+    }
   }
 
   @override
@@ -59,8 +74,18 @@ class CubicCongestionController implements CongestionController {
       }
     }
 
+    // Do not grow cwnd when app-limited.
+    if (_appLimited) {
+      _bytesInFlight = max(0, _bytesInFlight - newlyAckedBytes);
+      return;
+    }
+
     if (_cwnd < _ssthresh) {
       // Slow start: cwnd += newly acked packets
+      _hystart.onAck(largestAcked, now);
+      if (_hystart.shouldExitSlowStart) {
+        _ssthresh = _cwnd;
+      }
       _cwnd += newlyAckedBytes ~/ _packetSize;
     } else {
       // Congestion avoidance: CUBIC algorithm
@@ -108,6 +133,11 @@ class CubicCongestionController implements CongestionController {
   }
 
   @override
+  void onPersistentCongestion() {
+    _cwnd = _minCwndPackets;
+  }
+
+  @override
   bool canSend(int bytes) {
     return _bytesInFlight + bytes <= _cwnd * _packetSize;
   }
@@ -147,5 +177,7 @@ class CubicCongestionController implements CongestionController {
     _congestionEventTime = null;
     _bytesInFlight = 0;
     _inFastRecovery = false;
+    _appLimited = false;
+    _hystart.reset();
   }
 }

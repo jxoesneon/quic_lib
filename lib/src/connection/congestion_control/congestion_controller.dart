@@ -40,4 +40,14 @@ abstract class CongestionController {
 
   /// Whether sending [bytes] would exceed the congestion window.
   bool canSend(int bytes);
+
+  /// Whether the application is currently limited (not sending enough
+  /// to fill the congestion window).
+  bool get appLimited;
+
+  /// Set the application-limited state.
+  void setAppLimited(bool limited);
+
+  /// React to persistent congestion being declared (RFC 9002 §7.6).
+  void onPersistentCongestion();
 }

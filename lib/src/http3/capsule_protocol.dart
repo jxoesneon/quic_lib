@@ -9,9 +9,12 @@ import 'package:quic_lib/src/wire/varint.dart';
 /// flow-control capsules; stream registration and backpressure are
 /// managed through QUIC's native stream and flow-control mechanisms.
 ///
-/// This file implements only the capsule types defined by the spec:
-/// DATAGRAM (0x00), CLOSE_WEBTRANSPORT_SESSION (0x6843),
-/// DRAIN_WEBTRANSPORT_SESSION (0x78ae), and GOAWAY (0x1d).
+/// This file implements the capsule types defined by RFC 9220 and
+/// WebTransport over HTTP/3:
+/// DATAGRAM (0x00), CLOSE_WEBTRANSPORT_SESSION (0x2843),
+/// DRAIN_WEBTRANSPORT_SESSION (0x78ae), GOAWAY (0x1d),
+/// REGISTER_BIDIRECTIONAL_STREAM (0x41), and
+/// REGISTER_UNIDIRECTIONAL_STREAM (0x42).
 
 /// Base class for the Capsule Protocol (RFC 9297).
 ///
@@ -91,12 +94,16 @@ abstract class Capsule {
     switch (type) {
       case 0x00:
         return DatagramCapsule(data);
-      case 0x6843:
+      case 0x2843:
         return CloseWebTransportSessionCapsule(data: data);
       case 0x78ae:
         return DrainWebTransportSessionCapsule(data);
       case 0x1d:
         return GoawayCapsule(data);
+      case 0x41:
+        return RegisterBidirectionalStreamCapsule(data);
+      case 0x42:
+        return RegisterUnidirectionalStreamCapsule(data);
       default:
         throw ArgumentError(
           'Unknown capsule type: 0x${type.toRadixString(16)}',
@@ -121,7 +128,7 @@ class DatagramCapsule extends Capsule {
   DatagramCapsule(Uint8List data) : super(type: 0x00, data: data);
 }
 
-/// A CLOSE_WEBTRANSPORT_SESSION capsule (type 0x6843).
+/// A CLOSE_WEBTRANSPORT_SESSION capsule (type 0x2843).
 class CloseWebTransportSessionCapsule extends Capsule {
   final int errorCode;
   final String? errorMessage;
@@ -134,7 +141,7 @@ class CloseWebTransportSessionCapsule extends Capsule {
         errorMessage =
             (data != null) ? _decodeErrorMessage(data) : errorMessage,
         super(
-          type: 0x6843,
+          type: 0x2843,
           data: data ?? _buildData(errorCode, errorMessage),
         );
 
@@ -178,4 +185,16 @@ class DrainWebTransportSessionCapsule extends Capsule {
 /// A GOAWAY capsule (type 0x1d).
 class GoawayCapsule extends Capsule {
   GoawayCapsule(Uint8List data) : super(type: 0x1d, data: data);
+}
+
+/// A REGISTER_BIDIRECTIONAL_STREAM capsule (type 0x41).
+class RegisterBidirectionalStreamCapsule extends Capsule {
+  RegisterBidirectionalStreamCapsule(Uint8List data)
+      : super(type: 0x41, data: data);
+}
+
+/// A REGISTER_UNIDIRECTIONAL_STREAM capsule (type 0x42).
+class RegisterUnidirectionalStreamCapsule extends Capsule {
+  RegisterUnidirectionalStreamCapsule(Uint8List data)
+      : super(type: 0x42, data: data);
 }

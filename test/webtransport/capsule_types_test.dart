@@ -9,7 +9,7 @@ void main() {
   group('CapsuleType', () {
     test('fromValue returns correct enum for known types', () {
       expect(
-        CapsuleType.fromValue(0x1a4),
+        CapsuleType.fromValue(0x2843),
         equals(CapsuleType.closeWebTransportSession),
       );
       expect(
@@ -32,10 +32,10 @@ void main() {
         payload: hexDecode('dead beef'),
       );
       final bytes = capsule.serialize();
-      // type = 0x1a4 -> 2-byte varint: 0x41 0xa4
+      // type = 0x2843 -> 2-byte varint: 0x68 0x43
       // length = 4 -> 1-byte varint: 0x04
       // payload: de ad be ef
-      expect(bytes, equals(hexDecode('41 a4 04 de ad be ef')));
+      expect(bytes, equals(hexDecode('68 43 04 de ad be ef')));
     });
 
     test('parse round-trip', () {

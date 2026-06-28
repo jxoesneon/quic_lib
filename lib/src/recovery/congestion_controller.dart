@@ -1,5 +1,6 @@
 import 'package:quic_lib/src/connection/congestion_control/congestion_controller.dart'
     as cc;
+import 'package:quic_lib/src/connection/congestion_control/hystart.dart';
 
 /// NewReno congestion controller per RFC 9002 Section 7.
 ///
@@ -17,6 +18,8 @@ class CongestionController implements cc.CongestionController {
   int _ssthresh = -1; // -1 means no threshold (always in slow start).
   int _bytesInFlight = 0;
   int _congestionRecoveryStartTime = -1; // -1 means not in recovery.
+  bool _appLimited = false;
+  final Hystart _hystart = Hystart();
 
   /// Current congestion window in bytes.
   @override
@@ -35,6 +38,16 @@ class CongestionController implements cc.CongestionController {
   @override
   int get bytesInFlight => _bytesInFlight;
 
+  /// Whether the application is currently limited.
+  @override
+  bool get appLimited => _appLimited;
+
+  /// Set the application-limited state.
+  @override
+  void setAppLimited(bool limited) {
+    _appLimited = limited;
+  }
+
   /// Register a packet as sent (adds to bytes_in_flight).
   ///
   /// Callers MUST only account in-flight packets (those containing ack-eliciting
@@ -44,6 +57,10 @@ class CongestionController implements cc.CongestionController {
     // SECURITY: Reject negative byte counts.
     if (size < 0) size = 0;
     _bytesInFlight += size;
+    // Exit app-limited when cwnd is fully utilized.
+    if (_bytesInFlight >= _congestionWindow) {
+      _appLimited = false;
+    }
   }
 
   /// Process an ACK.
@@ -58,9 +75,17 @@ class CongestionController implements cc.CongestionController {
       _bytesInFlight = 0;
     }
 
-    // Do not increase cwnd during recovery.
-    if (inRecovery) {
+    // Do not increase cwnd during recovery or when app-limited.
+    if (inRecovery || _appLimited) {
       return;
+    }
+
+    // Hystart: check for early slow-start exit.
+    if (inSlowStart) {
+      _hystart.onAck(largestAcked, now);
+      if (_hystart.shouldExitSlowStart) {
+        _ssthresh = _congestionWindow;
+      }
     }
 
     // SECURITY: Cap cwnd growth to prevent 64-bit integer overflow.
@@ -122,6 +147,15 @@ class CongestionController implements cc.CongestionController {
     onPacketLost(0, _maxDatagramSize, now);
   }
 
+  /// Persistent congestion declared (RFC 9002 §7.6).
+  ///
+  /// Reduces cwnd to the minimum congestion window without clearing
+  /// bytes in flight.
+  @override
+  void onPersistentCongestion() {
+    _congestionWindow = minimumWindow;
+  }
+
   /// Can we send [bytes]?
   @override
   bool canSend(int bytes) {
@@ -135,5 +169,7 @@ class CongestionController implements cc.CongestionController {
     _ssthresh = -1;
     _bytesInFlight = 0;
     _congestionRecoveryStartTime = -1;
+    _appLimited = false;
+    _hystart.reset();
   }
 }

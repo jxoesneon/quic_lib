@@ -176,6 +176,54 @@ void main() {
       await transport.close();
       expect(transport.isClosed, isTrue);
     });
+
+    test('ALPN defaults to [libp2p]', () {
+      final transport = Libp2pQuicTransport();
+      expect(transport.alpnProtocols, equals(['libp2p']));
+    });
+
+    test('custom ALPN protocols are stored', () {
+      final transport = Libp2pQuicTransport(
+        alpnProtocols: ['custom/1', 'custom/2'],
+      );
+      expect(transport.alpnProtocols, equals(['custom/1', 'custom/2']));
+    });
+
+    test('Libp2pQuicConnection exposes ALPN fields', () {
+      final conn = Libp2pQuicConnection('test-conn');
+      expect(conn.alpnProtocols, equals(['libp2p']));
+      expect(conn.negotiatedAlpn, isNull);
+      expect(conn.isAlpnValid, isFalse);
+    });
+
+    test('Libp2pQuicConnection validateAlpn throws when no ALPN negotiated',
+        () {
+      final conn = Libp2pQuicConnection('test-conn');
+      expect(() => conn.validateAlpn(), throwsStateError);
+    });
+
+    test(
+        'Libp2pQuicConnection validateAlpn throws when negotiated '
+        'ALPN is not in list', () {
+      final fakeConn = _FakeQuicConnectionWithAlpn('unknown');
+      final conn = Libp2pQuicConnection(
+        fakeConn,
+        alpnProtocols: ['libp2p'],
+      );
+      expect(() => conn.validateAlpn(), throwsStateError);
+    });
+
+    test(
+        'Libp2pQuicConnection validateAlpn succeeds when negotiated '
+        'ALPN matches', () {
+      final fakeConn = _FakeQuicConnectionWithAlpn('libp2p');
+      final conn = Libp2pQuicConnection(
+        fakeConn,
+        alpnProtocols: ['libp2p'],
+      );
+      expect(conn.isAlpnValid, isTrue);
+      expect(() => conn.validateAlpn(), returnsNormally);
+    });
   });
 }
 
@@ -184,4 +232,9 @@ class _FakeQuicConnection {
   bool closeCalled = false;
   void openUnidirectionalStream() => openUniCalled = true;
   void close() => closeCalled = true;
+}
+
+class _FakeQuicConnectionWithAlpn {
+  final String? negotiatedAlpn;
+  _FakeQuicConnectionWithAlpn(this.negotiatedAlpn);
 }

@@ -13,18 +13,29 @@ class QpackEncoder {
   final QpackDynamicTable dynamicTable = QpackDynamicTable(capacity: 0);
 
   /// Encode a single field line using both static and dynamic tables.
-  Uint8List encode(String name, String value) {
+  ///
+  /// If [base] is provided, dynamic table entries with absolute index
+  /// greater than or equal to [base] are encoded using post-base
+  /// representations (RFC 9204 Section 4.5.3/4.5.5).
+  Uint8List encode(String name, String value, {int? base}) {
     // Try dynamic table exact match first
     final dynamicExact = dynamicTable.find(name, value);
     if (dynamicExact != null) {
-      return _encodeIndexed(QpackStaticTable.length + dynamicExact);
+      final absoluteIndex = QpackStaticTable.length + dynamicExact;
+      if (base != null && absoluteIndex >= base) {
+        return encodePostBaseIndexed(absoluteIndex - base);
+      }
+      return _encodeIndexed(absoluteIndex);
     }
 
     // Try dynamic table name-only match
     final dynamicName = dynamicTable.find(name);
     if (dynamicName != null) {
-      return _encodeLiteralWithNameRef(
-          QpackStaticTable.length + dynamicName, value);
+      final absoluteIndex = QpackStaticTable.length + dynamicName;
+      if (base != null && absoluteIndex >= base) {
+        return encodePostBaseLiteralNameRef(absoluteIndex - base, value);
+      }
+      return _encodeLiteralWithNameRef(absoluteIndex, value);
     }
 
     // Try exact static table match
@@ -45,10 +56,13 @@ class QpackEncoder {
   }
 
   /// Encode multiple field lines.
-  Uint8List encodeLines(List<({String name, String value})> lines) {
+  ///
+  /// If [base] is provided, all lines are encoded with post-base support.
+  Uint8List encodeLines(List<({String name, String value})> lines,
+      {int? base}) {
     final builder = BytesBuilder();
     for (final line in lines) {
-      builder.add(encode(line.name, line.value));
+      builder.add(encode(line.name, line.value, base: base));
     }
     return Uint8List.fromList(builder.toBytes());
   }

@@ -65,16 +65,26 @@ void main() {
       expect(consumed, equals(bytes.length));
     });
 
-    test('parse throws for type 0x41 (formerly incorrect bidirectional)', () {
-      // Raw capsule: type 0x41, length 0x00, no data.
-      final unknown = Uint8List.fromList([0x41, 0x00]);
-      expect(() => Capsule.parse(unknown), throwsArgumentError);
+    test('RegisterBidirectionalStreamCapsule round-trip', () {
+      final data = Uint8List.fromList([0x08]);
+      final capsule = RegisterBidirectionalStreamCapsule(data);
+      final bytes = capsule.serialize();
+      final (parsed, consumed) = Capsule.parse(bytes);
+
+      expect(parsed, isA<RegisterBidirectionalStreamCapsule>());
+      expect(parsed, equals(capsule));
+      expect(consumed, equals(bytes.length));
     });
 
-    test('parse throws for type 0x42 (formerly incorrect unidirectional)', () {
-      // Raw capsule: type 0x42, length 0x00, no data.
-      final unknown = Uint8List.fromList([0x42, 0x00]);
-      expect(() => Capsule.parse(unknown), throwsArgumentError);
+    test('RegisterUnidirectionalStreamCapsule round-trip', () {
+      final data = Uint8List.fromList([0x0C]);
+      final capsule = RegisterUnidirectionalStreamCapsule(data);
+      final bytes = capsule.serialize();
+      final (parsed, consumed) = Capsule.parse(bytes);
+
+      expect(parsed, isA<RegisterUnidirectionalStreamCapsule>());
+      expect(parsed, equals(capsule));
+      expect(consumed, equals(bytes.length));
     });
 
     test('parse throws for truncated data', () {

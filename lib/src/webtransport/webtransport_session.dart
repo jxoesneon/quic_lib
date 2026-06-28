@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:dart_quic/src/logging/quic_logger.dart';
 import 'package:dart_quic/src/webtransport/capsule_types.dart';
+import 'package:dart_quic/src/webtransport/goaway_capsule.dart';
 import 'package:dart_quic/src/wire/varint.dart';
 
 /// Manages the state of a single WebTransport session over HTTP/3.
@@ -12,6 +13,7 @@ class WebTransportSession {
   final int _sessionId;
   bool _isDraining = false;
   bool _isClosed = false;
+  bool _receivedGoaway = false;
 
   WebTransportSession(this._sessionId);
 
@@ -26,6 +28,9 @@ class WebTransportSession {
 
   /// Whether the session is still active (not draining and not closed).
   bool get isActive => !_isDraining && !_isClosed;
+
+  /// Whether a GOAWAY capsule has been received from the peer.
+  bool get receivedGoaway => _receivedGoaway;
 
   final List<Uint8List> _receivedDatagrams = [];
   final List<int> _registeredBidirectionalStreams = [];
@@ -56,6 +61,8 @@ class WebTransportSession {
       case CapsuleType.registerUnidirectionalStream:
         final streamId = VarInt.decode(Uint8List.fromList(capsule.payload).buffer);
         _registeredUnidirectionalStreams.add(streamId);
+      case CapsuleType.goaway:
+        _receivedGoaway = true;
       default:
         // Unknown/extension capsules are ignored per RFC 9220.
         break;
@@ -105,6 +112,13 @@ class WebTransportSession {
       type: CapsuleType.datagram,
       payload: data,
     );
+  }
+
+  /// Send a GOAWAY capsule to signal that no new sessions will be accepted.
+  ///
+  /// Optionally includes the last stream ID that will be processed.
+  GoawayCapsule sendGoaway({int? streamId}) {
+    return GoawayCapsule(streamId: streamId);
   }
 
   /// Called when the locally-initiated CLOSE has been acknowledged.

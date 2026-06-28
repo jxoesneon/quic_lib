@@ -116,6 +116,23 @@ class QuicEndpoint {
     _remotePorts[conn] = newPort;
   }
 
+  /// Scaffold for production connection migration with UDP socket rebind.
+  ///
+  /// Validates the new path using [changeConnectionAddress] and then updates
+  /// the connection's stored remote address.
+  ///
+  /// **Note:** True UDP socket rebind requires OS-level support (e.g.
+  /// `IP_RECVERR`, `SO_REUSEPORT`, or platform-specific APIs). This scaffold
+  /// updates the logical remote address used for [send] via the existing
+  /// [UdpSocket] instance.
+  Future<void> rebindToAddress(QuicConnection conn, InternetAddress newAddress, int newPort) async {
+    // Validate the new path via PATH_CHALLENGE/PATH_RESPONSE.
+    await changeConnectionAddress(conn, newAddress, newPort);
+    // Update the logical remote address used for sending packets.
+    _remoteAddresses[conn] = newAddress;
+    _remotePorts[conn] = newPort;
+  }
+
   /// Close the endpoint and all associated connections.
   void close() {
     for (final conn in _connections) {

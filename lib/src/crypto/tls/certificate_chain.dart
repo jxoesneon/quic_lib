@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:dart_quic/src/crypto/tls/x509_parser.dart';
+
 /// Parsed certificate metadata used for chain validation.
 ///
 /// In a full implementation this would be produced by an ASN.1 / X.509 parser.
@@ -27,19 +29,34 @@ class CertificateInfo {
 
 /// Parses a raw certificate into a [CertificateInfo].
 ///
-/// **Scaffold:** Constructs a synthetic [CertificateInfo] from the raw bytes
-/// so that chain validation logic can be tested. Real ASN.1 parsing is a
-/// future enhancement.
+/// **Scaffold:** Attempts to parse [rawBytes] as a DER-encoded X.509
+/// certificate via [parseX509].  If the bytes are not valid DER (e.g. unit
+/// test stubs), falls back to the legacy synthetic [CertificateInfo] so that
+/// existing callers continue to work.
 CertificateInfo parseCertificate(List<int> rawBytes) {
-  return CertificateInfo(
-    rawBytes: Uint8List.fromList(rawBytes),
-    subjectPublicKey: const [],
-    algorithm: 'ed25519',
-    notBefore: DateTime(2020, 1, 1),
-    notAfter: DateTime(2030, 1, 1),
-    subjectName: 'CN=scaffold',
-    issuerName: 'CN=scaffold-issuer',
-  );
+  try {
+    final x509 = parseX509(rawBytes);
+    return CertificateInfo(
+      rawBytes: Uint8List.fromList(rawBytes),
+      subjectPublicKey: Uint8List.fromList(x509.subjectPublicKeyInfo),
+      algorithm: x509.signatureAlgorithm,
+      notBefore: x509.notBefore,
+      notAfter: x509.notAfter,
+      subjectName: String.fromCharCodes(x509.subject),
+      issuerName: String.fromCharCodes(x509.issuer),
+    );
+  } on FormatException {
+    // Scaffold fallback for non-DER input (test stubs, mock data, etc.).
+    return CertificateInfo(
+      rawBytes: Uint8List.fromList(rawBytes),
+      subjectPublicKey: const [],
+      algorithm: 'ed25519',
+      notBefore: DateTime(2020, 1, 1),
+      notAfter: DateTime(2030, 1, 1),
+      subjectName: 'CN=scaffold',
+      issuerName: 'CN=scaffold-issuer',
+    );
+  }
 }
 
 /// Returns `true` if [cert] is outside its validity window relative to [now].

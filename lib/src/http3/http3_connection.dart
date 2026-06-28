@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'cancel_push_frame.dart';
 import 'data_frame.dart';
 import 'frame_types.dart';
+import 'goaway_frame.dart';
 import 'headers_frame.dart';
 import 'http3_request.dart';
 import 'http3_response.dart';
@@ -35,6 +36,8 @@ class Http3Connection {
   Http3SettingsFrame? _pendingSettings;
 
   bool _isClosing = false;
+  int _lastAcceptedStreamId = 0;
+  final List<Http3GoawayFrame> _sentGoawayFrames = [];
   final Map<int, HeadersFrame> _pendingHeaders = {};
   final Map<int, List<DataFrame>> _pendingData = {};
   final Map<int, Http3PushPromiseFrame> _pushPromises = {};
@@ -67,6 +70,15 @@ class Http3Connection {
 
   /// True once a GOAWAY frame has been received.
   bool get isClosing => _isClosing;
+
+  /// The last accepted stream ID.
+  int get lastAcceptedStreamId => _lastAcceptedStreamId;
+
+  /// GOAWAY frames that have been sent on this connection.
+  List<Http3GoawayFrame> get sentGoawayFrames => List.unmodifiable(_sentGoawayFrames);
+
+  /// True once a GOAWAY frame has been sent.
+  bool get hasSentGoaway => _sentGoawayFrames.isNotEmpty;
 
   /// Pending HEADERS frame for a given stream.
   HeadersFrame? getPendingHeaders(int streamId) => _pendingHeaders[streamId];
@@ -184,10 +196,16 @@ class Http3Connection {
     switch (frame.type) {
       case Http3FrameType.headers:
         _pendingHeaders[streamId] = HeadersFrame.fromPayload(frame.payload);
+        if (streamId > _lastAcceptedStreamId) {
+          _lastAcceptedStreamId = streamId;
+        }
         break;
       case Http3FrameType.data:
         final dataFrame = DataFrame.fromPayload(frame.payload);
         _pendingData.putIfAbsent(streamId, () => []).add(dataFrame);
+        if (streamId > _lastAcceptedStreamId) {
+          _lastAcceptedStreamId = streamId;
+        }
         break;
       case Http3FrameType.settings:
         onSettingsReceived(
@@ -218,6 +236,8 @@ class Http3Connection {
   /// Gracefully close the HTTP/3 connection.
   void close() {
     _isClosing = true;
-    // TODO: Send GOAWAY frame, drain streams, close QUIC connection.
+    final goaway = Http3GoawayFrame(lastStreamIdOrPushId: _lastAcceptedStreamId);
+    _sentGoawayFrames.add(goaway);
+    // TODO: Actually send the GOAWAY frame over the QUIC control stream
   }
 }

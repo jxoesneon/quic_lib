@@ -246,6 +246,17 @@ See `SECURITY_FIXES.md` for the complete list.
 | Fuzz harness scaffold | **DONE** — `test/fuzz/fuzz_harness.dart` |
 | Benchmark harness scaffold | **DONE** — `test/benchmark/benchmark_harness.dart` |
 
+### Completed in v1.1.0
+
+| Gap | Status |
+|-----|--------|
+| TLS transcript hash tracking | **DONE** — `TranscriptHash` maintains running SHA-256 of handshake messages; `HandshakeCoordinator` adds ClientHello to transcript |
+| HTTP/3 GOAWAY frame sending | **DONE** — `Http3Connection.close()` records `Http3GoawayFrame`; `lastAcceptedStreamId` tracks highest stream ID; `hasSentGoaway`/`sentGoawayFrames` |
+| QUIC v2 long header format | **DONE** — `V2LongHeader` implements RFC 9369 v2 first-byte encoding; serialize/parse round-trip for all packet types |
+| WebTransport GOAWAY capsule | **DONE** — `CapsuleType.goaway(0x1d)`, `GoawayCapsule`, `WebTransportSession.receivedGoaway`/`sendGoaway()` |
+| Production connection migration scaffold | **DONE** — `QuicEndpoint.rebindToAddress()` validates path and updates stored remote address after PATH_CHALLENGE/RESPONSE |
+| X.509 certificate parser scaffold | **DONE** — `X509Certificate` with TBSCertificate, signature, issuer, subject, validity; `parseX509()` validates DER tag; wired into `CertificateChain` and `CertificateVerifier` |
+
 ### Completed in v1.0.0
 
 | Gap | Status |
@@ -270,12 +281,12 @@ See `SECURITY_FIXES.md` for the complete list.
 
 | Gap | Impact | ETA |
 |-----|--------|-----|
-| Real ASN.1/X.509 certificate parsing | `CertificateChain` is a scaffold; needs BER/DER parser for production use | Post-v1.0 |
-| Full TLS handshake over production network | `HandshakeCoordinator` scaffold needs transcript hash, cert verification, Finished messages | Post-v1.0 |
-| HTTP/3 server push over network | Scaffold exists but no actual network transmission | Post-v1.0 |
-| Complete WebTransport spec compliance | Bidirectional capsule types added; remaining spec features | Post-v1.0 |
-| Production connection migration | PATH_CHALLENGE/RESPONSE wired; needs real network address switching | Post-v1.0 |
-| QUIC v2 full feature set | Version recognized; v2-specific frames and behaviors not yet wired | Post-v1.0 |
+| Full ASN.1/DER parser | `X509Certificate` is a scaffold; needs real BER/DER parser for production X.509 | Post-v1.1 |
+| Production TLS 1.3 handshake | `HandshakeCoordinator` scaffold needs transcript hash integration with Finished message, cert verification in handshake flow | Post-v1.1 |
+| HTTP/3 server push over network | `registerPushPromise()` scaffold needs actual stream transmission | Post-v1.1 |
+| Complete WebTransport spec | Bidirectional capsule types added; remaining spec features (flow control, pooling) | Post-v1.1 |
+| QUIC v2 full feature set | `V2LongHeader` format added; v2-specific frames and behaviors (e.g., new ACK format) | Post-v1.1 |
+| Real network address migration | `rebindToAddress()` is a scaffold; needs OS-level UDP socket rebind for production | Post-v1.1 |
 
 ---
 

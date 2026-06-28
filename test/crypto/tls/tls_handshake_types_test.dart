@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/crypto/tls/tls_handshake_types.dart';
+import 'package:quic_lib/src/crypto/tls/tls_handshake_types.dart';
 
 void main() {
   group('TlsHandshakeType', () {
@@ -36,7 +36,8 @@ void main() {
       expect(TlsExtensionType.signatureAlgorithms.value, 0x000d);
       expect(TlsExtensionType.useSrtp.value, 0x000e);
       expect(TlsExtensionType.heartbeat.value, 0x000f);
-      expect(TlsExtensionType.applicationLayerProtocolNegotiation.value, 0x0010);
+      expect(
+          TlsExtensionType.applicationLayerProtocolNegotiation.value, 0x0010);
       expect(TlsExtensionType.signedCertificateTimestamp.value, 0x0012);
       expect(TlsExtensionType.clientCertificateType.value, 0x0013);
       expect(TlsExtensionType.serverCertificateType.value, 0x0014);

@@ -143,7 +143,8 @@ abstract class CryptoBackend {
   Future<KeyPair> x25519GenerateKeyPair();
 
   /// Performs X25519 ECDH.
-  Future<SecretKey> x25519SharedSecret(SecretKey privateKey, PublicKey publicKey);
+  Future<SecretKey> x25519SharedSecret(
+      SecretKey privateKey, PublicKey publicKey);
 
   // -------------------------------------------------------------------------
   // Signatures (Ed25519)

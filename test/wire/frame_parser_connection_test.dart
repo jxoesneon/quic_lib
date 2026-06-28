@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 
 void main() {
   group('Connection-management frame parsing', () {
@@ -35,7 +35,8 @@ void main() {
       final bytes = original.serialize();
       final (parsed, nextOffset) = FrameCodec.parse(bytes);
       expect(parsed, isA<PathChallengeFrame>());
-      expect((parsed as PathChallengeFrame).data, equals(List<int>.filled(8, 0xCD)));
+      expect((parsed as PathChallengeFrame).data,
+          equals(List<int>.filled(8, 0xCD)));
       expect(nextOffset, equals(bytes.length));
     });
 
@@ -44,7 +45,8 @@ void main() {
       final bytes = original.serialize();
       final (parsed, nextOffset) = FrameCodec.parse(bytes);
       expect(parsed, isA<PathResponseFrame>());
-      expect((parsed as PathResponseFrame).data, equals(List<int>.filled(8, 0xEF)));
+      expect((parsed as PathResponseFrame).data,
+          equals(List<int>.filled(8, 0xEF)));
       expect(nextOffset, equals(bytes.length));
     });
 
@@ -65,7 +67,8 @@ void main() {
     });
 
     test('parse APPLICATION_CLOSE', () {
-      final original = ApplicationCloseFrame(errorCode: 0x0200, reasonPhrase: 'done');
+      final original =
+          ApplicationCloseFrame(errorCode: 0x0200, reasonPhrase: 'done');
       final bytes = original.serialize();
       final (parsed, nextOffset) = FrameCodec.parse(bytes);
       expect(parsed, isA<ApplicationCloseFrame>());

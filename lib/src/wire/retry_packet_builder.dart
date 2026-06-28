@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/packet/retry_integrity_tag.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/packet/retry_integrity_tag.dart';
 
 /// Builds QUIC Retry packets per RFC 9000 Section 17.2.5.
 class RetryPacketBuilder {

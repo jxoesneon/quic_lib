@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:dart_quic/dart_quic.dart';
+import 'package:quic_lib/dart_quic.dart';
 
 /// Minimal QUIC echo client example.
 ///
@@ -9,7 +9,8 @@ import 'package:dart_quic/dart_quic.dart';
 Future<void> main() async {
   // 1. Create a QuicEndpoint bound to an ephemeral port.
   final endpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
-  print('Endpoint bound to ${endpoint.localAddress.address}:${endpoint.localPort}');
+  print(
+      'Endpoint bound to ${endpoint.localAddress.address}:${endpoint.localPort}');
 
   // 2. Connect to a server at 127.0.0.1:4433.
   final remoteAddress = InternetAddress.loopbackIPv4;

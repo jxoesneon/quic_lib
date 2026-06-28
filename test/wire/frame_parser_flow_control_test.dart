@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 
 void main() {
   group('Flow-control frame parsing', () {
@@ -68,7 +68,8 @@ void main() {
     });
 
     test('STREAMS_BLOCKED bidi (0x16)', () {
-      final frame = StreamsBlockedFrame(maxStreams: 50, isUnidirectional: false);
+      final frame =
+          StreamsBlockedFrame(maxStreams: 50, isUnidirectional: false);
       final bytes = frame.serialize();
       final (parsed, offset) = FrameCodec.parse(bytes);
       expect(parsed, isA<StreamsBlockedFrame>());

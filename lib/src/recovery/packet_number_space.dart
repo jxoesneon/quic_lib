@@ -84,8 +84,8 @@ class PacketNumberSpaceManager {
       if (diff >= _replayWindowSize) {
         _receivedWindow[space] = 0;
       } else {
-        _receivedWindow[space] = (_receivedWindow[space]! << diff) &
-            ((_replayWindowSize << 1) - 1);
+        _receivedWindow[space] =
+            (_receivedWindow[space]! << diff) & ((_replayWindowSize << 1) - 1);
       }
       _receivedWindow[space] = _receivedWindow[space]! | 1;
       _largestReceived[space] = packetNumber;

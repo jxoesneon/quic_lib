@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/http3/qpack_string.dart';
+import 'package:quic_lib/src/http3/qpack_string.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -25,7 +25,8 @@ void main() {
 
     test('long string uses multi-byte length', () {
       // 150 'A' characters → UTF-8 length = 150 (> 127).
-      const value = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+      const value =
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
       final encoded = QpackString.encode(value);
 
       // First byte should have prefix = 0x7F (127) because length >= 127.

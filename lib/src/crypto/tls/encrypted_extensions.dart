@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/tls/client_hello.dart';
+import 'package:quic_lib/src/crypto/tls/client_hello.dart';
 
 /// TLS 1.3 EncryptedExtensions structure per RFC 8446 Section 4.3.1.
 ///

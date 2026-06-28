@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 import 'package:test/test.dart';
-import 'package:dart_quic/src/streams/reassembly_buffer.dart';
+import 'package:quic_lib/src/streams/reassembly_buffer.dart';
 
 void main() {
   group('ReassemblyBuffer', () {
@@ -18,7 +18,8 @@ void main() {
       expect(buf.read(), isNull);
       buf.insert(0, [0x01, 0x02, 0x03, 0x04]);
       final data = buf.read();
-      expect(data, equals(Uint8List.fromList([0x01, 0x02, 0x03, 0x04, 0x05, 0x06])));
+      expect(data,
+          equals(Uint8List.fromList([0x01, 0x02, 0x03, 0x04, 0x05, 0x06])));
     });
 
     test('final size triggers completion', () {

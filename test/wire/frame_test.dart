@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 import 'package:test/test.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 
 void main() {
   group('PaddingFrame', () {
@@ -82,7 +82,8 @@ void main() {
     });
 
     test('without explicit length', () {
-      final f = StreamFrame(streamId: 12, data: [0xCC], hasExplicitLength: false);
+      final f =
+          StreamFrame(streamId: 12, data: [0xCC], hasExplicitLength: false);
       expect(f.frameType & 0x02, equals(0));
     });
   });
@@ -193,7 +194,8 @@ void main() {
 
   group('ConnectionCloseFrame', () {
     test('transport with reason', () {
-      final f = ConnectionCloseFrame(errorCode: 0x0100, offendingFrameType: 0x06, reasonPhrase: 'test');
+      final f = ConnectionCloseFrame(
+          errorCode: 0x0100, offendingFrameType: 0x06, reasonPhrase: 'test');
       expect(f.serialize()[0], equals(0x1c));
     });
   });

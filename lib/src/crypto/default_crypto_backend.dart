@@ -427,7 +427,8 @@ class DefaultCryptoBackend implements CryptoBackend {
     // Expect uncompressed point: 0x04 || X || Y (65 bytes)
     final pubBytes = publicKey.bytes;
     if (pubBytes.length != 65 || pubBytes[0] != 0x04) {
-      throw ArgumentError('Expected 65-byte uncompressed ECDSA P-256 public key');
+      throw ArgumentError(
+          'Expected 65-byte uncompressed ECDSA P-256 public key');
     }
 
     final q = domainParams.curve.decodePoint(Uint8List.fromList(pubBytes));

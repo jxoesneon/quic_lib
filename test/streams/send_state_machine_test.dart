@@ -1,4 +1,4 @@
-import 'package:dart_quic/src/streams/send_state_machine.dart';
+import 'package:quic_lib/src/streams/send_state_machine.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -96,16 +96,14 @@ void main() {
       // ready → sent (invalid)
       expect(() => sm.transitionTo(SendStreamState.sent), throwsStateError);
       // ready → received (invalid)
-      expect(
-          () => sm.transitionTo(SendStreamState.received), throwsStateError);
+      expect(() => sm.transitionTo(SendStreamState.received), throwsStateError);
       // ready → resetReceived (invalid)
       expect(() => sm.transitionTo(SendStreamState.resetReceived),
           throwsStateError);
 
       sm.onDataSent();
       // send → received (invalid)
-      expect(
-          () => sm.transitionTo(SendStreamState.received), throwsStateError);
+      expect(() => sm.transitionTo(SendStreamState.received), throwsStateError);
       // send → ready (invalid)
       expect(() => sm.transitionTo(SendStreamState.ready), throwsStateError);
 
@@ -141,7 +139,8 @@ void main() {
       expect(() => sm2.transitionTo(SendStreamState.sent), throwsStateError);
       expect(
           () => sm2.transitionTo(SendStreamState.received), throwsStateError);
-      expect(() => sm2.transitionTo(SendStreamState.resetSent), throwsStateError);
+      expect(
+          () => sm2.transitionTo(SendStreamState.resetSent), throwsStateError);
     });
 
     test('isTerminal, canSend, wasReset flags across states', () {

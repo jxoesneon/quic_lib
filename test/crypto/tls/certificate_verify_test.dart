@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:dart_quic/src/crypto/tls/certificate_verify.dart';
+import 'package:quic_lib/src/crypto/tls/certificate_verify.dart';
 
 void main() {
   group('CertificateVerify', () {

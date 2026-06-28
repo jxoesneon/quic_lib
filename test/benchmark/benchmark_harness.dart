@@ -1,13 +1,13 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/connection/connection_state_machine.dart';
-import 'package:dart_quic/src/connection/connection_id_manager.dart';
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
-import 'package:dart_quic/src/crypto/initial_secrets.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/wire/varint.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/connection/connection_state_machine.dart';
+import 'package:quic_lib/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/initial_secrets.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/wire/varint.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 
 /// Benchmark harness for dart_quic performance regression testing.
 ///
@@ -53,7 +53,8 @@ void main() async {
     await InitialSecrets.derive(dcid, backend: backend);
   }
   final secretMs = DateTime.now().millisecondsSinceEpoch - secretStart;
-  print('InitialSecrets derive: ${secretIterations / (secretMs / 1000)} ops/sec');
+  print(
+      'InitialSecrets derive: ${secretIterations / (secretMs / 1000)} ops/sec');
 
   // --- FrameCodec benchmark ---
   final sampleFrame = AckFrame(

@@ -1,4 +1,4 @@
-import 'package:dart_quic/src/http3/http3_stream.dart';
+import 'package:quic_lib/src/http3/http3_stream.dart';
 import 'package:test/test.dart';
 
 void main() {

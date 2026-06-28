@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 
 void main() {
   group('FrameCodec.parse ACK_ECN frames', () {

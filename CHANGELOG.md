@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implemented libp2p certificate generator
 - Implemented multistream-select protocol
 - Implemented WebTransport session establishment
+- Implemented RFC 7541 static Huffman encoding for QPACK string literals
+- Implemented QPACK post-base index representations (RFC 9204 Sections 4.5.3, 4.5.5)
+- Added all missing RFC 9000 Section 18.2 transport parameters
+- Added HTTP/3 unidirectional stream type identifiers (RFC 9114 Section 6.2)
+- Added ECN validation per RFC 9000 Section 13.4.2
 
 ---
 

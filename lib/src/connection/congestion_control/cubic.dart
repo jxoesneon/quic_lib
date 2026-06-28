@@ -23,6 +23,7 @@ class CubicCongestionController implements CongestionController {
   int _bytesInFlight = 0;
   bool _inFastRecovery = false;
   int _recoveryStartPacket = 0;
+  int _smoothedRttUs = 1000000; // Default 1s until first RTT sample
 
   CubicCongestionController({int initialCwnd = 2, int packetSize = 1200})
       : _cwnd = initialCwnd,
@@ -94,14 +95,16 @@ class CubicCongestionController implements CongestionController {
 
   @override
   void onRttSample(Duration rtt) {
-    // CUBIC doesn't directly use RTT for cwnd calculation, but it's useful
+    _smoothedRttUs = rtt.inMicroseconds;
   }
 
   @override
   void onECNCEMarked(int count) {
-    // Treat ECN CE marks as loss events
+    // RFC 9002 Section 7.3.3: Reduce cwnd as though a loss was detected.
+    // Estimate lost bytes as one packet since ECN CE marks don't indicate
+    // exact lost bytes.
     final now = DateTime.now();
-    onPacketLost(_recoveryStartPacket + 1, 0, now);
+    onPacketLost(_recoveryStartPacket + 1, _packetSize, now);
   }
 
   @override
@@ -119,9 +122,12 @@ class CubicCongestionController implements CongestionController {
     final k = _cubicK();
     final wCubic = _cubicScalingFactor * pow(t - k, 3) + _wMax;
 
-    // TCP-friendly region (simplified RTT = 1s)
-    final wEst =
-        _wMax * _betaCubic + (3 * (1 - _betaCubic) / (1 + _betaCubic)) * t;
+    // TCP-friendly region (RFC 8312 Equation 2)
+    // W_est(t) = W_max * beta + (3 * (1 - beta) / (1 + beta)) * (t / RTT)
+    final rttSeconds = _smoothedRttUs / 1e6;
+    final tOverRtt = rttSeconds > 0 ? t / rttSeconds : t;
+    final wEst = _wMax * _betaCubic +
+        (3 * (1 - _betaCubic) / (1 + _betaCubic)) * tOverRtt;
 
     final target = wCubic > wEst ? wCubic : wEst;
     return max(target.floor(), _minCwndPackets);

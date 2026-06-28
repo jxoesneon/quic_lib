@@ -185,20 +185,20 @@ class QpackStaticTable {
     QpackStaticTableEntry('x-xss-protection', '1; report='),
   ];
 
-  /// Look up an entry by index (1-based per RFC 9204).
+  /// Look up an entry by index (0-based per RFC 9204 Section 3.1).
   static QpackStaticTableEntry? get(int index) {
-    if (index < 1 || index > entries.length) return null;
-    return entries[index - 1];
+    if (index < 0 || index >= entries.length) return null;
+    return entries[index];
   }
 
   /// Find the index of a name (with optional value).
-  /// Returns the 1-based index if found, null otherwise.
+  /// Returns the 0-based index if found, null otherwise.
   static int? findIndex(String name, [String? value]) {
     for (var i = 0; i < entries.length; i++) {
       final entry = entries[i];
       if (entry.name == name) {
         if (value == null || entry.value == value) {
-          return i + 1;
+          return i;
         }
       }
     }

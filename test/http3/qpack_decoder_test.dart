@@ -86,9 +86,9 @@ void main() {
     });
 
     test('decodeFieldLine throws for indexed entry with null value', () {
-      // Static table index 1 is ':authority' which has no value.
-      // Indexed representation: 1 + 6-bit prefix.
-      final indexBytes = QpackInteger.encode(1, 6);
+      // Static table index 0 is ':authority' which has no value.
+      // Indexed representation: 0 + 6-bit prefix.
+      final indexBytes = QpackInteger.encode(0, 6);
       indexBytes[0] |= 0x80; // Set first bit to 1 for indexed representation
       expect(
         () => QpackDecoder.decodeFieldLine(indexBytes, 0),

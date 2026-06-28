@@ -4,13 +4,13 @@ import 'package:quic_lib/src/http3/qpack_static_table.dart';
 void main() {
   group('QpackStaticTable', () {
     test('get returns correct entry for known indices', () {
-      final entry = QpackStaticTable.get(1);
+      final entry = QpackStaticTable.get(0);
       expect(entry, isNotNull);
       expect(entry!.name, equals(':authority'));
     });
 
     test('get returns null for out-of-bounds', () {
-      expect(QpackStaticTable.get(0), isNull);
+      expect(QpackStaticTable.get(-1), isNull);
       expect(QpackStaticTable.get(1000), isNull);
     });
 
@@ -37,7 +37,7 @@ void main() {
     });
 
     test('all entries have non-empty names', () {
-      for (var i = 1; i <= QpackStaticTable.length; i++) {
+      for (var i = 0; i < QpackStaticTable.length; i++) {
         final entry = QpackStaticTable.get(i);
         expect(entry, isNotNull);
         expect(entry!.name.isNotEmpty, isTrue);

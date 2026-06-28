@@ -25,7 +25,7 @@ void main() {
       expect(frame.settings, hasLength(3));
       expect(frame.settings[0x06], equals(16384));
       expect(frame.settings[0x01], equals(2048));
-      expect(frame.settings[0x02], equals(50));
+      expect(frame.settings[0x07], equals(50));
     });
 
     test('from factory includes new settings', () {

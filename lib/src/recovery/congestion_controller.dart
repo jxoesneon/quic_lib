@@ -111,9 +111,15 @@ class CongestionController implements cc.CongestionController {
   }
 
   /// React to ECN Congestion Experienced (CE) marks.
+  ///
+  /// Per RFC 9002 Section 7.3.3, reduces the congestion window as though
+  /// a loss was detected.
   @override
   void onECNCEMarked(int count) {
-    // Not implemented for NewReno; treat as no-op.
+    final now = DateTime.now();
+    // ECN CE marks don't specify exact lost bytes; treat as a single
+    // packet loss for cwnd reduction purposes.
+    onPacketLost(0, _maxDatagramSize, now);
   }
 
   /// Can we send [bytes]?

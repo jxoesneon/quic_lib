@@ -10,8 +10,8 @@ enum Http3SettingsId {
   /// SETTINGS_QPACK_MAX_TABLE_CAPACITY (0x01)
   maxTableCapacity(0x01),
 
-  /// SETTINGS_QPACK_BLOCKED_STREAMS (0x02)
-  blockedStreams(0x02),
+  /// SETTINGS_QPACK_BLOCKED_STREAMS (0x07) per RFC 9204 Section 5.
+  blockedStreams(0x07),
 
   /// SETTINGS_ENABLE_CONNECT_PROTOCOL (0x08) per RFC 9220.
   enableConnectProtocol(0x08),

@@ -23,7 +23,9 @@ library;
 
 export 'src/libp2p/peer_id.dart' show PeerId;
 export 'src/libp2p/multiaddr.dart' show Multiaddr, MultiaddrComponent;
+export 'src/libp2p/dcutr.dart' show DCUtRMessage, DCUtRHandler;
 export 'src/libp2p/dcutr_state_machine.dart' show DCUtRStateMachine;
+export 'src/libp2p/dcutr_udp_coordinator.dart' show DCUtRUdpCoordinator;
 export 'src/libp2p/libp2p_quic_transport.dart'
     show Libp2pQuicTransport, Libp2pQuicConnection;
 export 'src/libp2p/multistream_select.dart' show MultistreamSelect;

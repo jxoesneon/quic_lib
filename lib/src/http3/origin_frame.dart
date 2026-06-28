@@ -7,22 +7,26 @@ import 'package:quic_lib/src/wire/varint.dart';
 
 /// HTTP/3 ORIGIN frame payload.
 ///
-/// RFC 9412 Section 2.2: the payload consists of zero or more
-/// origin entries. Each entry is a VarInt-encoded length followed by
-/// an ASCII-encoded origin (scheme + host + port, e.g.,
-/// "https://example.com").
+/// RFC 9412 Section 2.1: the payload consists of zero or more
+/// origin entries. Each entry is a 16-bit unsigned integer
+/// (Origin-Len) in network byte order, followed by an ASCII-encoded
+/// origin (scheme + host + port, e.g., "https://example.com").
 class OriginFrame {
   /// The alternative origins advertised by this frame.
   final List<String> origins;
 
   OriginFrame({required this.origins});
 
-  /// Serialize payload: sequence of VarInt(length) + origin_bytes.
+  /// Serialize payload: sequence of 16-bit uint(length) + origin_bytes.
   Uint8List serializePayload() {
     final builder = BytesBuilder();
     for (final origin in origins) {
       final originBytes = utf8.encode(origin);
-      builder.add(VarInt.encode(originBytes.length));
+      if (originBytes.length > 65535) {
+        throw ArgumentError('Origin too long: ${originBytes.length} bytes');
+      }
+      builder.addByte((originBytes.length >> 8) & 0xFF);
+      builder.addByte(originBytes.length & 0xFF);
       builder.add(originBytes);
     }
     return builder.toBytes();
@@ -40,9 +44,13 @@ class OriginFrame {
     var offset = 0;
 
     while (offset < payload.length) {
-      final length = VarInt.decode(payload.buffer, offset: offset);
-      final lengthLength = VarInt.decodeLength(payload[offset]);
-      offset += lengthLength;
+      if (offset + 2 > payload.length) {
+        throw ArgumentError(
+          'ORIGIN payload too short for Origin-Len at offset $offset',
+        );
+      }
+      final length = (payload[offset] << 8) | payload[offset + 1];
+      offset += 2;
 
       if (offset + length > payload.length) {
         throw ArgumentError(

@@ -83,25 +83,13 @@ class QpackEncoder {
   /// Find a static table index for an exact name+value match.
   /// Returns the 1-based index or null.
   static int? findStaticIndex(String name, String value) {
-    for (var i = 1; i <= QpackStaticTable.length; i++) {
-      final entry = QpackStaticTable.get(i)!;
-      if (entry.name == name && entry.value == value) {
-        return i;
-      }
-    }
-    return null;
+    return QpackStaticTable.findIndex(name, value);
   }
 
   /// Find the first static table index for a given name.
-  /// Returns the 1-based index or null.
+  /// Returns the 0-based index or null.
   static int? findStaticNameIndex(String name) {
-    for (var i = 1; i <= QpackStaticTable.length; i++) {
-      final entry = QpackStaticTable.get(i)!;
-      if (entry.name == name) {
-        return i;
-      }
-    }
-    return null;
+    return QpackStaticTable.findIndex(name);
   }
 
   // Indexed representation: 1 + 6-bit prefix

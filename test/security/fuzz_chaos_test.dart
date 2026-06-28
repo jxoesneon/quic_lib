@@ -236,9 +236,9 @@ void _qpackFuzzGroup() {
     });
 
     test('static table get bounds-checked', () {
-      expect(QpackStaticTable.get(0), isNull);
+      expect(QpackStaticTable.get(-1), isNull);
       expect(QpackStaticTable.get(9999), isNull);
-      expect(QpackStaticTable.get(1), isNotNull);
+      expect(QpackStaticTable.get(0), isNotNull);
     });
 
     test('encodeFieldLines with empty list returns empty bytes', () {

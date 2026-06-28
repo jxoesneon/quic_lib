@@ -263,3 +263,10 @@ export 'src/libp2p/multistream_select.dart' show MultistreamSelect;
 export 'src/libp2p/libp2p_tls_extension.dart' show SignedKey, Libp2pExtension;
 export 'src/libp2p/libp2p_certificate_generator.dart'
     show Libp2pCertificateGenerator;
+
+// ---------------------------------------------------------------------------
+// Congestion control exports
+// ---------------------------------------------------------------------------
+export 'src/connection/congestion_control/bbr.dart'
+    show BbrCongestionController, BbrState;
+export 'src/connection/congestion_control/hystart.dart' show Hystart;

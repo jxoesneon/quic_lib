@@ -1,12 +1,12 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/cipher_suites.dart';
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
-import 'package:dart_quic/src/crypto/initial_secrets.dart';
-import 'package:dart_quic/src/crypto/key_manager.dart';
-import 'package:dart_quic/src/crypto/session_ticket_store.dart';
-import 'package:dart_quic/src/crypto/zero_rtt_helper.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/crypto/cipher_suites.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/initial_secrets.dart';
+import 'package:quic_lib/src/crypto/key_manager.dart';
+import 'package:quic_lib/src/crypto/session_ticket_store.dart';
+import 'package:quic_lib/src/crypto/zero_rtt_helper.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -93,8 +93,10 @@ void main() {
       final validPsk = SimpleSecretKey(Uint8List(32));
       final expiredPsk = SimpleSecretKey(Uint8List(32));
 
-      store.store('valid', validPsk, DateTime.now().add(const Duration(hours: 1)));
-      store.store('expired', expiredPsk, DateTime.now().subtract(const Duration(hours: 1)));
+      store.store(
+          'valid', validPsk, DateTime.now().add(const Duration(hours: 1)));
+      store.store('expired', expiredPsk,
+          DateTime.now().subtract(const Duration(hours: 1)));
 
       expect(store.validTicketIds, equals(['valid']));
     });
@@ -104,17 +106,21 @@ void main() {
 
       for (var i = 0; i < SessionTicketStore.maxTickets; i++) {
         final psk = SimpleSecretKey(Uint8List(32));
-        store.store('ticket-$i', psk, DateTime.now().add(const Duration(hours: 1)));
+        store.store(
+            'ticket-$i', psk, DateTime.now().add(const Duration(hours: 1)));
       }
 
-      expect(store.validTicketIds.length, equals(SessionTicketStore.maxTickets));
+      expect(
+          store.validTicketIds.length, equals(SessionTicketStore.maxTickets));
       expect(store.validTicketIds, contains('ticket-0'));
 
       // Store one more to trigger eviction of the oldest ('ticket-0').
       final newPsk = SimpleSecretKey(Uint8List(32));
-      store.store('ticket-new', newPsk, DateTime.now().add(const Duration(hours: 1)));
+      store.store(
+          'ticket-new', newPsk, DateTime.now().add(const Duration(hours: 1)));
 
-      expect(store.validTicketIds.length, equals(SessionTicketStore.maxTickets));
+      expect(
+          store.validTicketIds.length, equals(SessionTicketStore.maxTickets));
       expect(store.validTicketIds, isNot(contains('ticket-0')));
       expect(store.validTicketIds, contains('ticket-new'));
     });
@@ -124,16 +130,19 @@ void main() {
 
       for (var i = 0; i < SessionTicketStore.maxTickets; i++) {
         final psk = SimpleSecretKey(Uint8List(32));
-        store.store('ticket-$i', psk, DateTime.now().add(const Duration(hours: 1)));
+        store.store(
+            'ticket-$i', psk, DateTime.now().add(const Duration(hours: 1)));
       }
 
       // Refresh 'ticket-0' so it becomes newest.
       final refreshedPsk = SimpleSecretKey(Uint8List(32));
-      store.store('ticket-0', refreshedPsk, DateTime.now().add(const Duration(hours: 1)));
+      store.store('ticket-0', refreshedPsk,
+          DateTime.now().add(const Duration(hours: 1)));
 
       // Add a new ticket; the oldest should now be 'ticket-1'.
       final newPsk = SimpleSecretKey(Uint8List(32));
-      store.store('ticket-new', newPsk, DateTime.now().add(const Duration(hours: 1)));
+      store.store(
+          'ticket-new', newPsk, DateTime.now().add(const Duration(hours: 1)));
 
       expect(store.validTicketIds, contains('ticket-0'));
       expect(store.validTicketIds, isNot(contains('ticket-1')));
@@ -142,7 +151,8 @@ void main() {
     test('remove deletes a ticket', () {
       final store = SessionTicketStore();
       final psk = SimpleSecretKey(Uint8List(32));
-      store.store('ticket-a', psk, DateTime.now().add(const Duration(hours: 1)));
+      store.store(
+          'ticket-a', psk, DateTime.now().add(const Duration(hours: 1)));
 
       store.remove('ticket-a');
       expect(store.retrieve('ticket-a'), isNull);

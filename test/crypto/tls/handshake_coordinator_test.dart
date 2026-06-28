@@ -1,19 +1,17 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/initial_secrets.dart';
-import 'package:dart_quic/src/crypto/key_manager.dart';
-import 'package:dart_quic/src/crypto/tls/crypto_frame_assembler.dart';
-import 'package:dart_quic/src/crypto/tls/crypto_frame_handler.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_coordinator.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_key_exchange.dart'
-    as hke;
-import 'package:dart_quic/src/crypto/tls/handshake_state_machine.dart'
-    as hsm;
-import 'package:dart_quic/src/crypto/tls/tls_handshake_types.dart';
-import 'package:dart_quic/src/crypto/tls/tls_message_builder.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/initial_secrets.dart';
+import 'package:quic_lib/src/crypto/key_manager.dart';
+import 'package:quic_lib/src/crypto/tls/crypto_frame_assembler.dart';
+import 'package:quic_lib/src/crypto/tls/crypto_frame_handler.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_coordinator.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_key_exchange.dart' as hke;
+import 'package:quic_lib/src/crypto/tls/handshake_state_machine.dart' as hsm;
+import 'package:quic_lib/src/crypto/tls/tls_handshake_types.dart';
+import 'package:quic_lib/src/crypto/tls/tls_message_builder.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 import 'package:test/test.dart';
 
 import '../../helpers/mock_crypto_backend.dart';
@@ -88,8 +86,7 @@ void main() {
       expect(secret, isA<SecretKey>());
     });
 
-    test(
-        'installHandshakeKeys transitions KeyManager to have handshake keys',
+    test('installHandshakeKeys transitions KeyManager to have handshake keys',
         () async {
       await coordinator.generateKeys();
 
@@ -114,8 +111,7 @@ void main() {
   group('CryptoFrameHandler with coordinator', () {
     test('uses coordinator when a ClientHello is received', () async {
       final assembler = CryptoFrameAssembler();
-      final stateMachine =
-          hsm.HandshakeStateMachine(hsm.HandshakeRole.server);
+      final stateMachine = hsm.HandshakeStateMachine(hsm.HandshakeRole.server);
       stateMachine.start();
       stateMachine.accept();
 

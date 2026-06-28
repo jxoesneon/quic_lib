@@ -1,12 +1,12 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/key_manager.dart';
-import 'package:dart_quic/src/crypto/tls/crypto_message_parser.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_key_exchange.dart';
-import 'package:dart_quic/src/crypto/tls/tls_handshake_types.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/key_manager.dart';
+import 'package:quic_lib/src/crypto/tls/crypto_message_parser.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_key_exchange.dart';
+import 'package:quic_lib/src/crypto/tls/tls_handshake_types.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 
 class _SimplePublicKey implements PublicKey {
   @override
@@ -174,8 +174,7 @@ class HandshakeCoordinator {
 
           while (ksOffset + 4 <= ksEnd) {
             final group = (payload[ksOffset] << 8) | payload[ksOffset + 1];
-            final keyLen =
-                (payload[ksOffset + 2] << 8) | payload[ksOffset + 3];
+            final keyLen = (payload[ksOffset + 2] << 8) | payload[ksOffset + 3];
             ksOffset += 4;
             if (ksOffset + keyLen > ksEnd) return _dummyPublicKey();
 
@@ -198,6 +197,5 @@ class HandshakeCoordinator {
     return _dummyPublicKey();
   }
 
-  PublicKey _dummyPublicKey() =>
-      _SimplePublicKey(List<int>.filled(32, 0));
+  PublicKey _dummyPublicKey() => _SimplePublicKey(List<int>.filled(32, 0));
 }

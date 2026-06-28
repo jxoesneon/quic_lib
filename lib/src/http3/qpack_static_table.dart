@@ -170,8 +170,10 @@ class QpackStaticTable {
     QpackStaticTableEntry('link', ''),
     QpackStaticTableEntry('location', ''),
     QpackStaticTableEntry('range', 'bytes=0-'),
-    QpackStaticTableEntry('strict-transport-security', 'max-age=31536000; includesubdomains'),
-    QpackStaticTableEntry('strict-transport-security', 'max-age=63072000; includesubdomains'),
+    QpackStaticTableEntry(
+        'strict-transport-security', 'max-age=31536000; includesubdomains'),
+    QpackStaticTableEntry(
+        'strict-transport-security', 'max-age=63072000; includesubdomains'),
     QpackStaticTableEntry('vary', 'accept-encoding'),
     QpackStaticTableEntry('vary', 'origin'),
     QpackStaticTableEntry('x-content-type-options', 'nosniff'),

@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/recovery/pacing_calculator.dart';
+import 'package:quic_lib/src/recovery/pacing_calculator.dart';
 
 void main() {
   group('PacingCalculator', () {

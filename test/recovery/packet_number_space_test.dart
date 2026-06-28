@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
 
 void main() {
   group('PacketNumberSpaceManager', () {

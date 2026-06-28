@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/wire/quic_versions.dart';
+import 'package:quic_lib/src/wire/quic_versions.dart';
 
 void main() {
   group('QuicVersions.isSupported', () {

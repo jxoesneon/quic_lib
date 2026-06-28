@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:dart_quic/src/libp2p/multiaddr.dart';
-import 'package:dart_quic/src/libp2p/peer_id.dart';
+import 'package:quic_lib/src/libp2p/multiaddr.dart';
+import 'package:quic_lib/src/libp2p/peer_id.dart';
 
 void main() {
   group('Multiaddr deep coverage', () {

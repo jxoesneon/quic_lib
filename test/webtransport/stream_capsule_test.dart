@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/webtransport/capsule_types.dart';
-import 'package:dart_quic/src/webtransport/stream_capsule.dart';
-import 'package:dart_quic/src/webtransport/webtransport_session.dart';
-import 'package:dart_quic/src/wire/varint.dart';
+import 'package:quic_lib/src/webtransport/capsule_types.dart';
+import 'package:quic_lib/src/webtransport/stream_capsule.dart';
+import 'package:quic_lib/src/webtransport/webtransport_session.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 import 'package:test/test.dart';
 
 void main() {

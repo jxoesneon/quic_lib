@@ -13,9 +13,15 @@ class PacketReceiver {
   static const int maxFramesPerPacket = 256;
 
   /// Process a raw UDP datagram, splitting coalesced packets if needed.
-  static List<({PacketHeader header, List<Frame> frames, PacketNumberSpace? space})> processDatagram(Uint8List datagram) {
+  static List<
+          ({PacketHeader header, List<Frame> frames, PacketNumberSpace? space})>
+      processDatagram(Uint8List datagram) {
     final packets = CoalescedPacket.split(datagram);
-    final results = <({PacketHeader header, List<Frame> frames, PacketNumberSpace? space})>[];
+    final results = <({
+      PacketHeader header,
+      List<Frame> frames,
+      PacketNumberSpace? space
+    })>[];
     for (final packet in packets) {
       final result = processPacket(packet);
       if (result != null) {
@@ -27,8 +33,10 @@ class PacketReceiver {
 
   /// Process a single QUIC packet.
   /// Returns null if the packet is a Retry or Version Negotiation (special handling needed).
-  static ({PacketHeader header, List<Frame> frames, PacketNumberSpace? space})? processPacket(Uint8List packet) {
-    final header = PacketHeaderParser.parse(packet, destinationConnectionIdLength: _detectDcidLength(packet));
+  static ({PacketHeader header, List<Frame> frames, PacketNumberSpace? space})?
+      processPacket(Uint8List packet) {
+    final header = PacketHeaderParser.parse(packet,
+        destinationConnectionIdLength: _detectDcidLength(packet));
     final space = spaceFromHeader(header);
 
     if (space == null) {
@@ -105,14 +113,18 @@ class PacketReceiver {
   static int _headerLength(PacketHeader header) {
     if (header is LongHeader) {
       // Version (4) + DCID len (1) + DCID + SCID len (1) + SCID
-      var len = 6 + header.destinationConnectionId.length + header.sourceConnectionId.length;
+      var len = 6 +
+          header.destinationConnectionId.length +
+          header.sourceConnectionId.length;
       if (header.isInitial) {
         // Token length + token (simplified: assume no token for now)
       }
       // Length varint + packet number (simplified)
       return len + 4;
     } else if (header is ShortHeader) {
-      return 1 + header.destinationConnectionId.length + header.packetNumberLength;
+      return 1 +
+          header.destinationConnectionId.length +
+          header.packetNumberLength;
     }
     return 0;
   }

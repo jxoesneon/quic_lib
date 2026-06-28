@@ -1,12 +1,12 @@
-import 'package:dart_quic/src/crypto/cipher_suites.dart';
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/initial_secrets.dart';
-import 'package:dart_quic/src/crypto/packet/key_derivation.dart';
-import 'package:dart_quic/src/crypto/zero_rtt_helper.dart';
-import 'package:dart_quic/src/crypto/packet/header_protection.dart';
-import 'package:dart_quic/src/crypto/packet/packet_protector.dart';
-import 'package:dart_quic/src/crypto/packet/space_keys.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/crypto/cipher_suites.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/initial_secrets.dart';
+import 'package:quic_lib/src/crypto/packet/key_derivation.dart';
+import 'package:quic_lib/src/crypto/zero_rtt_helper.dart';
+import 'package:quic_lib/src/crypto/packet/header_protection.dart';
+import 'package:quic_lib/src/crypto/packet/packet_protector.dart';
+import 'package:quic_lib/src/crypto/packet/space_keys.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
 
 // Re-export for test convenience.
 export 'initial_secrets.dart' show SimpleSecretKey;

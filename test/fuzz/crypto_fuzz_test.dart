@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:test/test.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 
 void _fillBytes(Random rng, Uint8List bytes) {
   for (var i = 0; i < bytes.length; i++) {

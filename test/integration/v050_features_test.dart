@@ -1,22 +1,22 @@
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:dart_quic/src/connection/quic_connection.dart';
-import 'package:dart_quic/src/connection/connection_state_machine.dart';
-import 'package:dart_quic/src/connection/connection_id_manager.dart';
-import 'package:dart_quic/src/connection/packet_sender.dart';
-import 'package:dart_quic/src/http3/http3_connection.dart';
-import 'package:dart_quic/src/http3/settings_frame.dart';
-import 'package:dart_quic/src/libp2p/peer_id.dart';
-import 'package:dart_quic/src/recovery/congestion_controller.dart';
-import 'package:dart_quic/src/recovery/loss_detector.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/recovery/pto_scheduler.dart';
-import 'package:dart_quic/src/recovery/rtt_estimator.dart';
-import 'package:dart_quic/src/recovery/sent_packet_tracker.dart';
-import 'package:dart_quic/src/streams/stream_id.dart';
-import 'package:dart_quic/src/streams/stream_manager.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/connection/quic_connection.dart';
+import 'package:quic_lib/src/connection/connection_state_machine.dart';
+import 'package:quic_lib/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/connection/packet_sender.dart';
+import 'package:quic_lib/src/http3/http3_connection.dart';
+import 'package:quic_lib/src/http3/settings_frame.dart';
+import 'package:quic_lib/src/libp2p/peer_id.dart';
+import 'package:quic_lib/src/recovery/congestion_controller.dart';
+import 'package:quic_lib/src/recovery/loss_detector.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/recovery/pto_scheduler.dart';
+import 'package:quic_lib/src/recovery/rtt_estimator.dart';
+import 'package:quic_lib/src/recovery/sent_packet_tracker.dart';
+import 'package:quic_lib/src/streams/stream_id.dart';
+import 'package:quic_lib/src/streams/stream_manager.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 
 /// Integration tests for dart_quic v0.5.0 features.
 void main() {
@@ -66,7 +66,9 @@ void main() {
 
       // First create a stream by receiving a STREAM frame.
       final streamPacket = PacketSender.buildPacket(
-        frames: [StreamFrame(streamId: 0, data: [0x01])],
+        frames: [
+          StreamFrame(streamId: 0, data: [0x01])
+        ],
         space: PacketNumberSpace.application,
         dcid: List.filled(8, 0xAB),
         packetNumber: 0,
@@ -86,7 +88,8 @@ void main() {
       );
       conn.processIncomingDatagram(maxStreamDataPacket);
 
-      final windowAfter = conn.streamManager.getSendFlowController(0)!.availableWindow;
+      final windowAfter =
+          conn.streamManager.getSendFlowController(0)!.availableWindow;
       expect(windowAfter, greaterThan(windowBefore));
     });
   });

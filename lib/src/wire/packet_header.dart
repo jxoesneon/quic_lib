@@ -25,7 +25,8 @@ class LongHeader implements PacketHeader {
 
   final int version;
   final int packetType;
-  @override final List<int> destinationConnectionId;
+  @override
+  final List<int> destinationConnectionId;
   final List<int> sourceConnectionId;
   final int packetNumber;
   final List<int> payload;
@@ -86,7 +87,8 @@ class LongHeader implements PacketHeader {
 
     if (!isRetry) {
       // Packet number + payload length as varint
-      final pnBytes = _encodePacketNumber(packetNumber, _pnLengthFromValue(packetNumber));
+      final pnBytes =
+          _encodePacketNumber(packetNumber, _pnLengthFromValue(packetNumber));
       final length = pnBytes.length + payload.length;
       builder.add(VarInt.encode(length));
       builder.add(pnBytes);
@@ -102,7 +104,12 @@ class LongHeader implements PacketHeader {
 
   @override
   int get byteLength {
-    var len = 1 + 4 + 1 + destinationConnectionId.length + 1 + sourceConnectionId.length;
+    var len = 1 +
+        4 +
+        1 +
+        destinationConnectionId.length +
+        1 +
+        sourceConnectionId.length;
     if (isInitial) {
       final t = token ?? const <int>[];
       len += VarInt.encode(t.length).length + t.length;
@@ -120,7 +127,8 @@ class LongHeader implements PacketHeader {
 
 /// QUIC short header used for 1-RTT application data.
 class ShortHeader implements PacketHeader {
-  @override final List<int> destinationConnectionId;
+  @override
+  final List<int> destinationConnectionId;
   final int packetNumber;
   final bool spinBit;
   final bool keyPhase;
@@ -162,12 +170,14 @@ class ShortHeader implements PacketHeader {
   }
 
   @override
-  int get byteLength => 1 + destinationConnectionId.length + packetNumberLength + payload.length;
+  int get byteLength =>
+      1 + destinationConnectionId.length + packetNumberLength + payload.length;
 }
 
 /// Version negotiation packet sent when a peer doesn't support the requested version.
 class VersionNegotiationPacket implements PacketHeader {
-  @override final List<int> destinationConnectionId;
+  @override
+  final List<int> destinationConnectionId;
   final List<int> sourceConnectionId;
   final List<int> supportedVersions;
 
@@ -176,7 +186,8 @@ class VersionNegotiationPacket implements PacketHeader {
     required this.sourceConnectionId,
     required this.supportedVersions,
   }) {
-    if (destinationConnectionId.length > 255 || sourceConnectionId.length > 255) {
+    if (destinationConnectionId.length > 255 ||
+        sourceConnectionId.length > 255) {
       throw ArgumentError('CID too long');
     }
   }
@@ -207,12 +218,19 @@ class VersionNegotiationPacket implements PacketHeader {
 
   @override
   int get byteLength =>
-      1 + 4 + 1 + destinationConnectionId.length + 1 + sourceConnectionId.length + supportedVersions.length * 4;
+      1 +
+      4 +
+      1 +
+      destinationConnectionId.length +
+      1 +
+      sourceConnectionId.length +
+      supportedVersions.length * 4;
 }
 
 /// Parses QUIC packet headers from raw bytes.
 class PacketHeaderParser {
-  static PacketHeader parse(Uint8List bytes, {required int destinationConnectionIdLength}) {
+  static PacketHeader parse(Uint8List bytes,
+      {required int destinationConnectionIdLength}) {
     if (bytes.isEmpty) throw ArgumentError('Empty packet');
     final firstByte = bytes[0];
     final isLong = (firstByte & 0x80) != 0;
@@ -225,25 +243,36 @@ class PacketHeaderParser {
 
   static PacketHeader _parseLongHeader(Uint8List bytes) {
     var offset = 1; // skip first byte
-    if (bytes.length < offset + 4) throw ArgumentError('Packet too short for version');
-    final version = (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3];
+    if (bytes.length < offset + 4)
+      throw ArgumentError('Packet too short for version');
+    final version = (bytes[offset] << 24) |
+        (bytes[offset + 1] << 16) |
+        (bytes[offset + 2] << 8) |
+        bytes[offset + 3];
     offset += 4;
 
     if (version == 0) {
       // Version negotiation
-      if (bytes.length < offset + 1) throw ArgumentError('Packet too short for DCID length');
+      if (bytes.length < offset + 1)
+        throw ArgumentError('Packet too short for DCID length');
       final dcidLen = bytes[offset++];
-      if (bytes.length < offset + dcidLen) throw ArgumentError('Packet too short for DCID');
+      if (bytes.length < offset + dcidLen)
+        throw ArgumentError('Packet too short for DCID');
       final dcid = bytes.sublist(offset, offset + dcidLen);
       offset += dcidLen;
-      if (bytes.length < offset + 1) throw ArgumentError('Packet too short for SCID length');
+      if (bytes.length < offset + 1)
+        throw ArgumentError('Packet too short for SCID length');
       final scidLen = bytes[offset++];
-      if (bytes.length < offset + scidLen) throw ArgumentError('Packet too short for SCID');
+      if (bytes.length < offset + scidLen)
+        throw ArgumentError('Packet too short for SCID');
       final scid = bytes.sublist(offset, offset + scidLen);
       offset += scidLen;
       final versions = <int>[];
       while (offset + 4 <= bytes.length) {
-        final v = (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3];
+        final v = (bytes[offset] << 24) |
+            (bytes[offset + 1] << 16) |
+            (bytes[offset + 2] << 8) |
+            bytes[offset + 3];
         versions.add(v);
         offset += 4;
       }
@@ -255,31 +284,38 @@ class PacketHeaderParser {
     }
 
     final packetType = (bytes[0] >> 4) & 0x03;
-    if (bytes.length < offset + 1) throw ArgumentError('Packet too short for DCID length');
+    if (bytes.length < offset + 1)
+      throw ArgumentError('Packet too short for DCID length');
     final dcidLen = bytes[offset++];
-    if (bytes.length < offset + dcidLen) throw ArgumentError('Packet too short for DCID');
+    if (bytes.length < offset + dcidLen)
+      throw ArgumentError('Packet too short for DCID');
     final dcid = bytes.sublist(offset, offset + dcidLen);
     offset += dcidLen;
-    if (bytes.length < offset + 1) throw ArgumentError('Packet too short for SCID length');
+    if (bytes.length < offset + 1)
+      throw ArgumentError('Packet too short for SCID length');
     final scidLen = bytes[offset++];
-    if (bytes.length < offset + scidLen) throw ArgumentError('Packet too short for SCID');
+    if (bytes.length < offset + scidLen)
+      throw ArgumentError('Packet too short for SCID');
     final scid = bytes.sublist(offset, offset + scidLen);
     offset += scidLen;
 
     List<int>? token;
     if (packetType == LongHeader.typeInitial) {
-      if (bytes.length < offset + 1) throw ArgumentError('Packet too short for token length');
+      if (bytes.length < offset + 1)
+        throw ArgumentError('Packet too short for token length');
       final tokenLen = VarInt.decode(bytes.buffer, offset: offset);
       final tokenLenBytes = VarInt.decodeLength(bytes[offset]);
       offset += tokenLenBytes;
-      if (bytes.length < offset + tokenLen) throw ArgumentError('Packet too short for token');
+      if (bytes.length < offset + tokenLen)
+        throw ArgumentError('Packet too short for token');
       token = bytes.sublist(offset, offset + tokenLen);
       offset += tokenLen;
     }
 
     if (packetType == LongHeader.typeRetry) {
       // Retry token is the remainder minus 16 bytes for integrity tag
-      if (bytes.length < offset + 16) throw ArgumentError('Packet too short for Retry');
+      if (bytes.length < offset + 16)
+        throw ArgumentError('Packet too short for Retry');
       final retryToken = bytes.sublist(offset, bytes.length - 16);
       return LongHeader(
         version: version,
@@ -290,11 +326,13 @@ class PacketHeaderParser {
       );
     }
 
-    if (bytes.length < offset + 1) throw ArgumentError('Packet too short for length');
+    if (bytes.length < offset + 1)
+      throw ArgumentError('Packet too short for length');
     final length = VarInt.decode(bytes.buffer, offset: offset);
     final lengthFieldBytes = VarInt.decodeLength(bytes[offset]);
     offset += lengthFieldBytes;
-    if (bytes.length < offset + length) throw ArgumentError('Packet too short for payload');
+    if (bytes.length < offset + length)
+      throw ArgumentError('Packet too short for payload');
     final payload = bytes.sublist(offset, offset + length);
 
     // Packet number extraction is deferred to the caller because the exact
@@ -312,12 +350,14 @@ class PacketHeaderParser {
 
   static PacketHeader _parseShortHeader(Uint8List bytes, int dcidLen) {
     var offset = 1;
-    if (bytes.length < offset + dcidLen) throw ArgumentError('Packet too short for DCID');
+    if (bytes.length < offset + dcidLen)
+      throw ArgumentError('Packet too short for DCID');
     final dcid = bytes.sublist(offset, offset + dcidLen);
     offset += dcidLen;
     final firstByte = bytes[0];
     final pnLen = (firstByte & 0x03) + 1;
-    if (bytes.length < offset + pnLen) throw ArgumentError('Packet too short for PN');
+    if (bytes.length < offset + pnLen)
+      throw ArgumentError('Packet too short for PN');
     var pn = 0;
     for (var i = 0; i < pnLen; i++) {
       pn = (pn << 8) | bytes[offset + i];

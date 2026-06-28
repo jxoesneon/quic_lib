@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'huffman.dart';
 import 'qpack_integer.dart';
 
 /// QPACK string literal encoder/decoder per RFC 9204 Section 4.2 (same as
@@ -19,13 +20,13 @@ class QpackString {
 
   /// Encode [value] as a QPACK string literal.
   ///
-  /// When [huffman] is `true` the Huffman flag is set in the first byte and
-  /// the payload is raw UTF-8. Full Huffman compression per RFC 7541
-  /// Appendix B is not implemented because raw UTF-8 is valid and commonly
-  /// used in HTTP/3 implementations.
+  /// When [huffman] is `true` the payload is Huffman-encoded per RFC 7541
+  /// Appendix B and the Huffman flag is set in the first byte.
   static Uint8List encode(String value, {bool huffman = false}) {
-    final utf8Bytes = utf8.encode(value);
-    final length = utf8Bytes.length;
+    final stringBytes = huffman
+        ? HuffmanEncoder.encode(value)
+        : Uint8List.fromList(utf8.encode(value));
+    final length = stringBytes.length;
 
     // Encode length into a 7-bit prefix.
     final lengthBytes = QpackInteger.encode(length, 7);
@@ -33,9 +34,9 @@ class QpackString {
       lengthBytes[0] |= 0x80;
     }
 
-    final result = Uint8List(lengthBytes.length + utf8Bytes.length);
+    final result = Uint8List(lengthBytes.length + stringBytes.length);
     result.setRange(0, lengthBytes.length, lengthBytes);
-    result.setRange(lengthBytes.length, result.length, utf8Bytes);
+    result.setRange(lengthBytes.length, result.length, stringBytes);
 
     return result;
   }
@@ -65,7 +66,10 @@ class QpackString {
     }
 
     final stringBytes = bytes.sublist(stringOffset, stringOffset + length);
-    final value = utf8.decode(stringBytes);
+    final huffmanFlag = (bytes[offset] & 0x80) != 0;
+    final value = huffmanFlag
+        ? HuffmanDecoder.decode(stringBytes)
+        : utf8.decode(stringBytes);
 
     return (value, stringOffset + length);
   }

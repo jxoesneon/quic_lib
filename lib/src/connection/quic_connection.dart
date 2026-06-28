@@ -24,6 +24,7 @@ import 'package:quic_lib/src/recovery/sent_packet_tracker.dart';
 import 'package:quic_lib/src/security/anti_amplification_limit.dart';
 import 'package:quic_lib/src/utils/hex.dart';
 import 'package:quic_lib/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 import 'migration_helper.dart';
 import 'package:quic_lib/src/wire/coalesced_packet.dart';
 import 'package:quic_lib/src/crypto/packet/protected_packet_codec.dart';
@@ -104,6 +105,10 @@ class QuicConnection {
   Uint8List? _lastProbePacket;
   Completer<void>? _probeCompleter;
   StreamScheduler? _streamScheduler;
+
+  // RFC 9221 datagram support.
+  int maxDatagramFrameSize = 1200;
+  final _datagramController = StreamController<Uint8List>.broadcast();
 
   // Frame-dispatch subsystems (nullable until handshake pipeline is fully wired).
   final CryptoFrameAssembler? _cryptoAssembler;
@@ -191,6 +196,37 @@ class QuicConnection {
     _streamManager.scheduler = s;
   }
 
+  /// Stream of received unreliable datagram payloads (RFC 9221).
+  Stream<Uint8List> get onDatagramReceived => _datagramController.stream;
+
+  /// Build a [DatagramFrame] containing [data].
+  ///
+  /// Throws [ArgumentError] if [data] exceeds the negotiated
+  /// [maxDatagramFrameSize].
+  DatagramFrame sendDatagram(Uint8List data) {
+    if (maxDatagramFrameSize > 0 && data.length > maxDatagramFrameSize) {
+      throw ArgumentError(
+        'Datagram payload (${data.length} bytes) exceeds '
+        'maxDatagramFrameSize ($maxDatagramFrameSize bytes)',
+      );
+    }
+    return DatagramFrame(data: data, hasLength: true);
+  }
+
+  /// Serialize this connection's transport parameters into the wire format
+  /// used inside the `quic_transport_parameters` TLS extension.
+  ///
+  /// Each parameter is encoded as: id (varint) + length (varint) + value.
+  Uint8List buildTransportParameters() {
+    final builder = BytesBuilder();
+    // max_datagram_frame_size (0x20)
+    final maxDgBytes = VarInt.encode(maxDatagramFrameSize);
+    builder.add(VarInt.encode(0x20));
+    builder.add(VarInt.encode(maxDgBytes.length));
+    builder.add(maxDgBytes);
+    return Uint8List.fromList(builder.toBytes());
+  }
+
   SentPacketTracker get sentPacketTracker => _sentPacketTracker;
 
   // Expose subsystems for integration and monitoring.
@@ -271,6 +307,7 @@ class QuicConnection {
     int packetNumber,
     int sentTimeUs, {
     bool ackEliciting = true,
+    bool inFlight = true,
     int sizeInBytes = 0,
     int spaceIndex = 0,
   }) {
@@ -280,6 +317,7 @@ class QuicConnection {
       sentTimeUs,
       sizeInBytes,
       ackEliciting: ackEliciting,
+      inFlight: inFlight,
     );
   }
 
@@ -453,6 +491,9 @@ class QuicConnection {
         case PaddingFrame _:
           // No-op.
           break;
+        case DatagramFrame f:
+          _datagramController.add(Uint8List.fromList(f.data));
+          break;
         default:
           // Unknown/unhandled frame types are ignored per RFC 9000.
           break;
@@ -492,10 +533,13 @@ class QuicConnection {
       scid: scid,
       packetNumber: packetNumber,
     );
+    final ackEliciting = frames.any((f) => f.isAckEliciting);
+    final inFlight = frames.any((f) => f.isInFlight);
     onPacketSent(
       packetNumber,
       DateTime.now().millisecondsSinceEpoch * 1000,
-      ackEliciting: frames.any((f) => f is! PaddingFrame),
+      ackEliciting: ackEliciting,
+      inFlight: inFlight,
       sizeInBytes: packet.length,
       spaceIndex: space.spaceIndex,
     );
@@ -539,10 +583,13 @@ class QuicConnection {
 
     final result = await codec.protectAndEncrypt(patched, packetNumber);
 
+    final ackEliciting = frames.any((f) => f.isAckEliciting);
+    final inFlight = frames.any((f) => f.isInFlight);
     onPacketSent(
       packetNumber,
       DateTime.now().millisecondsSinceEpoch * 1000,
-      ackEliciting: frames.any((f) => f is! PaddingFrame),
+      ackEliciting: ackEliciting,
+      inFlight: inFlight,
       sizeInBytes: result.length,
       spaceIndex: space.spaceIndex,
     );

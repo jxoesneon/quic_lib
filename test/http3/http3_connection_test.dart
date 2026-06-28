@@ -5,6 +5,7 @@ import 'package:quic_lib/src/http3/data_frame.dart';
 import 'package:quic_lib/src/http3/frame_types.dart';
 import 'package:quic_lib/src/http3/goaway_frame.dart';
 import 'package:quic_lib/src/http3/headers_frame.dart';
+import 'package:quic_lib/src/http3/extended_connect_request.dart';
 import 'package:quic_lib/src/http3/http3_connection.dart';
 import 'package:quic_lib/src/http3/http3_request.dart';
 import 'package:quic_lib/src/http3/http3_response.dart';
@@ -91,6 +92,30 @@ void main() {
       expect(conn.hasBody(streamId), isFalse);
     });
 
+    test('sendExtendedConnect returns a stream ID', () async {
+      final conn = Http3Connection(quicConnection: FakeQuicConnection());
+      final request = ExtendedConnectRequest(
+        protocol: 'webtransport',
+        authority: 'example.com',
+        path: '/',
+      );
+      final streamId = await conn.sendExtendedConnect(request);
+      expect(streamId, equals(0));
+    });
+
+    test('sendExtendedConnect stages headers and body', () async {
+      final conn = Http3Connection(quicConnection: FakeQuicConnection());
+      final request = ExtendedConnectRequest(
+        protocol: 'webtransport',
+        authority: 'example.com',
+        path: '/wt',
+        body: Uint8List.fromList([1, 2]),
+      );
+      final streamId = await conn.sendExtendedConnect(request);
+      expect(conn.getPendingHeaders(streamId), isNotNull);
+      expect(conn.hasBody(streamId), isTrue);
+    });
+
     test('sendSettings creates pending settings', () {
       final conn = Http3Connection(quicConnection: Object());
       expect(conn.pendingSettings, isNull);
@@ -112,6 +137,24 @@ void main() {
         conn.peerSettings.settings[Http3SettingsId.maxFieldSectionSize.value],
         equals(4096),
       );
+    });
+
+    test('isConnectProtocolEnabled is true when peer sets it', () {
+      final conn = Http3Connection(quicConnection: Object());
+      expect(conn.isConnectProtocolEnabled, isFalse);
+      conn.onSettingsReceived(
+        Http3SettingsFrame.from(enableConnectProtocol: 1),
+      );
+      expect(conn.isConnectProtocolEnabled, isTrue);
+    });
+
+    test('isH3DatagramEnabled is true when peer sets it', () {
+      final conn = Http3Connection(quicConnection: Object());
+      expect(conn.isH3DatagramEnabled, isFalse);
+      conn.onSettingsReceived(
+        Http3SettingsFrame.from(h3Datagram: 1),
+      );
+      expect(conn.isH3DatagramEnabled, isTrue);
     });
 
     test('sendBody with empty data creates EOF marker', () async {

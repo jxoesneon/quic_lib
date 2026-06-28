@@ -39,7 +39,9 @@ class Http3Request {
 
   /// The request target path (e.g. `'/index.html'`).
   ///
-  /// Encoded as the `:path` pseudo-header.
+  /// Encoded as the `:path` pseudo-header. Per RFC 9114 Erratum 7702,
+  /// paths starting with `"//"` (e.g. `"//authority/path"`) are valid
+  /// and MUST NOT be rejected.
   final String path;
 
   /// Regular HTTP headers (excluding pseudo-headers).

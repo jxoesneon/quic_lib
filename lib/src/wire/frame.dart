@@ -5,26 +5,73 @@ import 'varint.dart';
 abstract class Frame {
   int get frameType;
   Uint8List serialize();
+
+  /// Whether this frame is ack-eliciting per RFC 9000 Table 3.
+  /// Default is `true`; override for non-ack-eliciting frames.
+  bool get isAckEliciting => true;
+
+  /// Whether this frame counts toward bytes in flight per RFC 9000 Table 3.
+  /// Default matches [isAckEliciting]; override for frames that are not
+  /// ack-eliciting but still should not count (e.g., CONNECTION_CLOSE).
+  bool get isInFlight => isAckEliciting;
+}
+
+/// Identifiers for QUIC frame types (RFC 9000 Section 19 and extensions).
+///
+/// This enum is used for type-safe frame identification. Individual [Frame]
+/// implementations also expose their type via the [frameType] getter.
+enum FrameType {
+  padding(0x00),
+  ping(0x01),
+  ack(0x02),
+  ackEcn(0x03),
+  resetStream(0x04),
+  stopSending(0x05),
+  crypto(0x06),
+  newToken(0x07),
+  stream(0x08),
+  maxData(0x10),
+  maxStreamData(0x11),
+  maxStreams(0x12),
+  dataBlocked(0x14),
+  streamDataBlocked(0x15),
+  streamsBlocked(0x16),
+  newConnectionId(0x18),
+  retireConnectionId(0x19),
+  pathChallenge(0x1a),
+  pathResponse(0x1b),
+  connectionClose(0x1c),
+  applicationClose(0x1d),
+  handshakeDone(0x1e),
+  datagram(0x30),
+  datagramWithLength(0x31);
+
+  final int value;
+  const FrameType(this.value);
 }
 
 // ---------------------------------------------------------------------------
 // 0x00 PADDING
 // ---------------------------------------------------------------------------
 /// A PADDING frame (RFC 9000 Section 19.1).
-class PaddingFrame implements Frame {
+class PaddingFrame extends Frame {
   final int length;
   PaddingFrame({this.length = 1});
   @override
   int get frameType => 0x00;
   @override
   Uint8List serialize() => Uint8List(length);
+  @override
+  bool get isAckEliciting => false;
+  @override
+  bool get isInFlight => false;
 }
 
 // ---------------------------------------------------------------------------
 // 0x01 PING
 // ---------------------------------------------------------------------------
 /// A PING frame (RFC 9000 Section 19.2).
-class PingFrame implements Frame {
+class PingFrame extends Frame {
   PingFrame();
   @override
   int get frameType => 0x01;
@@ -36,7 +83,7 @@ class PingFrame implements Frame {
 // 0x02 ACK
 // ---------------------------------------------------------------------------
 /// An ACK frame (RFC 9000 Section 19.3).
-class AckFrame implements Frame {
+class AckFrame extends Frame {
   final int largestAcknowledged;
   final int ackDelay;
   final List<AckRange> ackRanges;
@@ -49,6 +96,10 @@ class AckFrame implements Frame {
 
   @override
   int get frameType => 0x02;
+  @override
+  bool get isAckEliciting => false;
+  @override
+  bool get isInFlight => false;
 
   @override
   Uint8List serialize() {
@@ -157,7 +208,7 @@ class AckEcnFrame extends AckFrame {
 // 0x04 RESET_STREAM
 // ---------------------------------------------------------------------------
 /// A RESET_STREAM frame (RFC 9000 Section 19.4).
-class ResetStreamFrame implements Frame {
+class ResetStreamFrame extends Frame {
   final int streamId;
   final int errorCode;
   final int finalSize;
@@ -185,7 +236,7 @@ class ResetStreamFrame implements Frame {
 // 0x05 STOP_SENDING
 // ---------------------------------------------------------------------------
 /// A STOP_SENDING frame (RFC 9000 Section 19.5).
-class StopSendingFrame implements Frame {
+class StopSendingFrame extends Frame {
   final int streamId;
   final int errorCode;
 
@@ -208,7 +259,7 @@ class StopSendingFrame implements Frame {
 // 0x06 CRYPTO
 // ---------------------------------------------------------------------------
 /// A CRYPTO frame (RFC 9000 Section 19.6).
-class CryptoFrame implements Frame {
+class CryptoFrame extends Frame {
   final int offset;
   final List<int> data;
 
@@ -232,7 +283,7 @@ class CryptoFrame implements Frame {
 // 0x07 NEW_TOKEN
 // ---------------------------------------------------------------------------
 /// A NEW_TOKEN frame (RFC 9000 Section 19.7).
-class NewTokenFrame implements Frame {
+class NewTokenFrame extends Frame {
   final List<int> token;
 
   NewTokenFrame({required this.token});
@@ -254,7 +305,7 @@ class NewTokenFrame implements Frame {
 // 0x08-0x0f STREAM
 // ---------------------------------------------------------------------------
 /// A STREAM frame (RFC 9000 Section 19.8).
-class StreamFrame implements Frame {
+class StreamFrame extends Frame {
   final int streamId;
   final List<int> data;
   final int? offset;
@@ -298,7 +349,7 @@ class StreamFrame implements Frame {
 // 0x10 MAX_DATA
 // ---------------------------------------------------------------------------
 /// A MAX_DATA frame (RFC 9000 Section 19.9).
-class MaxDataFrame implements Frame {
+class MaxDataFrame extends Frame {
   final int maxData;
   MaxDataFrame({required this.maxData});
   @override
@@ -312,7 +363,7 @@ class MaxDataFrame implements Frame {
 // 0x11 MAX_STREAM_DATA
 // ---------------------------------------------------------------------------
 /// A MAX_STREAM_DATA frame (RFC 9000 Section 19.10).
-class MaxStreamDataFrame implements Frame {
+class MaxStreamDataFrame extends Frame {
   final int streamId;
   final int maxStreamData;
 
@@ -335,7 +386,7 @@ class MaxStreamDataFrame implements Frame {
 // 0x12 MAX_STREAMS (bidi), 0x13 MAX_STREAMS (uni)
 // ---------------------------------------------------------------------------
 /// A MAX_STREAMS frame (RFC 9000 Section 19.11).
-class MaxStreamsFrame implements Frame {
+class MaxStreamsFrame extends Frame {
   final int maxStreams;
   final bool isUnidirectional;
 
@@ -357,7 +408,7 @@ class MaxStreamsFrame implements Frame {
 // 0x14 DATA_BLOCKED
 // ---------------------------------------------------------------------------
 /// A DATA_BLOCKED frame (RFC 9000 Section 19.12).
-class DataBlockedFrame implements Frame {
+class DataBlockedFrame extends Frame {
   final int maxData;
   DataBlockedFrame({required this.maxData});
   @override
@@ -371,7 +422,7 @@ class DataBlockedFrame implements Frame {
 // 0x15 STREAM_DATA_BLOCKED
 // ---------------------------------------------------------------------------
 /// A STREAM_DATA_BLOCKED frame (RFC 9000 Section 19.13).
-class StreamDataBlockedFrame implements Frame {
+class StreamDataBlockedFrame extends Frame {
   final int streamId;
   final int maxStreamData;
 
@@ -394,7 +445,7 @@ class StreamDataBlockedFrame implements Frame {
 // 0x16 STREAMS_BLOCKED (bidi), 0x17 STREAMS_BLOCKED (uni)
 // ---------------------------------------------------------------------------
 /// A STREAMS_BLOCKED frame (RFC 9000 Section 19.14).
-class StreamsBlockedFrame implements Frame {
+class StreamsBlockedFrame extends Frame {
   final int maxStreams;
   final bool isUnidirectional;
 
@@ -417,7 +468,7 @@ class StreamsBlockedFrame implements Frame {
 // 0x18 NEW_CONNECTION_ID
 // ---------------------------------------------------------------------------
 /// A NEW_CONNECTION_ID frame (RFC 9000 Section 19.15).
-class NewConnectionIdFrame implements Frame {
+class NewConnectionIdFrame extends Frame {
   final int sequenceNumber;
   final int retirePriorTo;
   final List<int> connectionId;
@@ -454,7 +505,7 @@ class NewConnectionIdFrame implements Frame {
 // 0x19 RETIRE_CONNECTION_ID
 // ---------------------------------------------------------------------------
 /// A RETIRE_CONNECTION_ID frame (RFC 9000 Section 19.16).
-class RetireConnectionIdFrame implements Frame {
+class RetireConnectionIdFrame extends Frame {
   final int sequenceNumber;
   RetireConnectionIdFrame({required this.sequenceNumber});
   @override
@@ -468,7 +519,7 @@ class RetireConnectionIdFrame implements Frame {
 // 0x1a PATH_CHALLENGE
 // ---------------------------------------------------------------------------
 /// A PATH_CHALLENGE frame (RFC 9000 Section 19.17).
-class PathChallengeFrame implements Frame {
+class PathChallengeFrame extends Frame {
   final List<int> data; // 8 bytes
 
   PathChallengeFrame({required this.data}) {
@@ -487,7 +538,7 @@ class PathChallengeFrame implements Frame {
 // 0x1b PATH_RESPONSE
 // ---------------------------------------------------------------------------
 /// A PATH_RESPONSE frame (RFC 9000 Section 19.18).
-class PathResponseFrame implements Frame {
+class PathResponseFrame extends Frame {
   final List<int> data; // 8 bytes
 
   PathResponseFrame({required this.data}) {
@@ -506,7 +557,7 @@ class PathResponseFrame implements Frame {
 // 0x1c CONNECTION_CLOSE (transport)
 // ---------------------------------------------------------------------------
 /// A CONNECTION_CLOSE frame for transport errors (RFC 9000 Section 19.19).
-class ConnectionCloseFrame implements Frame {
+class ConnectionCloseFrame extends Frame {
   final int errorCode;
   final int? offendingFrameType;
   final String reasonPhrase;
@@ -519,6 +570,10 @@ class ConnectionCloseFrame implements Frame {
 
   @override
   int get frameType => 0x1c;
+  @override
+  bool get isAckEliciting => false;
+  @override
+  bool get isInFlight => false;
 
   @override
   Uint8List serialize() {
@@ -537,7 +592,7 @@ class ConnectionCloseFrame implements Frame {
 // 0x1d CONNECTION_CLOSE (application)
 // ---------------------------------------------------------------------------
 /// A CONNECTION_CLOSE frame for application errors (RFC 9000 Section 19.19).
-class ApplicationCloseFrame implements Frame {
+class ApplicationCloseFrame extends Frame {
   final int errorCode;
   final String reasonPhrase;
 
@@ -545,6 +600,10 @@ class ApplicationCloseFrame implements Frame {
 
   @override
   int get frameType => 0x1d;
+  @override
+  bool get isAckEliciting => false;
+  @override
+  bool get isInFlight => false;
 
   @override
   Uint8List serialize() {
@@ -562,12 +621,51 @@ class ApplicationCloseFrame implements Frame {
 // 0x1e HANDSHAKE_DONE
 // ---------------------------------------------------------------------------
 /// A HANDSHAKE_DONE frame (RFC 9000 Section 19.20).
-class HandshakeDoneFrame implements Frame {
+class HandshakeDoneFrame extends Frame {
   HandshakeDoneFrame();
   @override
   int get frameType => 0x1e;
   @override
   Uint8List serialize() => Uint8List(1)..[0] = 0x1e;
+}
+
+// ---------------------------------------------------------------------------
+// 0x30/0x31 DATAGRAM (RFC 9221)
+// ---------------------------------------------------------------------------
+/// A DATAGRAM frame (RFC 9221 Section 4).
+///
+/// QUIC datagrams provide an unreliable, unordered message abstraction.
+/// Unlike STREAM frames, datagrams are not retransmitted and are not subject
+/// to QUIC flow control. They are still limited by congestion control and the
+/// negotiated `max_datagram_frame_size`.
+///
+/// Two frame types are defined:
+/// - `0x30`: DATAGRAM with no length field (data extends to end of packet).
+/// - `0x31`: DATAGRAM with a length prefix (allows coalescing with other frames).
+class DatagramFrame extends Frame {
+  final Uint8List data;
+  final bool hasLength;
+
+  DatagramFrame({required this.data, this.hasLength = false});
+
+  @override
+  int get frameType => hasLength ? 0x31 : 0x30;
+
+  @override
+  Uint8List serialize() {
+    final builder = BytesBuilder();
+    builder.addByte(frameType);
+    if (hasLength) {
+      builder.add(VarInt.encode(data.length));
+    }
+    builder.add(data);
+    return Uint8List.fromList(builder.toBytes());
+  }
+
+  /// Returns the wire-format byte length of this frame.
+  int getByteLength() {
+    return 1 + (hasLength ? VarInt.encode(data.length).length : 0) + data.length;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -851,6 +949,14 @@ class FrameCodec {
         );
       case 0x1e: // HANDSHAKE_DONE
         return HandshakeDoneFrame();
+      case 0x30: // DATAGRAM (no length)
+        final data = _safeSublist(bytes, pos, bytes.length - pos);
+        return DatagramFrame(data: data, hasLength: false);
+      case 0x31: // DATAGRAM (with length)
+        final lengthValue = readVarInt(pos);
+        pos += varIntLength(pos);
+        final data = _safeSublist(bytes, pos, lengthValue);
+        return DatagramFrame(data: data, hasLength: true);
       default:
         throw UnsupportedError(
             'Frame parsing not yet implemented for type 0x${type.toRadixString(16)}');

@@ -13,6 +13,12 @@ enum Http3SettingsId {
   /// SETTINGS_QPACK_BLOCKED_STREAMS (0x02)
   blockedStreams(0x02),
 
+  /// SETTINGS_ENABLE_CONNECT_PROTOCOL (0x08) per RFC 9220.
+  enableConnectProtocol(0x08),
+
+  /// SETTINGS_H3_DATAGRAM (0x33) per RFC 9297.
+  h3Datagram(0x33),
+
   /// GREASE value for interoperability testing.
   grease0(0x0b),
 
@@ -71,6 +77,8 @@ class Http3SettingsFrame {
     int? maxFieldSectionSize,
     int? maxTableCapacity,
     int? blockedStreams,
+    int? enableConnectProtocol,
+    int? h3Datagram,
   }) {
     final map = <int, int>{};
     if (maxFieldSectionSize != null) {
@@ -81,6 +89,12 @@ class Http3SettingsFrame {
     }
     if (blockedStreams != null) {
       map[Http3SettingsId.blockedStreams.value] = blockedStreams;
+    }
+    if (enableConnectProtocol != null) {
+      map[Http3SettingsId.enableConnectProtocol.value] = enableConnectProtocol;
+    }
+    if (h3Datagram != null) {
+      map[Http3SettingsId.h3Datagram.value] = h3Datagram;
     }
     return Http3SettingsFrame(settings: map);
   }

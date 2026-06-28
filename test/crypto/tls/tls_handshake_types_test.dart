@@ -56,6 +56,12 @@ void main() {
     });
   });
 
+  group('QuicTransportParameterId', () {
+    test('maxDatagramFrameSize value is 0x20', () {
+      expect(QuicTransportParameterId.maxDatagramFrameSize.value, 0x20);
+    });
+  });
+
   group('TlsConstants', () {
     test('TLS version constants are correct', () {
       expect(TlsConstants.tls13Version, 0x0304);

@@ -28,6 +28,29 @@ void main() {
       expect(frame.settings[0x02], equals(50));
     });
 
+    test('from factory includes new settings', () {
+      final frame = Http3SettingsFrame.from(
+        enableConnectProtocol: 1,
+        h3Datagram: 1,
+      );
+
+      expect(frame.settings[Http3SettingsId.enableConnectProtocol.value],
+          equals(1));
+      expect(frame.settings[Http3SettingsId.h3Datagram.value], equals(1));
+    });
+
+    test('round-trip with new settings', () {
+      final frame = Http3SettingsFrame.from(
+        maxFieldSectionSize: 8192,
+        enableConnectProtocol: 1,
+        h3Datagram: 1,
+      );
+      final payload = frame.serializePayload();
+      final parsed = Http3SettingsFrame.parsePayload(payload);
+
+      expect(parsed, equals(frame));
+    });
+
     test('empty settings works', () {
       final frame = Http3SettingsFrame();
       expect(frame.settings, isEmpty);

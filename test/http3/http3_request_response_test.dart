@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:quic_lib/src/http3/extended_connect_request.dart';
 import 'package:quic_lib/src/http3/frame_types.dart';
 import 'package:quic_lib/src/http3/headers_frame.dart';
 import 'package:quic_lib/src/http3/http3_connection.dart';
@@ -54,6 +55,40 @@ void main() {
       expect(decoded.path, equals('/upload'));
       expect(decoded.headers['host'], equals('example.com'));
       expect(decoded.headers['content-type'], equals('application/json'));
+    });
+  });
+
+  group('ExtendedConnectRequest', () {
+    test('encode and decode round-trip', () {
+      final request = ExtendedConnectRequest(
+        protocol: 'webtransport',
+        authority: 'example.com',
+        path: '/wt',
+        headers: {'origin': 'https://example.com'},
+      );
+      final encoded = request.encodeHeaders();
+      expect(encoded.isNotEmpty, isTrue);
+
+      final decoded = ExtendedConnectRequest.decodeHeaders(encoded);
+      expect(decoded.protocol, equals('webtransport'));
+      expect(decoded.scheme, equals('https'));
+      expect(decoded.authority, equals('example.com'));
+      expect(decoded.path, equals('/wt'));
+      expect(decoded.headers['origin'], equals('https://example.com'));
+    });
+
+    test('encode with custom scheme', () {
+      final request = ExtendedConnectRequest(
+        protocol: 'websocket',
+        scheme: 'http',
+        authority: 'example.com',
+        path: '/chat',
+      );
+      final decoded = ExtendedConnectRequest.decodeHeaders(
+        request.encodeHeaders(),
+      );
+      expect(decoded.scheme, equals('http'));
+      expect(decoded.protocol, equals('websocket'));
     });
   });
 

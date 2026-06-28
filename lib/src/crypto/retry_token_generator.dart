@@ -57,44 +57,52 @@ class RetryTokenGenerator {
   /// - the embedded timestamp has not expired (default max age 5000 ms),
   /// - the embedded client address and DCID match the provided values, and
   /// - the HMAC-SHA256 over the payload verifies.
+  ///
+  /// Per RFC 9000 Errata 7861, invalid Retry tokens from other servers are
+  /// silently ignored (returns `false`) rather than treated as fatal errors.
   Future<bool> validate(
     Uint8List token,
     List<int> clientAddress,
     List<int> dcid, {
     int maxAgeMs = 5000,
   }) async {
-    final expectedPayloadLen = 8 + clientAddress.length + dcid.length;
-    final minLen = expectedPayloadLen + 32; // SHA-256 HMAC length
-    if (token.length < minLen) {
+    try {
+      final expectedPayloadLen = 8 + clientAddress.length + dcid.length;
+      final minLen = expectedPayloadLen + 32; // SHA-256 HMAC length
+      if (token.length < minLen) {
+        return false;
+      }
+
+      final timestamp = _decodeUint64(token.sublist(0, 8));
+      final now = DateTime.now().millisecondsSinceEpoch;
+      if (now - timestamp > maxAgeMs) {
+        return false;
+      }
+
+      // Verify the client address embedded in the token matches.
+      final tokenAddr = token.sublist(8, 8 + clientAddress.length);
+      if (!listEquals(tokenAddr, clientAddress)) {
+        return false;
+      }
+
+      // Verify the DCID embedded in the token matches.
+      final tokenDcid = token.sublist(
+        8 + clientAddress.length,
+        expectedPayloadLen,
+      );
+      if (!listEquals(tokenDcid, dcid)) {
+        return false;
+      }
+
+      final payload = token.sublist(0, expectedPayloadLen);
+      final actualHmac = token.sublist(expectedPayloadLen);
+      final expectedHmac = await _backend.hmac(Sha256(), _secretKey, payload);
+
+      return listEquals(expectedHmac, actualHmac);
+    } catch (_) {
+      // Errata 7861: Any unreadable token is silently ignored.
       return false;
     }
-
-    final timestamp = _decodeUint64(token.sublist(0, 8));
-    final now = DateTime.now().millisecondsSinceEpoch;
-    if (now - timestamp > maxAgeMs) {
-      return false;
-    }
-
-    // Verify the client address embedded in the token matches.
-    final tokenAddr = token.sublist(8, 8 + clientAddress.length);
-    if (!listEquals(tokenAddr, clientAddress)) {
-      return false;
-    }
-
-    // Verify the DCID embedded in the token matches.
-    final tokenDcid = token.sublist(
-      8 + clientAddress.length,
-      expectedPayloadLen,
-    );
-    if (!listEquals(tokenDcid, dcid)) {
-      return false;
-    }
-
-    final payload = token.sublist(0, expectedPayloadLen);
-    final actualHmac = token.sublist(expectedPayloadLen);
-    final expectedHmac = await _backend.hmac(Sha256(), _secretKey, payload);
-
-    return listEquals(expectedHmac, actualHmac);
   }
 
   static Uint8List _encodeUint64(int value) {

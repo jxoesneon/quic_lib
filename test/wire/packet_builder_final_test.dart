@@ -29,6 +29,12 @@ class _HugeFrame implements Frame {
 
   @override
   Uint8List serialize() => Uint8List(_size);
+
+  @override
+  bool get isAckEliciting => true;
+
+  @override
+  bool get isInFlight => true;
 }
 
 void main() {

@@ -85,6 +85,17 @@ enum TlsExtensionType {
   const TlsExtensionType(this.value);
 }
 
+/// QUIC transport parameter identifiers (RFC 9000 and extensions).
+///
+/// Transport parameters are carried in the `quic_transport_parameters`
+/// TLS extension (RFC 9001) and negotiated during the handshake.
+enum QuicTransportParameterId {
+  maxDatagramFrameSize(0x20); // RFC 9221
+
+  final int value;
+  const QuicTransportParameterId(this.value);
+}
+
 /// Protocol-wide constants for TLS 1.3 (RFC 8446).
 ///
 /// These values are used when building or parsing TLS handshake messages,

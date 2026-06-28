@@ -31,6 +31,9 @@ class CongestionController {
   int get bytesInFlight => _bytesInFlight;
 
   /// Register a packet as sent (adds to bytes_in_flight).
+  ///
+  /// Callers MUST only account in-flight packets (those containing ack-eliciting
+  /// frames). Per RFC 9000 Errata 8240, CONNECTION_CLOSE frames do not count.
   void onPacketSent(int bytes) {
     // SECURITY: Reject negative byte counts.
     if (bytes < 0) bytes = 0;

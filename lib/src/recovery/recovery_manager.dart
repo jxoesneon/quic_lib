@@ -82,7 +82,10 @@ class RecoveryManager {
   }) {
     _lossDetector.onPacketSent(packetNumber, sentTimeUs,
         ackEliciting: ackEliciting);
-    _congestionController.onPacketSent(sizeInBytes);
+    // Errata 8240: Only in-flight packets count toward bytes-in-flight.
+    if (inFlight) {
+      _congestionController.onPacketSent(sizeInBytes);
+    }
     _sentPacketTracker.track(SentPacketInfo(
       packetNumber: packetNumber,
       sentTimeUs: sentTimeUs,

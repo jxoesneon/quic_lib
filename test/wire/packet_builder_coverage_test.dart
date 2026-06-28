@@ -15,6 +15,12 @@ class _EmptyFrame implements Frame {
 
   @override
   Uint8List serialize() => Uint8List(0);
+
+  @override
+  bool get isAckEliciting => false;
+
+  @override
+  bool get isInFlight => false;
 }
 
 void main() {

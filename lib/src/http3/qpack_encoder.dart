@@ -85,4 +85,12 @@ class QpackEncoder {
     builder.add(QpackString.encode(value));
     return Uint8List.fromList(builder.toBytes());
   }
+
+  /// Compute the Required Insert Count for a dynamic table reference.
+  ///
+  /// Per RFC 9204 Errata 8410, the correct formula is:
+  /// `requiredInsertCount = max(requiredInsertCount, dynamicIndex + 1)`.
+  static int requiredInsertCount(int current, int dynamicIndex) {
+    return current > dynamicIndex + 1 ? current : dynamicIndex + 1;
+  }
 }

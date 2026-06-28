@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'cancel_push_frame.dart';
 import 'data_frame.dart';
+import 'extended_connect_request.dart';
 import 'frame_types.dart';
 import 'goaway_frame.dart';
 import 'headers_frame.dart';
@@ -134,6 +135,14 @@ class Http3Connection {
   /// True once the peer's SETTINGS frame has been received.
   bool get settingsExchanged => _settingsExchanged;
 
+  /// True if the peer has enabled Extended CONNECT (RFC 9220).
+  bool get isConnectProtocolEnabled =>
+      (_peerSettings.settings[Http3SettingsId.enableConnectProtocol.value] ?? 0) != 0;
+
+  /// True if the peer has enabled HTTP Datagrams (RFC 9297).
+  bool get isH3DatagramEnabled =>
+      (_peerSettings.settings[Http3SettingsId.h3Datagram.value] ?? 0) != 0;
+
   /// Pending SETTINGS frame to be sent on the control stream.
   Http3SettingsFrame? get pendingSettings => _pendingSettings;
 
@@ -227,6 +236,21 @@ class Http3Connection {
   /// The caller must flush the pending frames to the QUIC transport; this
   /// method only stages them internally.
   Future<int> sendRequest(Http3Request request) async {
+    final quic = _quicConnection as dynamic;
+    final streamId = quic.openBidirectionalStream() as int;
+    final headers = request.encodeHeaders();
+    _sendHeaders(streamId, headers);
+    if (request.body != null && request.body!.isNotEmpty) {
+      _sendData(streamId, request.body!);
+    }
+    return streamId;
+  }
+
+  /// Send an Extended CONNECT request (RFC 9220) on a new bidirectional stream.
+  ///
+  /// Encodes the request headers with the `:protocol` pseudo-header and
+  /// optionally stages a request body. Returns the stream ID for this exchange.
+  Future<int> sendExtendedConnect(ExtendedConnectRequest request) async {
     final quic = _quicConnection as dynamic;
     final streamId = quic.openBidirectionalStream() as int;
     final headers = request.encodeHeaders();

@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'qpack_encoder.dart';
 import 'qpack_integer.dart';
 import 'qpack_static_table.dart';
 import 'qpack_string.dart';
@@ -12,6 +13,7 @@ import 'qpack_string.dart';
 class QpackDynamicTable {
   int _capacity;
   final List<({String name, String value})> _entries = [];
+  int _requiredInsertCount = 0;
 
   QpackDynamicTable({int capacity = 0}) : _capacity = capacity;
 
@@ -27,6 +29,23 @@ class QpackDynamicTable {
 
   /// Number of entries in the dynamic table.
   int get length => _entries.length;
+
+  /// The smallest dynamic table insert count needed to decode any dynamic
+  /// table reference in the current field section.
+  ///
+  /// Per RFC 9204 Errata 8410, this is updated as:
+  /// `requiredInsertCount = max(requiredInsertCount, dynamicIndex + 1)`.
+  int get requiredInsertCount => _requiredInsertCount;
+
+  /// Reset [requiredInsertCount] to zero before encoding a new field section.
+  void resetRequiredInsertCount() => _requiredInsertCount = 0;
+
+  /// Update [requiredInsertCount] when a dynamic table reference is used.
+  void updateRequiredInsertCount(int dynamicIndex) {
+    // Errata 8410: Use the corrected formula via QpackEncoder.
+    _requiredInsertCount =
+        QpackEncoder.requiredInsertCount(_requiredInsertCount, dynamicIndex);
+  }
 
   /// Insert a new entry at the tail (most recent).
   ///
@@ -89,6 +108,7 @@ Uint8List encodeWithDynamicTable(
   // 1. Dynamic table exact match
   final dynamicIndex = table.find(name, value);
   if (dynamicIndex != null) {
+    table.updateRequiredInsertCount(dynamicIndex);
     final bytes = QpackInteger.encode(dynamicIndex, 6);
     bytes[0] |= 0xC0; // 11 prefix for dynamic indexed
     return bytes;
@@ -105,6 +125,7 @@ Uint8List encodeWithDynamicTable(
   // 3. Dynamic table name-only match
   final dynamicNameIndex = table.find(name);
   if (dynamicNameIndex != null) {
+    table.updateRequiredInsertCount(dynamicNameIndex);
     final builder = BytesBuilder();
     final indexBytes = QpackInteger.encode(dynamicNameIndex, 5);
     indexBytes[0] |= 0x60; // 011 prefix for literal with dynamic name reference

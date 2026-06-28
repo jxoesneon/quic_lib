@@ -1,14 +1,24 @@
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:dart_quic/src/crypto/tls/client_hello.dart';
-import 'package:dart_quic/src/crypto/tls/encrypted_extensions.dart';
+import 'package:quic_lib/src/crypto/tls/client_hello.dart';
+import 'package:quic_lib/src/crypto/tls/encrypted_extensions.dart';
 
 void main() {
   group('EncryptedExtensions', () {
     test('serialize round-trip with parse', () {
       final extensions = <TlsExtension>[
-        TlsExtension(type: 0x0010, data: [0x08, 0x68, 0x74, 0x74, 0x70, 0x2f, 0x31, 0x2e, 0x31]), // ALPN
+        TlsExtension(type: 0x0010, data: [
+          0x08,
+          0x68,
+          0x74,
+          0x74,
+          0x70,
+          0x2f,
+          0x31,
+          0x2e,
+          0x31
+        ]), // ALPN
       ];
 
       final ee = EncryptedExtensions(extensions: extensions);
@@ -35,8 +45,10 @@ void main() {
     test('multiple extensions preserved', () {
       final extensions = <TlsExtension>[
         TlsExtension(type: 0x0010, data: [0x00, 0x02, 0x68, 0x32]), // ALPN h2
-        TlsExtension(type: 0x002b, data: [0x03, 0x04]), // supported_versions TLS 1.3
-        TlsExtension(type: 0x0033, data: [0x00, 0x01, 0x00]), // key_share minimal
+        TlsExtension(
+            type: 0x002b, data: [0x03, 0x04]), // supported_versions TLS 1.3
+        TlsExtension(
+            type: 0x0033, data: [0x00, 0x01, 0x00]), // key_share minimal
       ];
 
       final ee = EncryptedExtensions(extensions: extensions);

@@ -1,5 +1,5 @@
 import 'tls_handshake_types.dart';
-import 'package:dart_quic/src/security/rate_limiter.dart';
+import 'package:quic_lib/src/security/rate_limiter.dart';
 
 enum HandshakeState {
   idle,

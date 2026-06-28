@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
 import 'mock_crypto_backend.dart';
 
 void main() {
@@ -36,12 +36,14 @@ void main() {
     });
 
     test('hkdfExtract returns a SecretKey', () async {
-      final key = await backend.hkdfExtract(_FakeHash(), _FakeKey(), _FakeKey());
+      final key =
+          await backend.hkdfExtract(_FakeHash(), _FakeKey(), _FakeKey());
       expect(await key.extractSync(), isEmpty);
     });
 
     test('hkdfExpand returns empty list', () async {
-      expect(await backend.hkdfExpand(_FakeHash(), _FakeKey(), [], 32), isEmpty);
+      expect(
+          await backend.hkdfExpand(_FakeHash(), _FakeKey(), [], 32), isEmpty);
     });
 
     test('hkdfExpandLabel returns empty list', () async {
@@ -75,7 +77,8 @@ void main() {
     });
 
     test('x25519SharedSecret returns a key', () async {
-      final key = await backend.x25519SharedSecret(_FakeKey(), _FakePublicKey());
+      final key =
+          await backend.x25519SharedSecret(_FakeKey(), _FakePublicKey());
       expect(await key.extractSync(), isEmpty);
     });
 

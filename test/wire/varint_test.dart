@@ -2,7 +2,7 @@ import 'dart:math' show Random;
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:dart_quic/src/wire/varint.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 
 import '../helpers/hex.dart';
 
@@ -224,8 +224,7 @@ void main() {
           if (value > VarInt.maxValue) continue;
           final encoded = VarInt.encode(value);
           final decoded = VarInt.decode(encoded.buffer);
-          expect(decoded, equals(value),
-              reason: 'Failed for value $value');
+          expect(decoded, equals(value), reason: 'Failed for value $value');
         }
       });
     });

@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/cipher_suites.dart';
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/cipher_suites.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
 import 'package:test/test.dart';
 
 import '../helpers/hex.dart';
@@ -135,7 +135,8 @@ void main() {
       final signature = await backend.ed25519Sign(privateKey, message);
       expect(signature.length, equals(64));
 
-      final verified = await backend.ed25519Verify(publicKey, message, signature);
+      final verified =
+          await backend.ed25519Verify(publicKey, message, signature);
       expect(verified, isTrue);
 
       final tampered = Uint8List.fromList([1, 2, 3, 4, 6]);

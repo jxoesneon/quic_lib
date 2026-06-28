@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 
 /// Chunks a large TLS message into CRYPTO frames respecting a max frame size.
 class CryptoFrameDeliverer {

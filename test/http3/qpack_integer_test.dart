@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/http3/qpack_integer.dart';
+import 'package:quic_lib/src/http3/qpack_integer.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -43,10 +43,12 @@ void main() {
       expect(QpackInteger.encode(0, 1), equals(Uint8List.fromList([0x00])));
 
       // prefixBits=1 → value=1 needs continuation.
-      expect(QpackInteger.encode(1, 1), equals(Uint8List.fromList([0x01, 0x00])));
+      expect(
+          QpackInteger.encode(1, 1), equals(Uint8List.fromList([0x01, 0x00])));
 
       // prefixBits=1 → value=2.
-      expect(QpackInteger.encode(2, 1), equals(Uint8List.fromList([0x01, 0x01])));
+      expect(
+          QpackInteger.encode(2, 1), equals(Uint8List.fromList([0x01, 0x01])));
 
       // prefixBits=7 → limit=127. 126 in one byte.
       expect(QpackInteger.encode(126, 7), equals(Uint8List.fromList([0x7E])));
@@ -79,9 +81,12 @@ void main() {
 
   group('QpackInteger.decode', () {
     test('decodes small single-byte values', () {
-      expect(QpackInteger.decode(Uint8List.fromList([0x00]), 0, 5), equals((0, 1)));
-      expect(QpackInteger.decode(Uint8List.fromList([0x0A]), 0, 5), equals((10, 1)));
-      expect(QpackInteger.decode(Uint8List.fromList([0x1E]), 0, 5), equals((30, 1)));
+      expect(QpackInteger.decode(Uint8List.fromList([0x00]), 0, 5),
+          equals((0, 1)));
+      expect(QpackInteger.decode(Uint8List.fromList([0x0A]), 0, 5),
+          equals((10, 1)));
+      expect(QpackInteger.decode(Uint8List.fromList([0x1E]), 0, 5),
+          equals((30, 1)));
     });
 
     test('decodes continuation bytes', () {
@@ -199,7 +204,8 @@ void main() {
       expect(encoded[0], equals(42));
 
       // Merge instruction bit.
-      final withInstruction = Uint8List.fromList([0x80 | encoded[0], ...encoded.skip(1)]);
+      final withInstruction =
+          Uint8List.fromList([0x80 | encoded[0], ...encoded.skip(1)]);
       expect(withInstruction[0], equals(0x80 + 42));
 
       // Decode should mask off the instruction bit.

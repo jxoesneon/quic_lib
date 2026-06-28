@@ -3,21 +3,21 @@ import 'dart:typed_data';
 
 import 'package:test/test.dart';
 
-import 'package:dart_quic/src/libp2p/multiaddr.dart';
-import 'package:dart_quic/src/libp2p/peer_id.dart';
-import 'package:dart_quic/src/libp2p/dcutr.dart';
-import 'package:dart_quic/src/http3/qpack_encoder.dart';
-import 'package:dart_quic/src/http3/qpack_static_table.dart';
-import 'package:dart_quic/src/http3/settings_frame.dart';
-import 'package:dart_quic/src/http3/goaway_frame.dart';
-import 'package:dart_quic/src/http3/frame_types.dart';
-import 'package:dart_quic/src/security/anti_amplification_limit.dart';
-import 'package:dart_quic/src/connection/migration_helper.dart';
-import 'package:dart_quic/src/recovery/rtt_estimator.dart';
-import 'package:dart_quic/src/recovery/congestion_controller.dart';
-import 'package:dart_quic/src/recovery/pto_scheduler.dart';
-import 'package:dart_quic/src/wire/frame.dart';
-import 'package:dart_quic/src/wire/varint.dart';
+import 'package:quic_lib/src/libp2p/multiaddr.dart';
+import 'package:quic_lib/src/libp2p/peer_id.dart';
+import 'package:quic_lib/src/libp2p/dcutr.dart';
+import 'package:quic_lib/src/http3/qpack_encoder.dart';
+import 'package:quic_lib/src/http3/qpack_static_table.dart';
+import 'package:quic_lib/src/http3/settings_frame.dart';
+import 'package:quic_lib/src/http3/goaway_frame.dart';
+import 'package:quic_lib/src/http3/frame_types.dart';
+import 'package:quic_lib/src/security/anti_amplification_limit.dart';
+import 'package:quic_lib/src/connection/migration_helper.dart';
+import 'package:quic_lib/src/recovery/rtt_estimator.dart';
+import 'package:quic_lib/src/recovery/congestion_controller.dart';
+import 'package:quic_lib/src/recovery/pto_scheduler.dart';
+import 'package:quic_lib/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -121,7 +121,8 @@ void _multiaddrFuzzGroup() {
     });
 
     test('port validation rejects out-of-range ports', () {
-      expect(() => Multiaddr.parse('/ip4/1.2.3.4/tcp/70000'), throwsA(anything));
+      expect(
+          () => Multiaddr.parse('/ip4/1.2.3.4/tcp/70000'), throwsA(anything));
       expect(() => Multiaddr.parse('/ip4/1.2.3.4/tcp/-1'), throwsA(anything));
     });
   });
@@ -177,7 +178,8 @@ void _dcutrFuzzGroup() {
     });
 
     test('length exceeds buffer throws safely', () {
-      final bytes = Uint8List.fromList([0x01, 0x00, 0xFF]); // length=255, only 3 bytes
+      final bytes =
+          Uint8List.fromList([0x01, 0x00, 0xFF]); // length=255, only 3 bytes
       expect(() => DCUtRMessage.parse(bytes), throwsA(anything));
     });
 
@@ -193,7 +195,8 @@ void _dcutrFuzzGroup() {
     test('serialize round-trip with random addresses', () {
       for (var i = 0; i < 50; i++) {
         final addr = _randomBytes(_rng.nextInt(128));
-        final msg = DCUtRMessage(type: DCUtRMessage.typeConnect, observedAddr: addr);
+        final msg =
+            DCUtRMessage(type: DCUtRMessage.typeConnect, observedAddr: addr);
         final serialized = msg.serialize();
         final parsed = DCUtRMessage.parse(serialized);
         expect(parsed.type, equals(msg.type));
@@ -285,7 +288,8 @@ void _http3FrameFuzzGroup() {
     });
 
     test('empty GOAWAY payload throws safely', () {
-      expect(() => Http3GoawayFrame.parsePayload(Uint8List(0)), throwsA(anything));
+      expect(
+          () => Http3GoawayFrame.parsePayload(Uint8List(0)), throwsA(anything));
     });
 
     test('GOAWAY round-trip with random stream IDs', () {
@@ -462,7 +466,8 @@ void _congestionControllerFuzzGroup() {
       cc.onPacketSent(1000);
       cc.onAckReceived(0x7FFFFFFFFFFFFFFF);
       expect(cc.bytesInFlight, equals(0));
-      expect(cc.congestionWindow, greaterThanOrEqualTo(CongestionController.minimumWindow));
+      expect(cc.congestionWindow,
+          greaterThanOrEqualTo(CongestionController.minimumWindow));
     });
 
     test('repeated ACKs in slow start grow cwnd', () {
@@ -471,7 +476,8 @@ void _congestionControllerFuzzGroup() {
         cc.onPacketSent(1200);
         cc.onAckReceived(1200);
       }
-      expect(cc.congestionWindow, greaterThan(CongestionController.initialWindow));
+      expect(
+          cc.congestionWindow, greaterThan(CongestionController.initialWindow));
     });
 
     test('congestion event reduces cwnd but not below minimum', () {
@@ -479,7 +485,8 @@ void _congestionControllerFuzzGroup() {
       cc.onPacketSent(10000);
       cc.onAckReceived(10000);
       cc.onCongestionEvent(0);
-      expect(cc.congestionWindow, greaterThanOrEqualTo(CongestionController.minimumWindow));
+      expect(cc.congestionWindow,
+          greaterThanOrEqualTo(CongestionController.minimumWindow));
     });
 
     test('canSend is consistent with state', () {

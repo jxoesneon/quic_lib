@@ -2,11 +2,11 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:dart_quic/src/io/quic_endpoint.dart';
-import 'package:dart_quic/src/connection/quic_connection.dart';
-import 'package:dart_quic/src/wire/frame.dart';
-import 'package:dart_quic/src/wire/packet_header.dart';
-import 'package:dart_quic/src/wire/packet_builder.dart';
+import 'package:quic_lib/src/io/quic_endpoint.dart';
+import 'package:quic_lib/src/connection/quic_connection.dart';
+import 'package:quic_lib/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/packet_header.dart';
+import 'package:quic_lib/src/wire/packet_builder.dart';
 
 void main() {
   group('QuicEndpoint rebindToAddress', () {

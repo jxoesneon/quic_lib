@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/libp2p/dcutr.dart';
+import 'package:quic_lib/src/libp2p/dcutr.dart';
 import 'package:test/test.dart';
 
 void main() {

@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
 
 /// Maintains a running TLS 1.3 transcript hash.
 ///

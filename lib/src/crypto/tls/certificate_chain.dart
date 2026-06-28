@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/tls/x509_parser.dart';
+import 'package:quic_lib/src/crypto/tls/x509_parser.dart';
 
 /// Parsed certificate metadata used for chain validation.
 ///

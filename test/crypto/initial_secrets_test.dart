@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart' as crypto;
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/initial_secrets.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/initial_secrets.dart';
 import 'package:test/test.dart';
 
 // ---------------------------------------------------------------------------
@@ -88,7 +88,8 @@ class _TestCryptoBackend implements CryptoBackend {
     return hkdfExpand(hash, secret, hkdfLabel, length);
   }
 
-  static List<int> _buildHkdfLabel(String label, List<int> context, int length) {
+  static List<int> _buildHkdfLabel(
+      String label, List<int> context, int length) {
     final fullLabel = 'tls13 $label';
     final labelBytes = utf8.encode(fullLabel);
     final result = BytesBuilder();

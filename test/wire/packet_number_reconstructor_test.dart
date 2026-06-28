@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/wire/packet_number_reconstructor.dart';
+import 'package:quic_lib/src/wire/packet_number_reconstructor.dart';
 
 void main() {
   group('PacketNumberReconstructor', () {
@@ -20,8 +20,7 @@ void main() {
       expect(reconstruct(0x01, 8, 0xFE), 0x101);
     });
 
-    test('truncate and reconstruct is identity for values within window',
-        () {
+    test('truncate and reconstruct is identity for values within window', () {
       const largestReceived = 0x1000;
       // Values strictly within the reconstructible half-window on either side.
       for (var offset = -127; offset <= 128; offset++) {

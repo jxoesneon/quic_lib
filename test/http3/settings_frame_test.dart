@@ -1,4 +1,4 @@
-import 'package:dart_quic/src/http3/settings_frame.dart';
+import 'package:quic_lib/src/http3/settings_frame.dart';
 import 'package:test/test.dart';
 
 void main() {

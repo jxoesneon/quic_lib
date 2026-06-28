@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/tls/client_hello.dart'
+import 'package:quic_lib/src/crypto/tls/client_hello.dart'
     show CipherSuite, TlsExtension;
 
 /// TLS 1.3 ServerHello structure per RFC 8446 Section 4.1.3.
@@ -44,8 +44,7 @@ class ServerHello {
       extensionsLength += 4 + ext.data.length; // type (2) + length (2) + data
     }
 
-    final totalLength =
-        2 + // legacy_version
+    final totalLength = 2 + // legacy_version
         32 + // random
         1 + // legacy_session_id_echo_length
         sessionIdLength +

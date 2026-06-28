@@ -1,6 +1,6 @@
-import 'package:dart_quic/src/http3/http3_connection.dart';
-import 'package:dart_quic/src/http3/settings_frame.dart';
-import 'package:dart_quic/src/libp2p/peer_id.dart';
+import 'package:quic_lib/src/http3/http3_connection.dart';
+import 'package:quic_lib/src/http3/settings_frame.dart';
+import 'package:quic_lib/src/libp2p/peer_id.dart';
 import 'package:test/test.dart';
 
 void main() {

@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
 
 /// Minimal scaffold representation of an X.509 certificate.
 ///

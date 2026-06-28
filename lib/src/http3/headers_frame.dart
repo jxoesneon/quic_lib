@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/http3/frame_types.dart';
+import 'package:quic_lib/src/http3/frame_types.dart';
 
 /// HTTP/3 HEADERS frame payload.
 ///
@@ -26,8 +26,7 @@ class Http3HeadersFrame {
   }
 
   @override
-  String toString() =>
-      'Http3HeadersFrame(${encodedFieldSection.length} bytes)';
+  String toString() => 'Http3HeadersFrame(${encodedFieldSection.length} bytes)';
 
   @override
   bool operator ==(Object other) =>

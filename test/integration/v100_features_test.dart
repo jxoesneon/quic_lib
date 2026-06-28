@@ -1,33 +1,33 @@
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:dart_quic/src/connection/quic_connection.dart';
-import 'package:dart_quic/src/connection/connection_state_machine.dart';
-import 'package:dart_quic/src/connection/connection_id_manager.dart';
-import 'package:dart_quic/src/connection/packet_receiver.dart';
-import 'package:dart_quic/src/connection/version_negotiation.dart';
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
-import 'package:dart_quic/src/crypto/key_manager.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_coordinator.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_key_exchange.dart';
-import 'package:dart_quic/src/http3/push_promise_frame.dart';
-import 'package:dart_quic/src/http3/frame_types.dart';
-import 'package:dart_quic/src/libp2p/peer_id.dart';
-import 'package:dart_quic/src/recovery/congestion_controller.dart';
-import 'package:dart_quic/src/recovery/loss_detector.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/recovery/pto_scheduler.dart';
-import 'package:dart_quic/src/recovery/rtt_estimator.dart';
-import 'package:dart_quic/src/streams/stream_id.dart';
-import 'package:dart_quic/src/streams/stream_manager.dart';
-import 'package:dart_quic/src/webtransport/capsule_types.dart';
-import 'package:dart_quic/src/webtransport/stream_capsule.dart';
-import 'package:dart_quic/src/webtransport/stream_types.dart';
-import 'package:dart_quic/src/wire/frame.dart';
-import 'package:dart_quic/src/wire/packet_builder.dart';
-import 'package:dart_quic/src/wire/packet_header.dart';
-import 'package:dart_quic/src/wire/quic_versions.dart';
+import 'package:quic_lib/src/connection/quic_connection.dart';
+import 'package:quic_lib/src/connection/connection_state_machine.dart';
+import 'package:quic_lib/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/connection/packet_receiver.dart';
+import 'package:quic_lib/src/connection/version_negotiation.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/key_manager.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_coordinator.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_key_exchange.dart';
+import 'package:quic_lib/src/http3/push_promise_frame.dart';
+import 'package:quic_lib/src/http3/frame_types.dart';
+import 'package:quic_lib/src/libp2p/peer_id.dart';
+import 'package:quic_lib/src/recovery/congestion_controller.dart';
+import 'package:quic_lib/src/recovery/loss_detector.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/recovery/pto_scheduler.dart';
+import 'package:quic_lib/src/recovery/rtt_estimator.dart';
+import 'package:quic_lib/src/streams/stream_id.dart';
+import 'package:quic_lib/src/streams/stream_manager.dart';
+import 'package:quic_lib/src/webtransport/capsule_types.dart';
+import 'package:quic_lib/src/webtransport/stream_capsule.dart';
+import 'package:quic_lib/src/webtransport/stream_types.dart';
+import 'package:quic_lib/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/packet_builder.dart';
+import 'package:quic_lib/src/wire/packet_header.dart';
+import 'package:quic_lib/src/wire/quic_versions.dart';
 
 /// Integration tests for dart_quic v1.0.0 features.
 void main() {
@@ -170,7 +170,10 @@ void main() {
         packetNumber: 0,
         token: const [],
       );
-      final frames = <Frame>[PingFrame(), CryptoFrame(offset: 0, data: [0x01])];
+      final frames = <Frame>[
+        PingFrame(),
+        CryptoFrame(offset: 0, data: [0x01])
+      ];
       final packet = PacketBuilder.build(header, frames);
 
       final result = PacketReceiver.processPacket(packet);

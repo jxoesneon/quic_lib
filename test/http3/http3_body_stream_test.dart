@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/http3/data_frame.dart';
-import 'package:dart_quic/src/http3/http3_body_stream.dart';
-import 'package:dart_quic/src/http3/http3_connection.dart';
+import 'package:quic_lib/src/http3/data_frame.dart';
+import 'package:quic_lib/src/http3/http3_body_stream.dart';
+import 'package:quic_lib/src/http3/http3_connection.dart';
 import 'package:test/test.dart';
 
 class FakeQuicConnection {

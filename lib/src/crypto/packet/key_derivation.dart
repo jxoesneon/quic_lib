@@ -1,5 +1,5 @@
-import 'package:dart_quic/src/crypto/cipher_suites.dart';
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/cipher_suites.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
 
 /// QUIC key derivation from a traffic secret per RFC 9001 Section 5.1.
 ///

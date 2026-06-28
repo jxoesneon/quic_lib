@@ -1,13 +1,14 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
-import 'package:dart_quic/src/crypto/tls/x509_parser.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/tls/x509_parser.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('parseX509', () {
-    test('returns an X509Certificate for valid DER-like bytes (starting with 0x30)',
+    test(
+        'returns an X509Certificate for valid DER-like bytes (starting with 0x30)',
         () {
       final derBytes = Uint8List.fromList([0x30, 0x03, 0x01, 0x01, 0xFF]);
       final cert = parseX509(derBytes);

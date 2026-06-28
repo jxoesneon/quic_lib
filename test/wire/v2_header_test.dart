@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:dart_quic/src/wire/quic_versions.dart';
-import 'package:dart_quic/src/wire/v2_header.dart';
+import 'package:quic_lib/src/wire/quic_versions.dart';
+import 'package:quic_lib/src/wire/v2_header.dart';
 
 void main() {
   group('V2LongHeader', () {
@@ -97,7 +97,8 @@ void main() {
       final parsed = V2LongHeader.parse(bytes);
       expect(parsed.version, equals(header.version));
       expect(parsed.packetType, equals(header.packetType));
-      expect(parsed.destinationConnectionId, equals(header.destinationConnectionId));
+      expect(parsed.destinationConnectionId,
+          equals(header.destinationConnectionId));
       expect(parsed.sourceConnectionId, equals(header.sourceConnectionId));
       expect(parsed.token, equals(header.token));
     });
@@ -114,7 +115,8 @@ void main() {
       final parsed = V2LongHeader.parse(bytes);
       expect(parsed.version, equals(header.version));
       expect(parsed.packetType, equals(header.packetType));
-      expect(parsed.destinationConnectionId, equals(header.destinationConnectionId));
+      expect(parsed.destinationConnectionId,
+          equals(header.destinationConnectionId));
       expect(parsed.sourceConnectionId, equals(header.sourceConnectionId));
     });
 
@@ -128,7 +130,8 @@ void main() {
       final bytes = header.serialize();
       final parsed = V2LongHeader.parse(bytes);
       expect(parsed.packetType, equals(V2LongHeader.typeHandshake));
-      expect(parsed.destinationConnectionId, equals(header.destinationConnectionId));
+      expect(parsed.destinationConnectionId,
+          equals(header.destinationConnectionId));
       expect(parsed.sourceConnectionId, equals(header.sourceConnectionId));
     });
 
@@ -186,7 +189,8 @@ void main() {
       builder.addByte(1);
       builder.addByte(0xCD);
       final bytes = builder.toBytes();
-      expect(() => V2LongHeader.parse(Uint8List.fromList(bytes)), throwsArgumentError);
+      expect(() => V2LongHeader.parse(Uint8List.fromList(bytes)),
+          throwsArgumentError);
     });
   });
 }

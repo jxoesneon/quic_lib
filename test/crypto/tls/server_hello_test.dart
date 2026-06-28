@@ -1,6 +1,6 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/crypto/tls/server_hello.dart';
-import 'package:dart_quic/src/crypto/tls/client_hello.dart'
+import 'package:quic_lib/src/crypto/tls/server_hello.dart';
+import 'package:quic_lib/src/crypto/tls/client_hello.dart'
     show CipherSuite, TlsExtension;
 
 void main() {

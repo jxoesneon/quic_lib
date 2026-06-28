@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
-import 'package:dart_quic/src/crypto/packet/header_protection.dart';
-import 'package:dart_quic/src/wire/varint.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/packet/header_protection.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 
 void main() {
   group('HeaderProtection', () {
@@ -85,7 +85,8 @@ void main() {
 
         final header = Uint8List.fromList([0x40, 0x01, 0x02]);
         final payload1 = Uint8List.fromList(List<int>.generate(32, (i) => i));
-        final payload2 = Uint8List.fromList(List<int>.generate(32, (i) => i + 1));
+        final payload2 =
+            Uint8List.fromList(List<int>.generate(32, (i) => i + 1));
 
         final protected1 = hp.apply(header, payload1);
         final protected2 = hp.apply(header, payload2);
@@ -110,7 +111,8 @@ void main() {
           ...dcid,
           pn & 0xFF,
         ]);
-        final payload = Uint8List.fromList(List<int>.generate(32, (i) => i * 3));
+        final payload =
+            Uint8List.fromList(List<int>.generate(32, (i) => i * 3));
 
         final protected = hp.apply(header, payload);
         final unprotected = hp.remove(protected, payload);
@@ -143,7 +145,8 @@ void main() {
         builder.addByte(scid.length);
         builder.add(scid);
 
-        final payload = Uint8List.fromList(List<int>.generate(32, (i) => i + 7));
+        final payload =
+            Uint8List.fromList(List<int>.generate(32, (i) => i + 7));
         final length = pnLen + payload.length;
         builder.add(VarInt.encode(length));
         builder.addByte((pn >> 8) & 0xFF);
@@ -165,7 +168,8 @@ void main() {
 
         final header = Uint8List.fromList([0x40, 0x01, 0x02]);
         final payload1 = Uint8List.fromList(List<int>.generate(32, (i) => i));
-        final payload2 = Uint8List.fromList(List<int>.generate(32, (i) => i + 1));
+        final payload2 =
+            Uint8List.fromList(List<int>.generate(32, (i) => i + 1));
 
         final protected1 = hp.apply(header, payload1);
         final protected2 = hp.apply(header, payload2);

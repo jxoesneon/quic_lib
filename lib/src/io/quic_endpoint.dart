@@ -68,7 +68,8 @@ class QuicEndpoint {
     );
 
     // Transition to handshaking to begin the QUIC handshake.
-    stateMachine.transitionTo(ConnectionState.handshaking, reason: 'Connect to $address:$port');
+    stateMachine.transitionTo(ConnectionState.handshaking,
+        reason: 'Connect to $address:$port');
 
     _connections.add(connection);
     return connection;

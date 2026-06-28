@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:mocktail/mocktail.dart';
 
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
 
 // ---------------------------------------------------------------------------
 // Simple default implementations of related types
@@ -117,8 +117,7 @@ class MockCryptoBackend extends Mock implements CryptoBackend {
       Future.value(<int>[]);
 
   @override
-  Future<KeyPair> x25519GenerateKeyPair() =>
-      Future.value(_MockKeyPair());
+  Future<KeyPair> x25519GenerateKeyPair() => Future.value(_MockKeyPair());
 
   @override
   Future<SecretKey> x25519SharedSecret(
@@ -128,8 +127,7 @@ class MockCryptoBackend extends Mock implements CryptoBackend {
       Future.value(_MockSecretKey());
 
   @override
-  Future<KeyPair> ed25519GenerateKeyPair() =>
-      Future.value(_MockKeyPair());
+  Future<KeyPair> ed25519GenerateKeyPair() => Future.value(_MockKeyPair());
 
   @override
   Future<List<int>> ed25519Sign(SecretKey privateKey, List<int> message) =>
@@ -144,8 +142,7 @@ class MockCryptoBackend extends Mock implements CryptoBackend {
       Future.value(true);
 
   @override
-  Future<KeyPair> ecdsaP256GenerateKeyPair() =>
-      Future.value(_MockKeyPair());
+  Future<KeyPair> ecdsaP256GenerateKeyPair() => Future.value(_MockKeyPair());
 
   @override
   Future<bool> ecdsaP256Verify(

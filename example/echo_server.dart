@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:dart_quic/dart_quic.dart';
+import 'package:quic_lib/dart_quic.dart';
 
 /// Minimal QUIC echo server example.
 ///

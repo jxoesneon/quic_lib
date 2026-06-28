@@ -1,19 +1,19 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/connection/connection_state_machine.dart';
-import 'package:dart_quic/src/connection/connection_id_manager.dart';
-import 'package:dart_quic/src/connection/quic_connection.dart';
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
-import 'package:dart_quic/src/crypto/key_manager.dart';
-import 'package:dart_quic/src/crypto/tls/crypto_frame_assembler.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_state_machine.dart';
-import 'package:dart_quic/src/recovery/congestion_controller.dart';
-import 'package:dart_quic/src/recovery/loss_detector.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/recovery/pto_scheduler.dart';
-import 'package:dart_quic/src/recovery/rtt_estimator.dart';
-import 'package:dart_quic/src/streams/stream_id.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/connection/connection_state_machine.dart';
+import 'package:quic_lib/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/connection/quic_connection.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/key_manager.dart';
+import 'package:quic_lib/src/crypto/tls/crypto_frame_assembler.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_state_machine.dart';
+import 'package:quic_lib/src/recovery/congestion_controller.dart';
+import 'package:quic_lib/src/recovery/loss_detector.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/recovery/pto_scheduler.dart';
+import 'package:quic_lib/src/recovery/rtt_estimator.dart';
+import 'package:quic_lib/src/streams/stream_id.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 import 'package:test/test.dart';
 
 /// Integration tests for the encrypted QUIC packet pipeline.
@@ -21,7 +21,8 @@ void main() {
   group('Encrypted Pipeline', () {
     final backend = DefaultCryptoBackend();
 
-    test('KeyManager.deriveInitial produces valid Initial-space keys', () async {
+    test('KeyManager.deriveInitial produces valid Initial-space keys',
+        () async {
       final dcid = List<int>.filled(8, 0xAB);
       final keyManager = await KeyManager.deriveInitial(dcid, backend);
 
@@ -29,22 +30,29 @@ void main() {
       expect(keyManager.keysFor(PacketNumberSpace.initial), isNotNull);
     });
 
-    test('buildEncryptedPacket with keys produces different bytes than plaintext', () async {
+    test(
+        'buildEncryptedPacket with keys produces different bytes than plaintext',
+        () async {
       final dcid = List<int>.filled(8, 0xAB);
       final keyManager = await KeyManager.deriveInitial(dcid, backend);
 
       final conn = _createConnection(keyManager: keyManager);
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
 
       final plaintext = conn.buildPacket(
         space: PacketNumberSpace.initial,
-        frames: [CryptoFrame(offset: 0, data: [0x01, 0x02, 0x03])],
+        frames: [
+          CryptoFrame(offset: 0, data: [0x01, 0x02, 0x03])
+        ],
         dcid: dcid,
       );
 
       final encrypted = await conn.buildEncryptedPacket(
         space: PacketNumberSpace.initial,
-        frames: [CryptoFrame(offset: 0, data: [0x01, 0x02, 0x03])],
+        frames: [
+          CryptoFrame(offset: 0, data: [0x01, 0x02, 0x03])
+        ],
         dcid: dcid,
       );
 
@@ -57,17 +65,22 @@ void main() {
     test('buildEncryptedPacket without keys falls back to plaintext', () async {
       final dcid = List<int>.filled(8, 0xAB);
       final conn = _createConnection();
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
 
       final plaintext = conn.buildPacket(
         space: PacketNumberSpace.initial,
-        frames: [CryptoFrame(offset: 0, data: [0x01])],
+        frames: [
+          CryptoFrame(offset: 0, data: [0x01])
+        ],
         dcid: dcid,
       );
 
       final encrypted = await conn.buildEncryptedPacket(
         space: PacketNumberSpace.initial,
-        frames: [CryptoFrame(offset: 0, data: [0x01])],
+        frames: [
+          CryptoFrame(offset: 0, data: [0x01])
+        ],
         dcid: dcid,
       );
 
@@ -78,7 +91,8 @@ void main() {
       expect(encrypted[0], equals(plaintext[0])); // same header type
     });
 
-    test('processEncryptedDatagram with keys dispatches CRYPTO frames', () async {
+    test('processEncryptedDatagram with keys dispatches CRYPTO frames',
+        () async {
       final dcid = List<int>.filled(8, 0xAB);
       final keyManager = await KeyManager.deriveInitial(dcid, backend);
       final cryptoAssembler = CryptoFrameAssembler();
@@ -87,7 +101,8 @@ void main() {
         keyManager: keyManager,
         cryptoAssembler: cryptoAssembler,
       );
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
       conn.onBytesReceived(100);
 
       final cryptoData = Uint8List.fromList([0x01, 0x00, 0x00, 0x05]);
@@ -105,13 +120,16 @@ void main() {
       // For now, we verify the pipeline didn't crash.
     });
 
-    test('processEncryptedDatagram with keys dispatches STREAM frames', () async {
+    test('processEncryptedDatagram with keys dispatches STREAM frames',
+        () async {
       final dcid = List<int>.filled(8, 0xAB);
       final keyManager = await KeyManager.deriveInitial(dcid, backend);
 
       final conn = _createConnection(keyManager: keyManager);
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
-      conn.stateMachine.transitionTo(ConnectionState.established, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.established, reason: 'test');
       conn.onBytesReceived(100);
 
       final streamData = Uint8List.fromList([0x48, 0x65, 0x6C, 0x6C, 0x6F]);
@@ -129,18 +147,25 @@ void main() {
       expect(stream, isNotNull);
     });
 
-    test('processEncryptedDatagram with CONNECTION_CLOSE transitions to draining', () async {
+    test(
+        'processEncryptedDatagram with CONNECTION_CLOSE transitions to draining',
+        () async {
       final dcid = List<int>.filled(8, 0xAB);
       final keyManager = await KeyManager.deriveInitial(dcid, backend);
 
       final conn = _createConnection(keyManager: keyManager);
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
-      conn.stateMachine.transitionTo(ConnectionState.established, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.established, reason: 'test');
       conn.onBytesReceived(100);
 
       final encryptedPacket = await conn.buildEncryptedPacket(
         space: PacketNumberSpace.application,
-        frames: [ConnectionCloseFrame(errorCode: 0x0100, offendingFrameType: 0x00, reasonPhrase: 'test')],
+        frames: [
+          ConnectionCloseFrame(
+              errorCode: 0x0100, offendingFrameType: 0x00, reasonPhrase: 'test')
+        ],
         dcid: dcid,
       );
 

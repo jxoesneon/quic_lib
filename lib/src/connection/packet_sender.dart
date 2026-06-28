@@ -18,6 +18,7 @@ class PacketSender {
     required List<int> dcid,
     List<int>? scid,
     required int packetNumber,
+    bool greaseQuicBit = false,
   }) async {
     PacketHeader header;
     switch (space) {
@@ -43,6 +44,7 @@ class PacketSender {
           destinationConnectionId: dcid,
           packetNumber: packetNumber,
           packetNumberLength: 1,
+          greaseQuicBit: greaseQuicBit,
         );
       case PacketNumberSpace.zeroRtt:
         header = LongHeader(

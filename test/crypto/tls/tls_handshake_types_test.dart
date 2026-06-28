@@ -60,6 +60,10 @@ void main() {
     test('maxDatagramFrameSize value is 0x20', () {
       expect(QuicTransportParameterId.maxDatagramFrameSize.value, 0x20);
     });
+
+    test('versionInformation value is 0x11', () {
+      expect(QuicTransportParameterId.versionInformation.value, 0x11);
+    });
   });
 
   group('TlsConstants', () {

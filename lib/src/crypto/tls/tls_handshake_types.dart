@@ -90,7 +90,9 @@ enum TlsExtensionType {
 /// Transport parameters are carried in the `quic_transport_parameters`
 /// TLS extension (RFC 9001) and negotiated during the handshake.
 enum QuicTransportParameterId {
-  maxDatagramFrameSize(0x20); // RFC 9221
+  maxDatagramFrameSize(0x20), // RFC 9221
+  versionInformation(0x11), // RFC 9368
+  greaseQuicBit(0x2ab2); // RFC 9287
 
   final int value;
   const QuicTransportParameterId(this.value);

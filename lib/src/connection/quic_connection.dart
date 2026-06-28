@@ -5,10 +5,12 @@ import 'package:quic_lib/src/connection/connection_state_machine.dart';
 import 'package:quic_lib/src/connection/connection_id_manager.dart';
 import 'package:quic_lib/src/connection/packet_receiver.dart';
 import 'package:quic_lib/src/connection/packet_sender.dart';
+import 'package:quic_lib/src/connection/version_information.dart';
 import 'package:quic_lib/src/crypto/key_manager.dart';
 import 'package:quic_lib/src/crypto/tls/crypto_frame_assembler.dart';
 import 'package:quic_lib/src/crypto/tls/crypto_frame_handler.dart';
 import 'package:quic_lib/src/crypto/tls/handshake_state_machine.dart';
+import 'package:quic_lib/src/crypto/tls/tls_handshake_types.dart';
 import 'package:quic_lib/src/streams/stream_id.dart';
 import 'package:quic_lib/src/streams/stream_manager.dart';
 import 'package:quic_lib/src/streams/stream_scheduler.dart';
@@ -110,6 +112,12 @@ class QuicConnection {
   int maxDatagramFrameSize = 1200;
   final _datagramController = StreamController<Uint8List>.broadcast();
 
+  // RFC 9287 QUIC bit greasing.
+  bool greaseQuicBit = true;
+
+  // RFC 9368 compatible version negotiation.
+  VersionInformation? versionInformation;
+
   // Frame-dispatch subsystems (nullable until handshake pipeline is fully wired).
   final CryptoFrameAssembler? _cryptoAssembler;
   final HandshakeStateMachine? _handshakeMachine;
@@ -142,6 +150,8 @@ class QuicConnection {
     HandshakeStateMachine? handshakeMachine,
     KeyManager? keyManager,
     StreamScheduler? streamScheduler,
+    this.versionInformation,
+    this.greaseQuicBit = true,
   })  : _stateMachine = stateMachine,
         _cidManager = cidManager,
         _pnSpaceManager = pnSpaceManager,
@@ -224,7 +234,71 @@ class QuicConnection {
     builder.add(VarInt.encode(0x20));
     builder.add(VarInt.encode(maxDgBytes.length));
     builder.add(maxDgBytes);
+    // version_information (0x11, RFC 9368)
+    final info = versionInformation;
+    if (info != null) {
+      final infoBytes = info.serialize();
+      builder.add(VarInt.encode(QuicTransportParameterId.versionInformation.value));
+      builder.add(VarInt.encode(infoBytes.length));
+      builder.add(infoBytes);
+    }
+    // grease_quic_bit (0x2ab2, RFC 9287)
+    if (greaseQuicBit) {
+      builder.add(VarInt.encode(QuicTransportParameterId.greaseQuicBit.value));
+      builder.add(VarInt.encode(0));
+    }
     return Uint8List.fromList(builder.toBytes());
+  }
+
+  /// Parse peer transport parameters and update connection state.
+  ///
+  /// Each parameter is encoded as: id (varint) + length (varint) + value.
+  /// If a [version_information] parameter is present, its [chosenVersion] is
+  /// validated against its [availableVersions] per RFC 9368.
+  void applyPeerTransportParameters(Uint8List bytes) {
+    var offset = 0;
+    while (offset < bytes.length) {
+      if (offset >= bytes.length) break;
+      final id = VarInt.decode(bytes.buffer, offset: bytes.offsetInBytes + offset);
+      final idLength = VarInt.decodeLength(bytes[offset]);
+      offset += idLength;
+
+      if (offset >= bytes.length) {
+        throw FormatException('Incomplete transport parameter: missing length');
+      }
+      final length = VarInt.decode(bytes.buffer, offset: bytes.offsetInBytes + offset);
+      final lengthLength = VarInt.decodeLength(bytes[offset]);
+      offset += lengthLength;
+
+      if (offset + length > bytes.length) {
+        throw FormatException(
+          'Transport parameter value exceeds buffer: need $length bytes at offset $offset',
+        );
+      }
+      final value = Uint8List.sublistView(bytes, offset, offset + length);
+      offset += length;
+
+      if (id == QuicTransportParameterId.versionInformation.value) {
+        final info = VersionInformation.parse(value);
+        if (!info.availableVersions.contains(info.chosenVersion)) {
+          throw FormatException(
+            'version_information chosenVersion 0x${info.chosenVersion.toRadixString(16)} '
+            'is not in availableVersions',
+          );
+        }
+        versionInformation = info;
+      }
+    }
+  }
+
+  /// Check whether 0-RTT is compatible with the peer's version information.
+  ///
+  /// Returns `true` if this connection's [versionInformation] and [peerInfo]
+  /// indicate that 0-RTT can be used across versions (RFC 9368).
+  bool isZeroRttCompatibleAcrossVersions(VersionInformation peerInfo) {
+    final local = versionInformation;
+    if (local == null) return false;
+    return local.isZeroRttCompatible(peerInfo);
   }
 
   SentPacketTracker get sentPacketTracker => _sentPacketTracker;
@@ -532,6 +606,7 @@ class QuicConnection {
       dcid: dcid,
       scid: scid,
       packetNumber: packetNumber,
+      greaseQuicBit: space == PacketNumberSpace.application ? greaseQuicBit : false,
     );
     final ackEliciting = frames.any((f) => f.isAckEliciting);
     final inFlight = frames.any((f) => f.isInFlight);
@@ -572,6 +647,7 @@ class QuicConnection {
       dcid: dcid,
       scid: scid,
       packetNumber: packetNumber,
+      greaseQuicBit: space == PacketNumberSpace.application ? greaseQuicBit : false,
     );
 
     // Patch the Length field for long headers to account for the AEAD tag.

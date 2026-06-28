@@ -5,7 +5,9 @@ import 'package:test/test.dart';
 import 'package:quic_lib/src/connection/quic_connection.dart';
 import 'package:quic_lib/src/connection/connection_state_machine.dart';
 import 'package:quic_lib/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/connection/version_information.dart';
 import 'package:quic_lib/src/crypto/tls/crypto_frame_assembler.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 import 'package:quic_lib/src/streams/stream_id.dart';
 import 'package:quic_lib/src/streams/stream_scheduler.dart';
 import 'package:quic_lib/src/recovery/packet_number_space.dart';
@@ -612,6 +614,90 @@ void main() {
       final conn = _createConnection();
       conn.updateConnectionFlowControl(131072);
       expect(conn.connectionFlowController.availableWindow, equals(131072));
+    });
+
+    group('version_information (RFC 9368)', () {
+      test('buildTransportParameters includes version_information when present', () {
+        final info = VersionInformation(
+          chosenVersion: 0x00000001,
+          availableVersions: [0x00000001],
+        );
+        final conn = _createConnection();
+        conn.versionInformation = info;
+        final tp = conn.buildTransportParameters();
+        expect(tp.length, greaterThan(0));
+        // The bytes should contain the version_information TP id (0x11) encoded as varint.
+        expect(tp, contains(0x11));
+      });
+
+      test('applyPeerTransportParameters parses version_information', () {
+        final conn = _createConnection();
+        final info = VersionInformation(
+          chosenVersion: 0x00000001,
+          availableVersions: [0x00000001],
+        );
+        final serialized = info.serialize();
+        // Build a transport parameter block: id (varint) + length (varint) + value.
+        final builder = BytesBuilder();
+        builder.add(VarInt.encode(0x11)); // version_information id
+        builder.add(VarInt.encode(serialized.length));
+        builder.add(serialized);
+        conn.applyPeerTransportParameters(Uint8List.fromList(builder.toBytes()));
+        expect(conn.versionInformation, isNotNull);
+        expect(conn.versionInformation!.chosenVersion, equals(0x00000001));
+      });
+
+      test('applyPeerTransportParameters throws when chosenVersion not in availableVersions', () {
+        final conn = _createConnection();
+        final info = VersionInformation(
+          chosenVersion: 0x6b3343cf,
+          availableVersions: [0x00000001], // does NOT contain chosenVersion
+        );
+        final serialized = info.serialize();
+        final builder = BytesBuilder();
+        builder.add(VarInt.encode(0x11));
+        builder.add(VarInt.encode(serialized.length));
+        builder.add(serialized);
+        expect(
+          () => conn.applyPeerTransportParameters(Uint8List.fromList(builder.toBytes())),
+          throwsA(isA<FormatException>()),
+        );
+      });
+
+      test('isZeroRttCompatibleAcrossVersions returns true when compatible', () {
+        final conn = _createConnection();
+        conn.versionInformation = VersionInformation(
+          chosenVersion: 0x00000001,
+          availableVersions: [0x00000001, 0x6b3343cf],
+        );
+        final peerInfo = VersionInformation(
+          chosenVersion: 0x6b3343cf,
+          availableVersions: [0x6b3343cf, 0x00000001],
+        );
+        expect(conn.isZeroRttCompatibleAcrossVersions(peerInfo), isTrue);
+      });
+
+      test('isZeroRttCompatibleAcrossVersions returns false when not compatible', () {
+        final conn = _createConnection();
+        conn.versionInformation = VersionInformation(
+          chosenVersion: 0x6b3343cf,
+          availableVersions: [0x6b3343cf],
+        );
+        final peerInfo = VersionInformation(
+          chosenVersion: 0x00000001,
+          availableVersions: [0x00000001],
+        );
+        expect(conn.isZeroRttCompatibleAcrossVersions(peerInfo), isFalse);
+      });
+
+      test('isZeroRttCompatibleAcrossVersions returns false when local info is null', () {
+        final conn = _createConnection();
+        final peerInfo = VersionInformation(
+          chosenVersion: 0x00000001,
+          availableVersions: [0x00000001],
+        );
+        expect(conn.isZeroRttCompatibleAcrossVersions(peerInfo), isFalse);
+      });
     });
   });
 }

@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import '../crypto/crypto_backend.dart';
 import '../crypto/packet/retry_integrity_tag.dart';
+import 'quic_bit_greaser.dart';
 import 'varint.dart';
 
 /// Base class for all QUIC packet headers.
@@ -233,6 +234,9 @@ class ShortHeader implements PacketHeader {
   /// The payload bytes (frames) carried after the header.
   final List<int> payload;
 
+  /// Whether to randomly set or clear the QUIC bit (RFC 9287).
+  final bool greaseQuicBit;
+
   /// Creates a short header.
   ///
   /// [destinationConnectionId] must be 255 bytes or fewer.
@@ -246,6 +250,7 @@ class ShortHeader implements PacketHeader {
     this.keyPhase = false,
     this.packetNumberLength = 1,
     this.payload = const [],
+    this.greaseQuicBit = false,
   }) {
     if (packetNumberLength < 1 || packetNumberLength > 4) {
       throw ArgumentError('PN length must be 1..4');
@@ -263,6 +268,9 @@ class ShortHeader implements PacketHeader {
     final builder = BytesBuilder();
     // First byte: HF=0, FB=1, SpinBit, Reserved(0), KeyPhase, PN Length - 1
     var firstByte = 0x40;
+    if (greaseQuicBit && !QuicBitGreaser.shouldGrease()) {
+      firstByte &= ~0x40;
+    }
     if (spinBit) firstByte |= 0x20;
     firstByte |= (packetNumberLength - 1);
     if (keyPhase) firstByte |= 0x04;

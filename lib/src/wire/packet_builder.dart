@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'frame.dart';
 import 'packet_header.dart';
 import 'packet_number.dart';
+import 'quic_bit_greaser.dart';
 
 /// Builds complete QUIC packets from headers and frames.
 ///
@@ -90,6 +91,9 @@ class PacketBuilder {
   static Uint8List _buildShortHeader(ShortHeader header, Uint8List frameBytes) {
     final builder = BytesBuilder();
     var firstByte = 0x40;
+    if (header.greaseQuicBit && !QuicBitGreaser.shouldGrease()) {
+      firstByte &= ~0x40;
+    }
     if (header.spinBit) firstByte |= 0x20;
     firstByte |= (header.packetNumberLength - 1);
     if (header.keyPhase) firstByte |= 0x04;

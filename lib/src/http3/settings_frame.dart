@@ -19,11 +19,11 @@ enum Http3SettingsId {
   /// SETTINGS_H3_DATAGRAM (0x33) per RFC 9297.
   h3Datagram(0x33),
 
-  /// GREASE value for interoperability testing.
-  grease0(0x0b),
+  /// GREASE value for interoperability testing (0x1f * 1 + 0x21 = 0x40).
+  grease0(0x40),
 
-  /// GREASE value for interoperability testing.
-  grease1(0x2a);
+  /// GREASE value for interoperability testing (0x1f * 2 + 0x21 = 0x5f).
+  grease1(0x5f);
 
   final int value;
   const Http3SettingsId(this.value);

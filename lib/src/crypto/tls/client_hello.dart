@@ -57,7 +57,7 @@ class ClientHello {
   /// Builds the ALPN extension data for a ClientHello.
   ///
   /// Format: `uint16 list_length + (uint8 name_length + name_bytes)...`
-  static Uint8List _buildAlpnData(List<String> protocols) {
+  static Uint8List buildAlpnData(List<String> protocols) {
     final builder = BytesBuilder();
     var listLength = 0;
     for (final p in protocols) {
@@ -117,7 +117,7 @@ class ClientHello {
     if (alpnProtocols.isNotEmpty && !hasAlpn) {
       merged.add(TlsExtension(
         type: 0x0010,
-        data: _buildAlpnData(alpnProtocols),
+        data: buildAlpnData(alpnProtocols),
       ));
     }
     final hasSni = merged.any((e) => e.type == 0x0000);

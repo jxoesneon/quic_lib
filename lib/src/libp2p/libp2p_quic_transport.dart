@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import '../connection/quic_connection.dart';
 import '../crypto/crypto_backend.dart';
 import '../crypto/tls/x509_parser.dart';
 import '../io/platform_address.dart';
@@ -117,9 +118,15 @@ class Libp2pQuicTransport {
 
     // Bridge QuicEndpoint connections to libp2p connections.
     _endpoint!.connections.listen((conn) {
+      if (conn is QuicConnection) {
+        conn.alpnProtocols = alpnProtocols;
+      }
       if (conn is! Libp2pQuicConnection) {
         // Wrap the raw QuicConnection.
-        final wrapped = Libp2pQuicConnection(conn);
+        final wrapped = Libp2pQuicConnection(
+          conn,
+          alpnProtocols: alpnProtocols,
+        );
         controller.add(wrapped);
       } else {
         controller.add(conn);
@@ -149,7 +156,11 @@ class Libp2pQuicTransport {
 
     _endpoint ??= await QuicEndpoint.bind(InternetAddress.anyIPv4, 0);
     final conn = await _endpoint!.connect(address, port);
-    return Libp2pQuicConnection(conn);
+    conn.alpnProtocols = alpnProtocols;
+    return Libp2pQuicConnection(
+      conn,
+      alpnProtocols: alpnProtocols,
+    );
   }
 
   /// Close the transport and all active listeners.
@@ -193,11 +204,65 @@ class Libp2pQuicConnection {
   /// certificate has been verified to contain the libp2p extension.
   PeerId? peerId;
 
+  /// ALPN protocols advertised by this endpoint during the TLS handshake.
+  final List<String> alpnProtocols;
+
   /// Creates a libp2p wrapper around [quicConnection].
   ///
   /// [quicConnection] is expected to be a [QuicConnection] or an object
   /// that implements `openUnidirectionalStream()` and `close()`.
-  Libp2pQuicConnection(this._quicConnection, {this.peerId});
+  Libp2pQuicConnection(
+    this._quicConnection, {
+    this.peerId,
+    this.alpnProtocols = const ['libp2p'],
+  });
+
+  /// The ALPN protocol negotiated by the peer, if available.
+  ///
+  /// Reads [QuicConnection.negotiatedAlpn] when the underlying connection
+  /// is a [QuicConnection]. Falls back to dynamic access for test fakes
+  /// and wrappers. Returns `null` otherwise.
+  String? get negotiatedAlpn {
+    final conn = _quicConnection;
+    if (conn is QuicConnection) {
+      return conn.negotiatedAlpn;
+    }
+    // Allow test fakes and other wrappers that expose negotiatedAlpn.
+    try {
+      final dynamicConn = conn as dynamic;
+      final result = dynamicConn.negotiatedAlpn;
+      if (result is String?) return result;
+    } catch (_) {
+      // Ignore if the underlying object doesn't support this property.
+    }
+    return null;
+  }
+
+  /// Whether the peer's selected ALPN matches one of [alpnProtocols].
+  bool get isAlpnValid {
+    final selected = negotiatedAlpn;
+    if (selected == null) return false;
+    return alpnProtocols.contains(selected);
+  }
+
+  /// Validates that the peer's selected ALPN is in [alpnProtocols].
+  ///
+  /// Throws [StateError] if no ALPN was negotiated or the negotiated
+  /// protocol is not acceptable.
+  void validateAlpn() {
+    final selected = negotiatedAlpn;
+    if (selected == null) {
+      throw StateError(
+        'ALPN negotiation failed: no protocol was selected',
+      );
+    }
+    if (!alpnProtocols.contains(selected)) {
+      throw StateError(
+        'ALPN negotiation failed: peer selected "$selected", '
+        'expected one of $alpnProtocols',
+      );
+    }
+  }
 
   /// The underlying QUIC connection object.
   ///

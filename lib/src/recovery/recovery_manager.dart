@@ -21,6 +21,10 @@ class RecoveryManager {
   final RttEstimator _rttEstimator;
   final SentPacketTracker _sentPacketTracker;
 
+  /// Time (microseconds) when the largest acknowledged packet was sent.
+  /// -1 means no packet has been acknowledged yet.
+  int _largestAckedSentTimeUs = -1;
+
   RecoveryManager({
     required CongestionController congestionController,
     required LossDetector lossDetector,
@@ -53,6 +57,17 @@ class RecoveryManager {
     final effectiveAckedBytes =
         ackedBytes > 0 ? ackedBytes : computedAckedBytes;
 
+    // Track the send time of the largest newly-acked packet.
+    SentPacketInfo? largestInfo;
+    for (final info in acked) {
+      if (largestInfo == null || info.packetNumber > largestInfo.packetNumber) {
+        largestInfo = info;
+      }
+    }
+    if (largestInfo != null) {
+      _largestAckedSentTimeUs = largestInfo.sentTimeUs;
+    }
+
     // 1. Detect lost packets (using previous largest acked).
     final lost = _lossDetector.onAckReceived(
       largestAcked,
@@ -60,7 +75,7 @@ class RecoveryManager {
       _rttEstimator.smoothedRtt,
     );
 
-    final now = DateTime.now();
+    final now = DateTime.fromMicrosecondsSinceEpoch(ackReceiveTimeUs);
 
     // 2. Update congestion controller: remove acked bytes, then apply loss.
     _congestionController.onAckReceived(largestAcked, effectiveAckedBytes, now);
@@ -72,6 +87,21 @@ class RecoveryManager {
 
     // 3. Reset PTO since we got an ACK.
     _ptoScheduler.onAckReceived();
+  }
+
+  /// Check whether persistent congestion should be declared (RFC 9002 §7.6).
+  ///
+  /// Returns true if the time since the largest acknowledged packet was sent
+  /// exceeds 3 * PTO, and resets cwnd to the initial window.
+  bool checkPersistentCongestion(int currentTimeUs) {
+    if (_largestAckedSentTimeUs < 0) return false;
+    final ptoDuration = _rttEstimator.getPtoDuration();
+    final persistentDuration = 3 * ptoDuration;
+    if (currentTimeUs - _largestAckedSentTimeUs > persistentDuration) {
+      _congestionController.onPersistentCongestion();
+      return true;
+    }
+    return false;
   }
 
   /// Register a packet as sent with all relevant subsystems.
@@ -115,6 +145,7 @@ class RecoveryManager {
     _ptoScheduler.reset();
     _rttEstimator.reset();
     _sentPacketTracker.resetAll();
+    _largestAckedSentTimeUs = -1;
   }
 
   // Convenience getters for monitoring.

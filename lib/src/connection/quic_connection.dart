@@ -160,6 +160,19 @@ class QuicConnection {
   /// Port for the preferred address.
   int preferredAddressPort = 0;
 
+  // Missing RFC 9000 Section 18.2 transport parameters.
+  /// Original destination connection ID (0x00), sent by server after Retry.
+  List<int>? originalDestinationConnectionId;
+
+  /// Stateless reset token (0x02), 16-byte token for stateless reset.
+  Uint8List? statelessResetToken;
+
+  /// Initial source connection ID (0x0f), validation aid.
+  List<int>? initialSourceConnectionId;
+
+  /// Retry source connection ID (0x10), sent by server after Retry.
+  List<int>? retrySourceConnectionId;
+
   // PSK / 0-RTT session resumption (RFC 8446 + RFC 9001).
   Uint8List? pskTicket;
   int? pskTicketAgeAdd;
@@ -168,6 +181,13 @@ class QuicConnection {
   /// Maximum amount of early data the server is willing to accept (bytes).
   /// Defaults to `0xffff` as a conservative limit.
   int maxEarlyData = 0xffff;
+
+  /// ALPN protocols advertised during the TLS handshake (e.g. `['libp2p']`).
+  List<String> alpnProtocols = const [];
+
+  /// The ALPN protocol negotiated by the peer, set after the handshake
+  /// completes and EncryptedExtensions have been processed.
+  String? negotiatedAlpn;
 
   // Frame-dispatch subsystems (nullable until handshake pipeline is fully wired).
   final CryptoFrameAssembler? _cryptoAssembler;
@@ -207,6 +227,10 @@ class QuicConnection {
     this.allowMigration = true,
     this.preferredAddress,
     this.preferredAddressPort = 0,
+    this.originalDestinationConnectionId,
+    this.statelessResetToken,
+    this.initialSourceConnectionId,
+    this.retrySourceConnectionId,
     bool useCubic = false,
   })  : _stateMachine = stateMachine,
         _cidManager = cidManager,
@@ -292,11 +316,18 @@ class QuicConnection {
 
   /// TLS extensions that should be included in the ClientHello for this
   /// connection. Returns an `early_data` extension when [attempt0Rtt] is
-  /// enabled and a PSK ticket is available.
+  /// enabled and a PSK ticket is available, and an ALPN extension when
+  /// [alpnProtocols] is non-empty.
   List<TlsExtension> buildClientHelloExtensions() {
     final result = <TlsExtension>[];
     if (attempt0Rtt && pskTicket != null) {
       result.add(TlsExtension(type: 0x002a, data: const []));
+    }
+    if (alpnProtocols.isNotEmpty) {
+      result.add(TlsExtension(
+        type: 0x0010,
+        data: ClientHello.buildAlpnData(alpnProtocols),
+      ));
     }
     return result;
   }
@@ -307,11 +338,26 @@ class QuicConnection {
   /// Each parameter is encoded as: id (varint) + length (varint) + value.
   Uint8List buildTransportParameters() {
     final builder = BytesBuilder();
+    // original_destination_connection_id (0x00)
+    final odcid = originalDestinationConnectionId;
+    if (odcid != null) {
+      builder.add(VarInt.encode(
+          QuicTransportParameterId.originalDestinationConnectionId.value));
+      builder.add(VarInt.encode(odcid.length));
+      builder.add(odcid);
+    }
     // max_idle_timeout (0x01, RFC 9000 Section 18.2)
     final maxIdleBytes = VarInt.encode(maxIdleTimeout);
     builder.add(VarInt.encode(QuicTransportParameterId.maxIdleTimeout.value));
     builder.add(VarInt.encode(maxIdleBytes.length));
     builder.add(maxIdleBytes);
+    // stateless_reset_token (0x02)
+    final srt = statelessResetToken;
+    if (srt != null && srt.length == 16) {
+      builder.add(VarInt.encode(QuicTransportParameterId.statelessResetToken.value));
+      builder.add(VarInt.encode(16));
+      builder.add(srt);
+    }
     // max_udp_payload_size (0x03, RFC 9000 Section 18.2)
     final maxUdpBytes = VarInt.encode(maxUdpPayloadSize);
     builder
@@ -421,6 +467,22 @@ class QuicConnection {
       builder.add(VarInt.encode(QuicTransportParameterId.greaseQuicBit.value));
       builder.add(VarInt.encode(0));
     }
+    // initial_source_connection_id (0x0f)
+    final iscid = initialSourceConnectionId;
+    if (iscid != null) {
+      builder.add(VarInt.encode(
+          QuicTransportParameterId.initialSourceConnectionId.value));
+      builder.add(VarInt.encode(iscid.length));
+      builder.add(iscid);
+    }
+    // retry_source_connection_id (0x10)
+    final rscid = retrySourceConnectionId;
+    if (rscid != null) {
+      builder.add(VarInt.encode(
+          QuicTransportParameterId.retrySourceConnectionId.value));
+      builder.add(VarInt.encode(rscid.length));
+      builder.add(rscid);
+    }
     // early_data (0x42, RFC 9001)
     final earlyDataBytes = VarInt.encode(maxEarlyData);
     builder.add(VarInt.encode(QuicTransportParameterId.earlyData.value));
@@ -494,6 +556,26 @@ class QuicConnection {
           );
         }
         versionInformation = info;
+      } else if (id ==
+          QuicTransportParameterId.originalDestinationConnectionId.value) {
+        originalDestinationConnectionId = Uint8List.fromList(value);
+      } else if (id ==
+          QuicTransportParameterId.statelessResetToken.value) {
+        statelessResetToken = Uint8List.fromList(value);
+      } else if (id ==
+          QuicTransportParameterId.initialSourceConnectionId.value) {
+        initialSourceConnectionId = Uint8List.fromList(value);
+      } else if (id ==
+          QuicTransportParameterId.retrySourceConnectionId.value) {
+        retrySourceConnectionId = Uint8List.fromList(value);
+      } else if (id == QuicTransportParameterId.preferredAddress.value) {
+        // Parse 4-byte IPv4 + 2-byte port (simplified; full support needs IPv6).
+        if (value.length >= 6) {
+          final addrStr =
+              '${value[0]}.${value[1]}.${value[2]}.${value[3]}';
+          preferredAddress = InternetAddress(addrStr);
+          preferredAddressPort = (value[4] << 8) | value[5];
+        }
       }
     }
   }

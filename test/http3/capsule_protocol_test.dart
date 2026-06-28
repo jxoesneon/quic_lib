@@ -59,6 +59,28 @@ void main() {
       expect(consumed, equals(bytes.length));
     });
 
+    test('RegisterBidirectionalStreamCapsule round-trip', () {
+      final data = Uint8List.fromList([0x08]);
+      final capsule = RegisterBidirectionalStreamCapsule(data);
+      final bytes = capsule.serialize();
+      final (parsed, consumed) = Capsule.parse(bytes);
+
+      expect(parsed, isA<RegisterBidirectionalStreamCapsule>());
+      expect(parsed, equals(capsule));
+      expect(consumed, equals(bytes.length));
+    });
+
+    test('RegisterUnidirectionalStreamCapsule round-trip', () {
+      final data = Uint8List.fromList([0x0C]);
+      final capsule = RegisterUnidirectionalStreamCapsule(data);
+      final bytes = capsule.serialize();
+      final (parsed, consumed) = Capsule.parse(bytes);
+
+      expect(parsed, isA<RegisterUnidirectionalStreamCapsule>());
+      expect(parsed, equals(capsule));
+      expect(consumed, equals(bytes.length));
+    });
+
     test('parse throws for unknown capsule type', () {
       // Build an unknown capsule manually: type 0x99, length 0, no data.
       final unknown = Uint8List.fromList([0x99, 0x00]);

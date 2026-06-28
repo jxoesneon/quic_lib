@@ -95,10 +95,10 @@ void main() {
       final original = StreamCapsule(
         streamId: 42,
         type: CapsuleType
-            .closeWebTransportSession, // value 0x1a4 = 420 (2-byte varint)
+            .closeWebTransportSession, // value 0x2843 = 10307 (2-byte varint)
       );
       final bytes = original.serialize();
-      // Type (420 = 2 bytes) + streamId (42 = 1 byte) = 3 bytes total.
+      // Type (10307 = 2 bytes) + streamId (42 = 1 byte) = 3 bytes total.
       expect(bytes.length, equals(3));
       final parsed = StreamCapsule.parse(bytes);
       expect(parsed, equals(original));

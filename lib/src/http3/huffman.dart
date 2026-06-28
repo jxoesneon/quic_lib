@@ -147,15 +147,42 @@ class HuffmanDecoder {
   static String decode(Uint8List data) {
     final result = <int>[];
     var node = _root;
+    int? lastSymbolEndBit;
+    var bitCount = 0;
 
     for (var byteIdx = 0; byteIdx < data.length; byteIdx++) {
       final byte = data[byteIdx];
       for (var bitIdx = 7; bitIdx >= 0; bitIdx--) {
         final bit = (byte >> bitIdx) & 1;
-        node = bit == 0 ? node.zero! : node.one!;
+        if (bit == 0) {
+          if (node.zero == null) {
+            throw FormatException('Invalid Huffman code at bit $bitCount');
+          }
+          node = node.zero!;
+        } else {
+          if (node.one == null) {
+            throw FormatException('Invalid Huffman code at bit $bitCount');
+          }
+          node = node.one!;
+        }
+        bitCount++;
         if (node.symbol != null) {
           result.add(node.symbol!);
           node = _root;
+          lastSymbolEndBit = bitCount;
+        }
+      }
+    }
+
+    // RFC 7541 Section 5.2: padding bits after the last decoded symbol
+    // must all be 1s.
+    if (lastSymbolEndBit != null && lastSymbolEndBit < data.length * 8) {
+      for (var i = lastSymbolEndBit; i < data.length * 8; i++) {
+        final byteIdx = i ~/ 8;
+        final bIdx = 7 - (i % 8);
+        final bit = (data[byteIdx] >> bIdx) & 1;
+        if (bit != 1) {
+          throw FormatException('Invalid Huffman padding at bit $i');
         }
       }
     }

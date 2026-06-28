@@ -123,5 +123,64 @@ void main() {
       controller.onAckReceived(0, 100, DateTime.now());
       expect(controller.bytesInFlight, equals(0));
     });
+
+    test('app-limited suppresses cwnd growth', () {
+      controller.onPacketSent(1, 2400);
+      controller.setAppLimited(true);
+      expect(controller.appLimited, isTrue);
+
+      controller.onAckReceived(1, 2400, DateTime.now());
+      // cwnd should not grow while app-limited.
+      expect(controller.congestionWindow, equals(2400));
+      expect(controller.bytesInFlight, equals(0));
+    });
+
+    test('app-limited exits when cwnd is fully utilized', () {
+      controller.setAppLimited(true);
+      controller.onPacketSent(1, 2400);
+      expect(controller.appLimited, isFalse);
+    });
+
+    test('persistent congestion resets cwnd to initial window', () {
+      controller.onPacketSent(1, 2400);
+      controller.onAckReceived(1, 2400, DateTime.now());
+      expect(controller.congestionWindow, greaterThan(2400));
+
+      controller.onPersistentCongestion();
+      expect(controller.congestionWindow, equals(2400));
+    });
+
+    test('Hystart exits slow start early on ack train', () {
+      var now = DateTime(2024, 1, 1, 0, 0, 0);
+      // Send enough packets.
+      for (var i = 0; i < 10; i++) {
+        controller.onPacketSent(i, 1200);
+      }
+      // Ack them back-to-back (< 2ms apart) to trigger Hystart.
+      for (var i = 0; i < 10; i++) {
+        controller.onAckReceived(i, 1200, now);
+        now = now.add(const Duration(milliseconds: 1));
+      }
+      // Hystart should have exited slow start.
+      expect(controller.inSlowStart, isFalse);
+    });
+
+    test('Hystart delay-based exit on ack spacing increase', () {
+      var now = DateTime(2024, 1, 1, 0, 0, 0);
+      for (var i = 0; i < 5; i++) {
+        controller.onPacketSent(i, 1200);
+      }
+      // Normal spacing.
+      for (var i = 0; i < 3; i++) {
+        controller.onAckReceived(i, 1200, now);
+        now = now.add(const Duration(milliseconds: 1));
+      }
+      expect(controller.inSlowStart, isTrue);
+
+      // Sudden large spacing increase.
+      now = now.add(const Duration(milliseconds: 10));
+      controller.onAckReceived(3, 1200, now);
+      expect(controller.inSlowStart, isFalse);
+    });
   });
 }

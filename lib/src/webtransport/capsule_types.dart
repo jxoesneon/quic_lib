@@ -6,7 +6,7 @@ import 'package:quic_lib/src/wire/varint.dart';
 /// Capsule types for WebTransport over HTTP/3 (RFC 9220).
 enum CapsuleType {
   datagram(0x00),
-  closeWebTransportSession(0x1a4),
+  closeWebTransportSession(0x2843),
   drainWebTransportSession(0x78ae),
   registerBidirectionalStream(0x41),
   registerUnidirectionalStream(0x42),

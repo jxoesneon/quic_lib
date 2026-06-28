@@ -715,27 +715,9 @@ class QuicConnection {
     onBytesReceived(datagram.length);
     final packets = PacketReceiver.processDatagram(datagram);
     for (final packet in packets) {
-      final hasAck = packet.frames.any((f) => f is AckFrame);
-      if (hasAck) {
-        _updateEcnCounters(packet.header.ecnBits);
-      }
       _dispatchFrames(packet.space, packet.frames);
     }
     return packets.length;
-  }
-
-  void _updateEcnCounters(int ecnBits) {
-    switch (ecnBits) {
-      case 2:
-        ect0Counter++;
-        break;
-      case 1:
-        ect1Counter++;
-        break;
-      case 3:
-        ceCounter++;
-        break;
-    }
   }
 
   /// Validate ECN counts from an ACK_ECN frame (RFC 9000 Section 13.4.2).
@@ -983,10 +965,6 @@ class QuicConnection {
     for (final rawPacket in rawPackets) {
       final result = await _processEncryptedPacket(rawPacket);
       if (result != null) {
-        final hasAck = result.frames.any((f) => f is AckFrame);
-        if (hasAck && (rawPacket[0] & 0x80) == 0) {
-          _updateEcnCounters(rawPacket[0] & 0x03);
-        }
         _dispatchFrames(result.space, result.frames);
         processed++;
       }

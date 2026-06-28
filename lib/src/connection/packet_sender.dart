@@ -19,7 +19,6 @@ class PacketSender {
     List<int>? scid,
     required int packetNumber,
     bool greaseQuicBit = false,
-    bool ecnCapable = false,
   }) async {
     PacketHeader header;
     switch (space) {
@@ -46,7 +45,6 @@ class PacketSender {
           packetNumber: packetNumber,
           packetNumberLength: 1,
           greaseQuicBit: greaseQuicBit,
-          ecnCapable: ecnCapable,
         );
       case PacketNumberSpace.zeroRtt:
         header = LongHeader(

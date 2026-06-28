@@ -11,7 +11,6 @@ import 'package:quic_lib/src/recovery/pto_scheduler.dart';
 import 'package:quic_lib/src/recovery/congestion_controller.dart';
 import 'package:quic_lib/src/streams/stream_id.dart';
 import 'package:quic_lib/src/wire/frame.dart';
-import 'package:quic_lib/src/wire/packet_header.dart';
 
 QuicConnection _createConnection({
   ConnectionStateMachine? stateMachine,
@@ -31,20 +30,15 @@ QuicConnection _createConnection({
   );
 }
 
-/// Build a raw short-header packet with the given [ecnBits] and [payload].
-/// The packet number length is derived from [ecnBits] + 1 to match the
-/// simulated ECN encoding in the last two bits.
-Uint8List _buildShortHeaderPacket(int ecnBits, List<int> payload) {
+/// Build a raw short-header packet with the given [payload].
+/// Uses a fixed packet number length of 1.
+Uint8List _buildShortHeaderPacket(List<int> payload) {
   final dcid = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08];
-  // First byte: HF=0, FB=1, no spin, no key phase, PN length encoded by ecnBits
-  final firstByte = 0x40 | ecnBits;
-  final pnLen = ecnBits + 1;
-  final pnBytes = List<int>.generate(pnLen, (_) => 0x00);
+  // First byte: HF=0, FB=1, no spin, no key phase, PN length = 1
+  final firstByte = 0x40;
+  final pnBytes = [0x00];
   return Uint8List.fromList([firstByte, ...dcid, ...pnBytes, ...payload]);
 }
-
-/// Extract ECN bits from a serialized short-header packet.
-int _extractEcnBits(Uint8List packet) => packet[0] & 0x03;
 
 void main() {
   group('ECN validation with AckEcnFrame', () {
@@ -61,7 +55,7 @@ void main() {
         ect1Count: 0,
         ceCount: 0,
       );
-      final packet1 = _buildShortHeaderPacket(0, frame1.serialize());
+      final packet1 = _buildShortHeaderPacket(frame1.serialize());
       conn.processIncomingDatagram(packet1);
 
       expect(conn.isEcnValidated, isTrue);
@@ -75,7 +69,7 @@ void main() {
         ect1Count: 1,
         ceCount: 0,
       );
-      final packet2 = _buildShortHeaderPacket(0, frame2.serialize());
+      final packet2 = _buildShortHeaderPacket(frame2.serialize());
       conn.processIncomingDatagram(packet2);
 
       // Still validated, no failure.
@@ -94,7 +88,7 @@ void main() {
         ect1Count: 0,
         ceCount: 0,
       );
-      final packet1 = _buildShortHeaderPacket(0, frame1.serialize());
+      final packet1 = _buildShortHeaderPacket(frame1.serialize());
       conn.processIncomingDatagram(packet1);
       expect(conn.isEcnValidated, isTrue);
 
@@ -107,7 +101,7 @@ void main() {
         ect1Count: 0,
         ceCount: 0,
       );
-      final packet2 = _buildShortHeaderPacket(0, frame2.serialize());
+      final packet2 = _buildShortHeaderPacket(frame2.serialize());
       conn.processIncomingDatagram(packet2);
 
       // Validation should have failed, so ECN is no longer validated and
@@ -126,7 +120,7 @@ void main() {
         ect1Count: 1,
         ceCount: 2,
       );
-      final packet1 = _buildShortHeaderPacket(0, frame1.serialize());
+      final packet1 = _buildShortHeaderPacket(frame1.serialize());
       conn.processIncomingDatagram(packet1);
       expect(conn.isEcnValidated, isTrue);
 
@@ -138,7 +132,7 @@ void main() {
         ect1Count: 2,
         ceCount: 1,
       );
-      final packet2 = _buildShortHeaderPacket(0, frame2.serialize());
+      final packet2 = _buildShortHeaderPacket(frame2.serialize());
       conn.processIncomingDatagram(packet2);
 
       expect(conn.isEcnValidated, isFalse);
@@ -155,7 +149,7 @@ void main() {
         ect1Count: 0,
         ceCount: 1,
       );
-      final packet = _buildShortHeaderPacket(0, frame.serialize());
+      final packet = _buildShortHeaderPacket(frame.serialize());
       conn.processIncomingDatagram(packet);
 
       expect(conn.isEcnValidated, isFalse);
@@ -163,7 +157,7 @@ void main() {
   });
 
   group('ECN disabled after validation failure', () {
-    test('validation fails and ecnValidated becomes false', () async {
+    test('validation fails and ecnValidated becomes false', () {
       final conn = _createConnection(ecnEnabled: true);
 
       // First establish a baseline with a higher count.
@@ -175,7 +169,7 @@ void main() {
         ect1Count: 0,
         ceCount: 0,
       );
-      final ackPacket1 = _buildShortHeaderPacket(0, frame1.serialize());
+      final ackPacket1 = _buildShortHeaderPacket(frame1.serialize());
       conn.processIncomingDatagram(ackPacket1);
       expect(conn.isEcnValidated, isTrue);
 
@@ -188,7 +182,7 @@ void main() {
         ect1Count: 0,
         ceCount: 0,
       );
-      final ackPacket2 = _buildShortHeaderPacket(0, frame2.serialize());
+      final ackPacket2 = _buildShortHeaderPacket(frame2.serialize());
       conn.processIncomingDatagram(ackPacket2);
 
       // After failure, ECN should no longer be validated.
@@ -204,7 +198,9 @@ void main() {
         frames: [PingFrame()],
         dcid: dcid,
       );
-      expect(_extractEcnBits(packet), equals(0));
+      // With ECN removed from ShortHeader, the bottom 2 bits encode PN length.
+      // PN length = 1 means bits 00, so first byte should be 0x40.
+      expect(packet[0] & 0x03, equals(0));
     });
   });
 }

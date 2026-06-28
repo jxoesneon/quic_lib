@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## 1.2.4
+## [1.3.0]
 
 ### Protocol Completeness
 - Fixed RFC 9000 errata (8240, 7861, 8410, 7702)

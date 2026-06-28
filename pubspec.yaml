@@ -37,4 +37,3 @@ platforms:
   macos:
   windows:
   web:
-  wasm:

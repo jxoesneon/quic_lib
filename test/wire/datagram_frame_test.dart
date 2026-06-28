@@ -31,7 +31,8 @@ void main() {
       final frameWithLen = DatagramFrame(data: data, hasLength: true);
 
       expect(frameNoLen.getByteLength(), equals(frameNoLen.serialize().length));
-      expect(frameWithLen.getByteLength(), equals(frameWithLen.serialize().length));
+      expect(frameWithLen.getByteLength(),
+          equals(frameWithLen.serialize().length));
     });
 
     test('getByteLength for large payload uses correct varint size', () {

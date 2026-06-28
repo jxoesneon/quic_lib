@@ -32,8 +32,7 @@ abstract class Capsule {
     result.setRange(0, typeBytes.length, typeBytes);
     result.setRange(
         typeBytes.length, typeBytes.length + lengthBytes.length, lengthBytes);
-    result.setRange(
-        typeBytes.length + lengthBytes.length, result.length, data);
+    result.setRange(typeBytes.length + lengthBytes.length, result.length, data);
     return result;
   }
 
@@ -132,7 +131,8 @@ class CloseWebTransportSessionCapsule extends Capsule {
     int errorCode = 0,
     String? errorMessage,
   })  : errorCode = (data != null) ? _decodeErrorCode(data) : errorCode,
-        errorMessage = (data != null) ? _decodeErrorMessage(data) : errorMessage,
+        errorMessage =
+            (data != null) ? _decodeErrorMessage(data) : errorMessage,
         super(
           type: 0x6843,
           data: data ?? _buildData(errorCode, errorMessage),

@@ -147,7 +147,9 @@ class Http3Connection {
 
   /// True if the peer has enabled Extended CONNECT (RFC 9220).
   bool get isConnectProtocolEnabled =>
-      (_peerSettings.settings[Http3SettingsId.enableConnectProtocol.value] ?? 0) != 0;
+      (_peerSettings.settings[Http3SettingsId.enableConnectProtocol.value] ??
+          0) !=
+      0;
 
   /// True if the peer has enabled HTTP Datagrams (RFC 9297).
   bool get isH3DatagramEnabled =>

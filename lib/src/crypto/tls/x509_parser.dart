@@ -339,13 +339,13 @@ X509Certificate parseX509(List<int> derBytes) {
   final extensions = <String, List<int>>{};
   if (tbsIdx < tbsChildren.length && tbsChildren[tbsIdx].tag == 0xA3) {
     final extWrapperNode = tbsChildren[tbsIdx];
-    final extWrapperChildren =
-        _parseChildren(bytes, extWrapperNode.valueStart, extWrapperNode.valueEnd);
+    final extWrapperChildren = _parseChildren(
+        bytes, extWrapperNode.valueStart, extWrapperNode.valueEnd);
     // The [3] wrapper contains the Extensions SEQUENCE.
     for (final extensionsSeqNode in extWrapperChildren) {
       if (extensionsSeqNode.tag != 0x30) continue;
-      final extensionList =
-          _parseChildren(bytes, extensionsSeqNode.valueStart, extensionsSeqNode.valueEnd);
+      final extensionList = _parseChildren(
+          bytes, extensionsSeqNode.valueStart, extensionsSeqNode.valueEnd);
       // Each child of the Extensions SEQUENCE is an individual Extension SEQUENCE.
       for (final extSeqNode in extensionList) {
         if (extSeqNode.tag != 0x30) continue;

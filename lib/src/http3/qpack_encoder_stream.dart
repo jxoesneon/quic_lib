@@ -186,8 +186,7 @@ class InsertWithoutNameReference extends EncoderInstruction {
   }
 
   @override
-  String toString() =>
-      'InsertWithoutNameReference(name: $name, value: $value)';
+  String toString() => 'InsertWithoutNameReference(name: $name, value: $value)';
 }
 
 /// RFC 9204 Section 4.3.4 — Duplicate.

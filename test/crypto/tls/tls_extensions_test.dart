@@ -52,7 +52,9 @@ void main() {
         random: List<int>.generate(32, (i) => i),
         cipherSuites: [CipherSuite.tlsAes128GcmSha256],
         extensions: [
-          TlsExtension(type: 0x0000, data: [0x00, 0x05, 0x00, 0x00, 0x03, 0x66, 0x6f, 0x6f]),
+          TlsExtension(
+              type: 0x0000,
+              data: [0x00, 0x05, 0x00, 0x00, 0x03, 0x66, 0x6f, 0x6f]),
         ],
         serverName: 'example.com',
       );

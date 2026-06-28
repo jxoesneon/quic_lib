@@ -114,13 +114,14 @@ class CubicCongestionController implements CongestionController {
       return _cwnd;
     }
 
-    final t = now.difference(_congestionEventTime!).inMicroseconds / 1e6; // seconds
+    final t =
+        now.difference(_congestionEventTime!).inMicroseconds / 1e6; // seconds
     final k = _cubicK();
     final wCubic = _cubicScalingFactor * pow(t - k, 3) + _wMax;
 
     // TCP-friendly region (simplified RTT = 1s)
-    final wEst = _wMax * _betaCubic +
-        (3 * (1 - _betaCubic) / (1 + _betaCubic)) * t;
+    final wEst =
+        _wMax * _betaCubic + (3 * (1 - _betaCubic) / (1 + _betaCubic)) * t;
 
     final target = wCubic > wEst ? wCubic : wEst;
     return max(target.floor(), _minCwndPackets);

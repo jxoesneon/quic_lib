@@ -23,7 +23,8 @@ class QpackEncoder {
     // Try dynamic table name-only match
     final dynamicName = dynamicTable.find(name);
     if (dynamicName != null) {
-      return _encodeLiteralWithNameRef(QpackStaticTable.length + dynamicName, value);
+      return _encodeLiteralWithNameRef(
+          QpackStaticTable.length + dynamicName, value);
     }
 
     // Try exact static table match

@@ -49,7 +49,8 @@ class SignedKey {
     // field 2, wire type 2 (length-delimited): tag = (2 << 3) | 2 = 18
     final pkLen = publicKey.length;
     final sigLen = signature.length;
-    final totalLen = 1 + _varintLength(pkLen) + pkLen + 1 + _varintLength(sigLen) + sigLen;
+    final totalLen =
+        1 + _varintLength(pkLen) + pkLen + 1 + _varintLength(sigLen) + sigLen;
     final result = Uint8List(totalLen);
     var offset = 0;
 

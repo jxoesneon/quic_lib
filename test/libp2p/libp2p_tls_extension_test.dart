@@ -136,8 +136,7 @@ void main() {
       expect(valid, isTrue);
     });
 
-    test('verifyLibp2pSignature fails with wrong expected PeerId',
-        () async {
+    test('verifyLibp2pSignature fails with wrong expected PeerId', () async {
       // Generate host identity.
       final hostKeyPair = await backend.ed25519GenerateKeyPair();
       final hostPublicKey = await hostKeyPair.publicKey;
@@ -160,8 +159,7 @@ void main() {
       expect(valid, isFalse);
     });
 
-    test('extractLibp2pExtension returns null for chain without extension',
-        () {
+    test('extractLibp2pExtension returns null for chain without extension', () {
       // Use the existing minimal certificate helper (no libp2p extension).
       final minimalCert = CertificateInfo(
         rawBytes: helper.buildMinimalCert(),
@@ -200,7 +198,8 @@ void main() {
       var foundAlpn = false;
       while (offset + 4 <= bytes.length) {
         final int extType = ((bytes[offset] << 8) | bytes[offset + 1]) as int;
-        final int extDataLen = ((bytes[offset + 2] << 8) | bytes[offset + 3]) as int;
+        final int extDataLen =
+            ((bytes[offset + 2] << 8) | bytes[offset + 3]) as int;
         if (extType == 0x0010) {
           foundAlpn = true;
           // ALPN data: uint16 list_len + uint8 name_len + name

@@ -58,13 +58,16 @@ void main() {
 
   group('QuicTransportParameterId', () {
     test('RFC 9000 Section 18.2 parameters have correct values', () {
-      expect(QuicTransportParameterId.originalDestinationConnectionId.value, 0x00);
+      expect(
+          QuicTransportParameterId.originalDestinationConnectionId.value, 0x00);
       expect(QuicTransportParameterId.maxIdleTimeout.value, 0x01);
       expect(QuicTransportParameterId.statelessResetToken.value, 0x02);
       expect(QuicTransportParameterId.maxUdpPayloadSize.value, 0x03);
       expect(QuicTransportParameterId.initialMaxData.value, 0x04);
-      expect(QuicTransportParameterId.initialMaxStreamDataBidiLocal.value, 0x05);
-      expect(QuicTransportParameterId.initialMaxStreamDataBidiRemote.value, 0x06);
+      expect(
+          QuicTransportParameterId.initialMaxStreamDataBidiLocal.value, 0x05);
+      expect(
+          QuicTransportParameterId.initialMaxStreamDataBidiRemote.value, 0x06);
       expect(QuicTransportParameterId.initialMaxStreamDataUni.value, 0x07);
       expect(QuicTransportParameterId.initialMaxStreamsBidi.value, 0x08);
       expect(QuicTransportParameterId.initialMaxStreamsUni.value, 0x09);

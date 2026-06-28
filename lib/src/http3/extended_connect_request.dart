@@ -79,7 +79,7 @@ class ExtendedConnectRequest {
         case ':path':
           path = line.value;
         case ':method':
-        // ignored, always CONNECT
+          // ignored, always CONNECT
           break;
         default:
           headers[line.name] = line.value;

@@ -7,7 +7,8 @@ void main() {
   group('PathChallengeFrame', () {
     test('serialize/parse round-trip', () {
       final original = PathChallengeFrame(
-        data: Uint8List.fromList([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08]),
+        data: Uint8List.fromList(
+            [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08]),
       );
       final bytes = original.serialize();
       final parsed = PathChallengeFrame.parse(bytes);
@@ -48,7 +49,8 @@ void main() {
 
     test('FrameCodec parse round-trip', () {
       final original = PathChallengeFrame(
-        data: Uint8List.fromList([0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x11, 0x22]),
+        data: Uint8List.fromList(
+            [0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x11, 0x22]),
       );
       final bytes = original.serialize();
       final (parsed, nextOffset) = FrameCodec.parse(bytes);
@@ -62,7 +64,8 @@ void main() {
   group('PathResponseFrame', () {
     test('serialize/parse round-trip', () {
       final original = PathResponseFrame(
-        data: Uint8List.fromList([0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88]),
+        data: Uint8List.fromList(
+            [0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88]),
       );
       final bytes = original.serialize();
       final parsed = PathResponseFrame.parse(bytes);
@@ -101,7 +104,8 @@ void main() {
 
     test('FrameCodec parse round-trip', () {
       final original = PathResponseFrame(
-        data: Uint8List.fromList([0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0]),
+        data: Uint8List.fromList(
+            [0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0]),
       );
       final bytes = original.serialize();
       final (parsed, nextOffset) = FrameCodec.parse(bytes);

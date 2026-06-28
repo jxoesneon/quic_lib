@@ -32,7 +32,8 @@ class MigrationHelper {
       _evictOldestChallenge();
     }
     final random = Random.secure();
-    final data = Uint8List.fromList(List<int>.generate(8, (_) => random.nextInt(256)));
+    final data =
+        Uint8List.fromList(List<int>.generate(8, (_) => random.nextInt(256)));
     _pendingChallenges[bytesToHex(data)] = currentTimeUs ?? _nowUs();
     return PathChallengeFrame(data: data);
   }

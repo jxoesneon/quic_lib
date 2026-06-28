@@ -534,7 +534,8 @@ class PathChallengeFrame extends Frame {
 
   static Uint8List _generateRandomData() {
     final random = Random.secure();
-    return Uint8List.fromList(List<int>.generate(8, (_) => random.nextInt(256)));
+    return Uint8List.fromList(
+        List<int>.generate(8, (_) => random.nextInt(256)));
   }
 
   static PathChallengeFrame parse(Uint8List bytes) {
@@ -694,7 +695,9 @@ class DatagramFrame extends Frame {
 
   /// Returns the wire-format byte length of this frame.
   int getByteLength() {
-    return 1 + (hasLength ? VarInt.encode(data.length).length : 0) + data.length;
+    return 1 +
+        (hasLength ? VarInt.encode(data.length).length : 0) +
+        data.length;
   }
 }
 

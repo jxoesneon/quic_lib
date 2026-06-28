@@ -43,8 +43,7 @@ class PriorityUpdateFrame {
     }
     final streamId = VarInt.decode(payload.buffer, offset: 0);
     final streamIdLength = VarInt.decodeLength(payload[0]);
-    final priorityFieldValue =
-        ascii.decode(payload.sublist(streamIdLength));
+    final priorityFieldValue = ascii.decode(payload.sublist(streamIdLength));
     return PriorityUpdateFrame(
       streamId: streamId,
       priorityFieldValue: priorityFieldValue,
@@ -121,8 +120,7 @@ class PriorityUpdatePushFrame {
     }
     final streamId = VarInt.decode(payload.buffer, offset: 0);
     final streamIdLength = VarInt.decodeLength(payload[0]);
-    final priorityFieldValue =
-        ascii.decode(payload.sublist(streamIdLength));
+    final priorityFieldValue = ascii.decode(payload.sublist(streamIdLength));
     return PriorityUpdatePushFrame(
       streamId: streamId,
       priorityFieldValue: priorityFieldValue,

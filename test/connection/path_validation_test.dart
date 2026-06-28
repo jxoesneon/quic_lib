@@ -30,7 +30,9 @@ QuicConnection _createConnection() {
 
 Future<Uint8List> _buildResponseDatagram(
     List<int> challengeData, List<int> dcid) async {
-  final frames = <Frame>[PathResponseFrame(data: Uint8List.fromList(challengeData))];
+  final frames = <Frame>[
+    PathResponseFrame(data: Uint8List.fromList(challengeData))
+  ];
   final payload =
       Uint8List.fromList(frames.expand((f) => f.serialize()).toList());
   final header = ShortHeader(
@@ -70,7 +72,8 @@ void main() {
 
       // Extract the challenge data from the sent packet.
       final result = PacketReceiver.processPacket(packet);
-      final challengeFrame = result!.frames.whereType<PathChallengeFrame>().first;
+      final challengeFrame =
+          result!.frames.whereType<PathChallengeFrame>().first;
 
       // Build a PATH_RESPONSE packet with matching data.
       final responseDatagram =
@@ -103,7 +106,8 @@ void main() {
 
       // Extract challenge data.
       final parsed = PacketReceiver.processPacket(packet);
-      final challengeFrame = parsed!.frames.whereType<PathChallengeFrame>().first;
+      final challengeFrame =
+          parsed!.frames.whereType<PathChallengeFrame>().first;
 
       // Manually clear pending challenges to simulate timeout/expiration.
       // Since _pendingPathChallenges is private, we simulate by sending

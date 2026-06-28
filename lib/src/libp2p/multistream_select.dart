@@ -9,7 +9,8 @@ class MultistreamSelect {
   static const String newline = '\n';
 
   /// The multistream header: `<protocolId>\n` as UTF-8 bytes.
-  static Uint8List get header => Uint8List.fromList(utf8.encode('$protocolId\n'));
+  static Uint8List get header =>
+      Uint8List.fromList(utf8.encode('$protocolId\n'));
 
   /// Encode a protocol list: `<protocol>\n` for each.
   static Uint8List encodeProtocols(List<String> protocols) {

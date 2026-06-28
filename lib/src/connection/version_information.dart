@@ -50,14 +50,17 @@ class VersionInformation {
   /// Parse from bytes.
   static VersionInformation parse(Uint8List bytes) {
     if (bytes.length < 4 || (bytes.length % 4) != 0) {
-      throw FormatException('version_information must be a multiple of 4 bytes');
+      throw FormatException(
+          'version_information must be a multiple of 4 bytes');
     }
     final chosenVersion =
         (bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
     final versions = <int>[];
     for (var i = 4; i < bytes.length; i += 4) {
-      versions.add(
-          (bytes[i] << 24) | (bytes[i + 1] << 16) | (bytes[i + 2] << 8) | bytes[i + 3]);
+      versions.add((bytes[i] << 24) |
+          (bytes[i + 1] << 16) |
+          (bytes[i + 2] << 8) |
+          bytes[i + 3]);
     }
     return VersionInformation(
       chosenVersion: chosenVersion,

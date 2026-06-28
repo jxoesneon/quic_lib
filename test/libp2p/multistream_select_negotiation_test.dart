@@ -49,7 +49,8 @@ void main() {
       final data = Uint8List.fromList([0x05, 0x41, 0x42, 0x43, 0x44, 0x45]);
       final result = MultistreamSelect.parseLengthPrefixed(data);
       expect(result, isNotNull);
-      expect(result!.$1, equals(Uint8List.fromList([0x41, 0x42, 0x43, 0x44, 0x45])));
+      expect(result!.$1,
+          equals(Uint8List.fromList([0x41, 0x42, 0x43, 0x44, 0x45])));
       expect(result.$2, equals(6));
     });
 
@@ -93,7 +94,8 @@ void main() {
 
       // Verify the header was sent length-prefixed.
       expect(fakeConn.written.length, equals(2));
-      final headerResult = MultistreamSelect.parseLengthPrefixed(fakeConn.written[0]);
+      final headerResult =
+          MultistreamSelect.parseLengthPrefixed(fakeConn.written[0]);
       expect(headerResult, isNotNull);
       expect(
         MultistreamSelect.parseMessages(headerResult!.$1),
@@ -101,7 +103,8 @@ void main() {
       );
 
       // Verify the protocol was sent length-prefixed.
-      final protoResult = MultistreamSelect.parseLengthPrefixed(fakeConn.written[1]);
+      final protoResult =
+          MultistreamSelect.parseLengthPrefixed(fakeConn.written[1]);
       expect(protoResult, isNotNull);
       expect(
         MultistreamSelect.parseMessages(protoResult!.$1),

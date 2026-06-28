@@ -189,7 +189,8 @@ void main() {
       expect(conn.isEcnValidated, isFalse);
     });
 
-    test('outgoing packets are not ECN-capable when ecnEnabled is false', () async {
+    test('outgoing packets are not ECN-capable when ecnEnabled is false',
+        () async {
       final conn = _createConnection(ecnEnabled: false);
       final dcid = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08];
 

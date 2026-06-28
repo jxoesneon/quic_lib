@@ -347,7 +347,8 @@ class Libp2pQuicConnection {
           if (stream.incomingData is Stream<Uint8List>) {
             final chunk = await (stream.incomingData as Stream<Uint8List>)
                 .first
-                .timeout(const Duration(seconds: 5), onTimeout: () => Uint8List(0));
+                .timeout(const Duration(seconds: 5),
+                    onTimeout: () => Uint8List(0));
             return chunk.isNotEmpty ? chunk : null;
           }
         }

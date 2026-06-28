@@ -29,7 +29,8 @@ void main() {
 
       final parsed = VersionInformation.parse(bytes);
       expect(parsed.chosenVersion, equals(0x6b3343cf));
-      expect(parsed.availableVersions, equals([0x6b3343cf, 0x00000001, 0xbaadca11]));
+      expect(parsed.availableVersions,
+          equals([0x6b3343cf, 0x00000001, 0xbaadca11]));
     });
 
     test('isVersionCompatible returns true when version is available', () {
@@ -48,7 +49,9 @@ void main() {
       expect(info.isVersionCompatible(0x6b3343cf), isFalse);
     });
 
-    test('isZeroRttCompatible returns true when chosen version is in server available versions', () {
+    test(
+        'isZeroRttCompatible returns true when chosen version is in server available versions',
+        () {
       final clientInfo = VersionInformation(
         chosenVersion: 0x00000001,
         availableVersions: [0x00000001, 0x6b3343cf],
@@ -60,7 +63,9 @@ void main() {
       expect(clientInfo.isZeroRttCompatible(serverInfo), isTrue);
     });
 
-    test('isZeroRttCompatible returns false when chosen version is not in server available versions', () {
+    test(
+        'isZeroRttCompatible returns false when chosen version is not in server available versions',
+        () {
       final clientInfo = VersionInformation(
         chosenVersion: 0x6b3343cf,
         availableVersions: [0x6b3343cf],
@@ -81,7 +86,8 @@ void main() {
 
     test('parse throws FormatException for non-multiple-of-4 length', () {
       expect(
-        () => VersionInformation.parse(Uint8List.fromList([0x00, 0x00, 0x00, 0x01, 0x00])),
+        () => VersionInformation.parse(
+            Uint8List.fromList([0x00, 0x00, 0x00, 0x01, 0x00])),
         throwsA(isA<FormatException>()),
       );
     });

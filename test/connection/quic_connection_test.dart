@@ -617,7 +617,8 @@ void main() {
     });
 
     group('version_information (RFC 9368)', () {
-      test('buildTransportParameters includes version_information when present', () {
+      test('buildTransportParameters includes version_information when present',
+          () {
         final info = VersionInformation(
           chosenVersion: 0x00000001,
           availableVersions: [0x00000001],
@@ -642,12 +643,15 @@ void main() {
         builder.add(VarInt.encode(0x11)); // version_information id
         builder.add(VarInt.encode(serialized.length));
         builder.add(serialized);
-        conn.applyPeerTransportParameters(Uint8List.fromList(builder.toBytes()));
+        conn.applyPeerTransportParameters(
+            Uint8List.fromList(builder.toBytes()));
         expect(conn.versionInformation, isNotNull);
         expect(conn.versionInformation!.chosenVersion, equals(0x00000001));
       });
 
-      test('applyPeerTransportParameters throws when chosenVersion not in availableVersions', () {
+      test(
+          'applyPeerTransportParameters throws when chosenVersion not in availableVersions',
+          () {
         final conn = _createConnection();
         final info = VersionInformation(
           chosenVersion: 0x6b3343cf,
@@ -659,12 +663,14 @@ void main() {
         builder.add(VarInt.encode(serialized.length));
         builder.add(serialized);
         expect(
-          () => conn.applyPeerTransportParameters(Uint8List.fromList(builder.toBytes())),
+          () => conn.applyPeerTransportParameters(
+              Uint8List.fromList(builder.toBytes())),
           throwsA(isA<FormatException>()),
         );
       });
 
-      test('isZeroRttCompatibleAcrossVersions returns true when compatible', () {
+      test('isZeroRttCompatibleAcrossVersions returns true when compatible',
+          () {
         final conn = _createConnection();
         conn.versionInformation = VersionInformation(
           chosenVersion: 0x00000001,
@@ -677,7 +683,9 @@ void main() {
         expect(conn.isZeroRttCompatibleAcrossVersions(peerInfo), isTrue);
       });
 
-      test('isZeroRttCompatibleAcrossVersions returns false when not compatible', () {
+      test(
+          'isZeroRttCompatibleAcrossVersions returns false when not compatible',
+          () {
         final conn = _createConnection();
         conn.versionInformation = VersionInformation(
           chosenVersion: 0x6b3343cf,
@@ -690,7 +698,9 @@ void main() {
         expect(conn.isZeroRttCompatibleAcrossVersions(peerInfo), isFalse);
       });
 
-      test('isZeroRttCompatibleAcrossVersions returns false when local info is null', () {
+      test(
+          'isZeroRttCompatibleAcrossVersions returns false when local info is null',
+          () {
         final conn = _createConnection();
         final peerInfo = VersionInformation(
           chosenVersion: 0x00000001,

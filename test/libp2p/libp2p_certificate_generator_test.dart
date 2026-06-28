@@ -172,8 +172,10 @@ void main() {
 
       // UTCTime serialises without timezone info and the parser reconstructs
       // a local DateTime, so allow up to 24 hours of drift.
-      expect(x509.notBefore.difference(notBefore).inSeconds.abs(), lessThan(86400));
-      expect(x509.notAfter.difference(notAfter).inSeconds.abs(), lessThan(86400));
+      expect(x509.notBefore.difference(notBefore).inSeconds.abs(),
+          lessThan(86400));
+      expect(
+          x509.notAfter.difference(notAfter).inSeconds.abs(), lessThan(86400));
       expect(x509.notBefore.isBefore(x509.notAfter), isTrue);
     });
   });

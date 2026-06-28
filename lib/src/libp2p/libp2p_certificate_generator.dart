@@ -113,13 +113,19 @@ class Libp2pCertificateGenerator {
 
     // Extensions [3] EXPLICIT SEQUENCE { Extension }
     final libp2pOid = ASN1ObjectIdentifier.fromComponents([
-      1, 3, 6, 1, 4, 1, 53594, 1, 1,
+      1,
+      3,
+      6,
+      1,
+      4,
+      1,
+      53594,
+      1,
+      1,
     ]);
     final extValue = ASN1OctetString(libp2pExtensionBytes);
-    final extSeq = ASN1Sequence()
-      ..elements.addAll([libp2pOid, extValue]);
-    final extensionsSeq = ASN1Sequence()
-      ..elements.add(extSeq);
+    final extSeq = ASN1Sequence()..elements.addAll([libp2pOid, extValue]);
+    final extensionsSeq = ASN1Sequence()..elements.add(extSeq);
     final wrapperBytes = Uint8List.fromList([
       0xA3,
       ...ASN1Object.encodeLength(extensionsSeq.encodedBytes.length),
@@ -153,8 +159,7 @@ class Libp2pCertificateGenerator {
     final s = ASN1Integer(
       ASN1Integer.decodeBigInt(Uint8List.fromList(signature.sublist(32, 64))),
     );
-    final ecdsaSig = ASN1Sequence()
-      ..elements.addAll([r, s]);
+    final ecdsaSig = ASN1Sequence()..elements.addAll([r, s]);
 
     // BIT STRING with 0 unused bits
     final sigBitString = ASN1BitString(
@@ -162,23 +167,22 @@ class Libp2pCertificateGenerator {
       unusedbits: 0,
     );
 
-    return ASN1Sequence()
-      ..elements.addAll([tbs, sigAlg, sigBitString]);
+    return ASN1Sequence()..elements.addAll([tbs, sigAlg, sigBitString]);
   }
 
   ASN1Sequence _buildEcdsaSha256AlgorithmIdentifier() {
-    final oid = ASN1ObjectIdentifier.fromComponents([1, 2, 840, 10045, 4, 3, 2]);
+    final oid =
+        ASN1ObjectIdentifier.fromComponents([1, 2, 840, 10045, 4, 3, 2]);
     final nullParam = ASN1Null();
-    return ASN1Sequence()
-      ..elements.addAll([oid, nullParam]);
+    return ASN1Sequence()..elements.addAll([oid, nullParam]);
   }
 
   ASN1Sequence _buildSubjectPublicKeyInfo(List<int> publicKey) {
     // AlgorithmIdentifier: ecPublicKey + prime256v1
     final ecOid = ASN1ObjectIdentifier.fromComponents([1, 2, 840, 10045, 2, 1]);
-    final curveOid = ASN1ObjectIdentifier.fromComponents([1, 2, 840, 10045, 3, 1, 7]);
-    final algorithmId = ASN1Sequence()
-      ..elements.addAll([ecOid, curveOid]);
+    final curveOid =
+        ASN1ObjectIdentifier.fromComponents([1, 2, 840, 10045, 3, 1, 7]);
+    final algorithmId = ASN1Sequence()..elements.addAll([ecOid, curveOid]);
 
     // BIT STRING with 0 unused bits prefix + uncompressed point
     final keyBitString = ASN1BitString(
@@ -186,14 +190,12 @@ class Libp2pCertificateGenerator {
       unusedbits: 0,
     );
 
-    return ASN1Sequence()
-      ..elements.addAll([algorithmId, keyBitString]);
+    return ASN1Sequence()..elements.addAll([algorithmId, keyBitString]);
   }
 
   ASN1Sequence _buildValidity(DateTime notBefore, DateTime notAfter) {
     final nb = ASN1UtcTime(notBefore);
     final na = ASN1UtcTime(notAfter);
-    return ASN1Sequence()
-      ..elements.addAll([nb, na]);
+    return ASN1Sequence()..elements.addAll([nb, na]);
   }
 }

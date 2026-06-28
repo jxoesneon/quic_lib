@@ -66,7 +66,8 @@ void main() {
       final conn = _createConnection();
       final tp = conn.buildTransportParameters();
       final ids = _parseTransportParameterIds(tp);
-      expect(ids, isNot(contains(QuicTransportParameterId.initialMaxData.value)));
+      expect(
+          ids, isNot(contains(QuicTransportParameterId.initialMaxData.value)));
     });
 
     test('includes ack_delay_exponent and max_ack_delay', () {

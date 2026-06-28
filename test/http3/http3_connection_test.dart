@@ -414,7 +414,8 @@ void main() {
       conn.sendPriorityUpdate(42, 'u=3, i');
       expect(conn.pendingPriorityUpdates, hasLength(1));
       expect(conn.pendingPriorityUpdates.first.streamId, equals(42));
-      expect(conn.pendingPriorityUpdates.first.priorityFieldValue, equals('u=3, i'));
+      expect(conn.pendingPriorityUpdates.first.priorityFieldValue,
+          equals('u=3, i'));
       expect(conn.pendingQuicPackets, isNotEmpty);
     });
 

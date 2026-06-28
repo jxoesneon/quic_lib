@@ -309,7 +309,8 @@ class QuicConnection {
     builder.add(maxIdleBytes);
     // max_udp_payload_size (0x03, RFC 9000 Section 18.2)
     final maxUdpBytes = VarInt.encode(maxUdpPayloadSize);
-    builder.add(VarInt.encode(QuicTransportParameterId.maxUdpPayloadSize.value));
+    builder
+        .add(VarInt.encode(QuicTransportParameterId.maxUdpPayloadSize.value));
     builder.add(VarInt.encode(maxUdpBytes.length));
     builder.add(maxUdpBytes);
     // initial_max_data (0x04, RFC 9000 Section 18.2)
@@ -322,35 +323,40 @@ class QuicConnection {
     // initial_max_stream_data_bidi_local (0x05)
     if (initialMaxStreamDataBidiLocal > 0) {
       final bytes = VarInt.encode(initialMaxStreamDataBidiLocal);
-      builder.add(VarInt.encode(QuicTransportParameterId.initialMaxStreamDataBidiLocal.value));
+      builder.add(VarInt.encode(
+          QuicTransportParameterId.initialMaxStreamDataBidiLocal.value));
       builder.add(VarInt.encode(bytes.length));
       builder.add(bytes);
     }
     // initial_max_stream_data_bidi_remote (0x06)
     if (initialMaxStreamDataBidiRemote > 0) {
       final bytes = VarInt.encode(initialMaxStreamDataBidiRemote);
-      builder.add(VarInt.encode(QuicTransportParameterId.initialMaxStreamDataBidiRemote.value));
+      builder.add(VarInt.encode(
+          QuicTransportParameterId.initialMaxStreamDataBidiRemote.value));
       builder.add(VarInt.encode(bytes.length));
       builder.add(bytes);
     }
     // initial_max_stream_data_uni (0x07)
     if (initialMaxStreamDataUni > 0) {
       final bytes = VarInt.encode(initialMaxStreamDataUni);
-      builder.add(VarInt.encode(QuicTransportParameterId.initialMaxStreamDataUni.value));
+      builder.add(VarInt.encode(
+          QuicTransportParameterId.initialMaxStreamDataUni.value));
       builder.add(VarInt.encode(bytes.length));
       builder.add(bytes);
     }
     // initial_max_streams_bidi (0x08)
     if (initialMaxStreamsBidi > 0) {
       final bytes = VarInt.encode(initialMaxStreamsBidi);
-      builder.add(VarInt.encode(QuicTransportParameterId.initialMaxStreamsBidi.value));
+      builder.add(
+          VarInt.encode(QuicTransportParameterId.initialMaxStreamsBidi.value));
       builder.add(VarInt.encode(bytes.length));
       builder.add(bytes);
     }
     // initial_max_streams_uni (0x09)
     if (initialMaxStreamsUni > 0) {
       final bytes = VarInt.encode(initialMaxStreamsUni);
-      builder.add(VarInt.encode(QuicTransportParameterId.initialMaxStreamsUni.value));
+      builder.add(
+          VarInt.encode(QuicTransportParameterId.initialMaxStreamsUni.value));
       builder.add(VarInt.encode(bytes.length));
       builder.add(bytes);
     }
@@ -366,34 +372,42 @@ class QuicConnection {
     builder.add(maxAckDelayBytes);
     // active_connection_id_limit (0x0e)
     final activeConnectionIdLimitBytes = VarInt.encode(activeConnectionIdLimit);
-    builder.add(VarInt.encode(QuicTransportParameterId.activeConnectionIdLimit.value));
+    builder.add(
+        VarInt.encode(QuicTransportParameterId.activeConnectionIdLimit.value));
     builder.add(VarInt.encode(activeConnectionIdLimitBytes.length));
     builder.add(activeConnectionIdLimitBytes);
     // max_datagram_frame_size (0x20)
     final maxDgBytes = VarInt.encode(maxDatagramFrameSize);
-    builder.add(VarInt.encode(QuicTransportParameterId.maxDatagramFrameSize.value));
+    builder.add(
+        VarInt.encode(QuicTransportParameterId.maxDatagramFrameSize.value));
     builder.add(VarInt.encode(maxDgBytes.length));
     builder.add(maxDgBytes);
     // version_information (0x11, RFC 9368)
     final info = versionInformation;
     if (info != null) {
       final infoBytes = info.serialize();
-      builder.add(VarInt.encode(QuicTransportParameterId.versionInformation.value));
+      builder.add(
+          VarInt.encode(QuicTransportParameterId.versionInformation.value));
       builder.add(VarInt.encode(infoBytes.length));
       builder.add(infoBytes);
     }
     // disable_active_migration (0x0c, RFC 9000 Section 9)
     if (!allowMigration) {
-      builder.add(VarInt.encode(QuicTransportParameterId.disableActiveMigration.value));
+      builder.add(
+          VarInt.encode(QuicTransportParameterId.disableActiveMigration.value));
       builder.add(VarInt.encode(0));
     }
     // preferred_address (0x0d, RFC 9000 Section 9.6)
     final pa = preferredAddress;
     if (pa != null) {
       final addrBytes = pa.rawAddress;
-      final portBytes = [(preferredAddressPort >> 8) & 0xFF, preferredAddressPort & 0xFF];
+      final portBytes = [
+        (preferredAddressPort >> 8) & 0xFF,
+        preferredAddressPort & 0xFF
+      ];
       final paBytes = Uint8List.fromList([...addrBytes, ...portBytes]);
-      builder.add(VarInt.encode(QuicTransportParameterId.preferredAddress.value));
+      builder
+          .add(VarInt.encode(QuicTransportParameterId.preferredAddress.value));
       builder.add(VarInt.encode(paBytes.length));
       builder.add(paBytes);
     }
@@ -419,14 +433,16 @@ class QuicConnection {
     var offset = 0;
     while (offset < bytes.length) {
       if (offset >= bytes.length) break;
-      final id = VarInt.decode(bytes.buffer, offset: bytes.offsetInBytes + offset);
+      final id =
+          VarInt.decode(bytes.buffer, offset: bytes.offsetInBytes + offset);
       final idLength = VarInt.decodeLength(bytes[offset]);
       offset += idLength;
 
       if (offset >= bytes.length) {
         throw FormatException('Incomplete transport parameter: missing length');
       }
-      final length = VarInt.decode(bytes.buffer, offset: bytes.offsetInBytes + offset);
+      final length =
+          VarInt.decode(bytes.buffer, offset: bytes.offsetInBytes + offset);
       final lengthLength = VarInt.decodeLength(bytes[offset]);
       offset += lengthLength;
 
@@ -444,9 +460,11 @@ class QuicConnection {
         maxUdpPayloadSize = VarInt.decode(value.buffer);
       } else if (id == QuicTransportParameterId.initialMaxData.value) {
         initialMaxData = VarInt.decode(value.buffer);
-      } else if (id == QuicTransportParameterId.initialMaxStreamDataBidiLocal.value) {
+      } else if (id ==
+          QuicTransportParameterId.initialMaxStreamDataBidiLocal.value) {
         initialMaxStreamDataBidiLocal = VarInt.decode(value.buffer);
-      } else if (id == QuicTransportParameterId.initialMaxStreamDataBidiRemote.value) {
+      } else if (id ==
+          QuicTransportParameterId.initialMaxStreamDataBidiRemote.value) {
         initialMaxStreamDataBidiRemote = VarInt.decode(value.buffer);
       } else if (id == QuicTransportParameterId.initialMaxStreamDataUni.value) {
         initialMaxStreamDataUni = VarInt.decode(value.buffer);
@@ -868,7 +886,8 @@ class QuicConnection {
       dcid: dcid,
       scid: scid,
       packetNumber: packetNumber,
-      greaseQuicBit: space == PacketNumberSpace.application ? greaseQuicBit : false,
+      greaseQuicBit:
+          space == PacketNumberSpace.application ? greaseQuicBit : false,
     );
     final ackEliciting = frames.any((f) => f.isAckEliciting);
     final inFlight = frames.any((f) => f.isInFlight);
@@ -909,7 +928,8 @@ class QuicConnection {
       dcid: dcid,
       scid: scid,
       packetNumber: packetNumber,
-      greaseQuicBit: space == PacketNumberSpace.application ? greaseQuicBit : false,
+      greaseQuicBit:
+          space == PacketNumberSpace.application ? greaseQuicBit : false,
     );
 
     // Patch the Length field for long headers to account for the AEAD tag.

@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/logging/quic_logger.dart';
-import 'package:dart_quic/src/webtransport/capsule_types.dart';
-import 'package:dart_quic/src/wire/varint.dart';
+import 'package:quic_lib/src/logging/quic_logger.dart';
+import 'package:quic_lib/src/webtransport/capsule_types.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 
 /// Manages the state of a single WebTransport session over HTTP/3.
 ///
@@ -32,13 +32,16 @@ class WebTransportSession {
   final List<int> _registeredUnidirectionalStreams = [];
 
   /// Datagrams received via [CapsuleType.datagram] capsules.
-  List<Uint8List> get receivedDatagrams => List.unmodifiable(_receivedDatagrams);
+  List<Uint8List> get receivedDatagrams =>
+      List.unmodifiable(_receivedDatagrams);
 
   /// Bidirectional stream IDs registered via [CapsuleType.registerBidirectionalStream] capsules.
-  List<int> get registeredBidirectionalStreams => List.unmodifiable(_registeredBidirectionalStreams);
+  List<int> get registeredBidirectionalStreams =>
+      List.unmodifiable(_registeredBidirectionalStreams);
 
   /// Unidirectional stream IDs registered via [CapsuleType.registerUnidirectionalStream] capsules.
-  List<int> get registeredUnidirectionalStreams => List.unmodifiable(_registeredUnidirectionalStreams);
+  List<int> get registeredUnidirectionalStreams =>
+      List.unmodifiable(_registeredUnidirectionalStreams);
 
   /// Process an incoming capsule received on the session's control stream.
   void onCapsuleReceived(Capsule capsule) {
@@ -51,10 +54,12 @@ class WebTransportSession {
       case CapsuleType.drainWebTransportSession:
         _isDraining = true;
       case CapsuleType.registerBidirectionalStream:
-        final streamId = VarInt.decode(Uint8List.fromList(capsule.payload).buffer);
+        final streamId =
+            VarInt.decode(Uint8List.fromList(capsule.payload).buffer);
         _registeredBidirectionalStreams.add(streamId);
       case CapsuleType.registerUnidirectionalStream:
-        final streamId = VarInt.decode(Uint8List.fromList(capsule.payload).buffer);
+        final streamId =
+            VarInt.decode(Uint8List.fromList(capsule.payload).buffer);
         _registeredUnidirectionalStreams.add(streamId);
       default:
         // Unknown/extension capsules are ignored per RFC 9220.

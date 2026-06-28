@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 import 'package:test/test.dart';
-import 'package:dart_quic/src/connection/packet_receiver.dart';
-import 'package:dart_quic/src/wire/packet_header.dart';
-import 'package:dart_quic/src/wire/packet_builder.dart';
-import 'package:dart_quic/src/wire/frame.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/connection/packet_receiver.dart';
+import 'package:quic_lib/src/wire/packet_header.dart';
+import 'package:quic_lib/src/wire/packet_builder.dart';
+import 'package:quic_lib/src/wire/frame.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
 
 void main() {
   group('PacketReceiver.spaceFromHeader', () {
@@ -16,7 +16,8 @@ void main() {
         sourceConnectionId: [0x02],
         packetNumber: 0,
       );
-      expect(PacketReceiver.spaceFromHeader(header), equals(PacketNumberSpace.initial));
+      expect(PacketReceiver.spaceFromHeader(header),
+          equals(PacketNumberSpace.initial));
     });
 
     test('Handshake → handshake space', () {
@@ -27,7 +28,8 @@ void main() {
         sourceConnectionId: [0x02],
         packetNumber: 0,
       );
-      expect(PacketReceiver.spaceFromHeader(header), equals(PacketNumberSpace.handshake));
+      expect(PacketReceiver.spaceFromHeader(header),
+          equals(PacketNumberSpace.handshake));
     });
 
     test('ShortHeader → application space', () {
@@ -35,7 +37,8 @@ void main() {
         destinationConnectionId: [0x01],
         packetNumber: 0,
       );
-      expect(PacketReceiver.spaceFromHeader(header), equals(PacketNumberSpace.application));
+      expect(PacketReceiver.spaceFromHeader(header),
+          equals(PacketNumberSpace.application));
     });
 
     test('Retry → null', () {
@@ -60,7 +63,10 @@ void main() {
         packetNumber: 0,
         token: const [],
       );
-      final frames = [PingFrame(), CryptoFrame(offset: 0, data: [0x01])];
+      final frames = [
+        PingFrame(),
+        CryptoFrame(offset: 0, data: [0x01])
+      ];
       final packet = PacketBuilder.build(header, frames);
 
       final result = PacketReceiver.processPacket(packet);

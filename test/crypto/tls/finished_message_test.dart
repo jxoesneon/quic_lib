@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/crypto/tls/finished_message.dart';
+import 'package:quic_lib/src/crypto/tls/finished_message.dart';
 
 void main() {
   group('FinishedMessage', () {

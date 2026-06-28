@@ -1,18 +1,18 @@
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:dart_quic/src/connection/quic_connection.dart';
-import 'package:dart_quic/src/connection/connection_state_machine.dart';
-import 'package:dart_quic/src/connection/connection_id_manager.dart';
-import 'package:dart_quic/src/streams/stream_id.dart';
-import 'package:dart_quic/src/streams/flow_controller.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/recovery/rtt_estimator.dart';
-import 'package:dart_quic/src/recovery/loss_detector.dart';
-import 'package:dart_quic/src/recovery/pto_scheduler.dart';
-import 'package:dart_quic/src/recovery/congestion_controller.dart';
-import 'package:dart_quic/src/wire/frame.dart';
-import 'package:dart_quic/src/wire/packet_header.dart';
+import 'package:quic_lib/src/connection/quic_connection.dart';
+import 'package:quic_lib/src/connection/connection_state_machine.dart';
+import 'package:quic_lib/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/streams/stream_id.dart';
+import 'package:quic_lib/src/streams/flow_controller.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/recovery/rtt_estimator.dart';
+import 'package:quic_lib/src/recovery/loss_detector.dart';
+import 'package:quic_lib/src/recovery/pto_scheduler.dart';
+import 'package:quic_lib/src/recovery/congestion_controller.dart';
+import 'package:quic_lib/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/packet_header.dart';
 
 QuicConnection _createConnection() {
   return QuicConnection(
@@ -28,7 +28,8 @@ QuicConnection _createConnection() {
 }
 
 Uint8List _buildDatagram(List<Frame> frames) {
-  final payload = Uint8List.fromList(frames.expand((f) => f.serialize()).toList());
+  final payload =
+      Uint8List.fromList(frames.expand((f) => f.serialize()).toList());
   final header = ShortHeader(
     destinationConnectionId: Uint8List(8),
     packetNumber: 0,
@@ -50,17 +51,20 @@ void main() {
       expect(conn.connectionFlowController.availableWindow, equals(100000));
     });
 
-    test('MAX_STREAM_DATA updates stream flow controller via StreamManager', () {
+    test('MAX_STREAM_DATA updates stream flow controller via StreamManager',
+        () {
       final conn = _createConnection();
       const streamId = 0;
 
       // Create the stream by delivering a STREAM frame.
       final createDatagram = _buildDatagram([
-        StreamFrame(streamId: streamId, data: Uint8List(0), hasExplicitLength: true),
+        StreamFrame(
+            streamId: streamId, data: Uint8List(0), hasExplicitLength: true),
       ]);
       conn.processIncomingDatagram(createDatagram);
 
-      final initialWindow = conn.streamManager.getSendFlowController(streamId)!.availableWindow;
+      final initialWindow =
+          conn.streamManager.getSendFlowController(streamId)!.availableWindow;
       expect(initialWindow, equals(65536));
 
       final updateDatagram = _buildDatagram([
@@ -68,7 +72,8 @@ void main() {
       ]);
       conn.processIncomingDatagram(updateDatagram);
 
-      final updatedWindow = conn.streamManager.getSendFlowController(streamId)!.availableWindow;
+      final updatedWindow =
+          conn.streamManager.getSendFlowController(streamId)!.availableWindow;
       expect(updatedWindow, equals(200000));
     });
 
@@ -82,15 +87,18 @@ void main() {
       final conn = _createConnection();
       expect(conn.connectionFlowController.availableWindow, equals(65536));
 
-      conn.processIncomingDatagram(_buildDatagram([MaxDataFrame(maxData: 100000)]));
+      conn.processIncomingDatagram(
+          _buildDatagram([MaxDataFrame(maxData: 100000)]));
       expect(conn.connectionFlowController.availableWindow, equals(100000));
 
       // Lower limit should be ignored.
-      conn.processIncomingDatagram(_buildDatagram([MaxDataFrame(maxData: 50000)]));
+      conn.processIncomingDatagram(
+          _buildDatagram([MaxDataFrame(maxData: 50000)]));
       expect(conn.connectionFlowController.availableWindow, equals(100000));
 
       // Higher limit should update.
-      conn.processIncomingDatagram(_buildDatagram([MaxDataFrame(maxData: 150000)]));
+      conn.processIncomingDatagram(
+          _buildDatagram([MaxDataFrame(maxData: 150000)]));
       expect(conn.connectionFlowController.availableWindow, equals(150000));
     });
   });

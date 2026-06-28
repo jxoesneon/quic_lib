@@ -70,7 +70,8 @@ class QuicEndpoint {
     );
 
     // Transition to handshaking to begin the QUIC handshake.
-    stateMachine.transitionTo(ConnectionState.handshaking, reason: 'Connect to $address:$port');
+    stateMachine.transitionTo(ConnectionState.handshaking,
+        reason: 'Connect to $address:$port');
 
     _connections.add(connection);
     _remoteAddresses[connection] = address;
@@ -79,19 +80,22 @@ class QuicEndpoint {
   }
 
   /// Returns the remote address for a given connection, or null if unknown.
-  InternetAddress? getRemoteAddress(QuicConnection conn) => _remoteAddresses[conn];
+  InternetAddress? getRemoteAddress(QuicConnection conn) =>
+      _remoteAddresses[conn];
 
   /// Returns the remote port for a given connection, or null if unknown.
   int? getRemotePort(QuicConnection conn) => _remotePorts[conn];
 
   /// Migrate a connection to a new remote address and port.
-  Future<void> migrateConnection(QuicConnection conn, InternetAddress newAddress, int newPort) async {
+  Future<void> migrateConnection(
+      QuicConnection conn, InternetAddress newAddress, int newPort) async {
     _remoteAddresses[conn] = newAddress;
     _remotePorts[conn] = newPort;
   }
 
   /// Check whether the stored remote address for [conn] differs from [addr]:[port].
-  bool isRemoteAddressChanged(QuicConnection conn, InternetAddress addr, int port) {
+  bool isRemoteAddressChanged(
+      QuicConnection conn, InternetAddress addr, int port) {
     final currentAddr = _remoteAddresses[conn];
     final currentPort = _remotePorts[conn];
     if (currentAddr == null || currentPort == null) return true;
@@ -104,7 +108,8 @@ class QuicEndpoint {
   /// Sends a PATH_CHALLENGE to [newAddress]:[newPort] via the underlying UDP
   /// socket. When a matching PATH_RESPONSE is received, the remote address
   /// is updated.
-  Future<void> changeConnectionAddress(QuicConnection conn, InternetAddress newAddress, int newPort) async {
+  Future<void> changeConnectionAddress(
+      QuicConnection conn, InternetAddress newAddress, int newPort) async {
     const dcid = <int>[];
     final future = conn.probeNewPath(dcid);
     final packet = conn.lastProbePacket;

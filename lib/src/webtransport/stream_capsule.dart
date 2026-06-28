@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/webtransport/capsule_types.dart';
-import 'package:dart_quic/src/wire/varint.dart';
+import 'package:quic_lib/src/webtransport/capsule_types.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 
 /// A WebTransport capsule that registers a stream for a session.
 class StreamCapsule {

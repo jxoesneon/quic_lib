@@ -1,5 +1,5 @@
-import 'package:dart_quic/src/crypto/tls/certificate_chain.dart';
-import 'package:dart_quic/src/crypto/tls/certificate_message.dart';
+import 'package:quic_lib/src/crypto/tls/certificate_chain.dart';
+import 'package:quic_lib/src/crypto/tls/certificate_message.dart';
 import 'package:test/test.dart';
 
 void main() {

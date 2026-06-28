@@ -1,8 +1,8 @@
 import 'dart:io';
 
-import 'package:dart_quic/src/io/quic_endpoint.dart';
-import 'package:dart_quic/src/connection/quic_connection.dart';
-import 'package:dart_quic/src/connection/connection_state_machine.dart';
+import 'package:quic_lib/src/io/quic_endpoint.dart';
+import 'package:quic_lib/src/connection/quic_connection.dart';
+import 'package:quic_lib/src/connection/connection_state_machine.dart';
 import 'package:test/test.dart';
 
 void main() {

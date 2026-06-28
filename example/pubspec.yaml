@@ -1,0 +1,10 @@
+name: quic_lib_example
+description: Example applications for the quic_lib package.
+publish_to: none
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  quic_lib:
+    path: ..

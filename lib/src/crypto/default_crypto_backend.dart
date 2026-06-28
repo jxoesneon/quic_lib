@@ -404,8 +404,8 @@ class DefaultCryptoBackend implements CryptoBackend {
     keyGenerator.init(pc.ParametersWithRandom(params, random));
     final keyPair = keyGenerator.generateKeyPair();
 
-    final privateKey = keyPair.privateKey as pc.ECPrivateKey;
-    final publicKey = keyPair.publicKey as pc.ECPublicKey;
+    final privateKey = keyPair.privateKey;
+    final publicKey = keyPair.publicKey;
 
     final dBytes = _encodeBigInt(privateKey.d!, 32);
 

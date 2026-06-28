@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.2] — 2026-06-28
+
+### Fixes
+- **Static analysis clean** — Fixed 29 `curly_braces_in_flow_control_structures` info issues in `handshake_coordinator.dart`, `frame.dart`, and `packet_header.dart`
+- **Removed unnecessary casts** — Fixed `unnecessary_cast` info issues in `default_crypto_backend.dart`
+- **Updated dependencies** — Bumped `pointycastle` from `^3.7.0` to `^4.0.0`
+- **Example directory** — Added `example/README.md` and `example/pubspec.yaml` for pub.dev example detection
+
 ## [1.2.1] — 2026-06-28
 
 ### Documentation

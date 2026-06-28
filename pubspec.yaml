@@ -11,7 +11,6 @@ topics:
   - http3
   - webtransport
   - libp2p
-  - transport
 
 environment:
   sdk: ^3.0.0

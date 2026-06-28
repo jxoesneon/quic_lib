@@ -14,7 +14,7 @@ dependencies:
 
 ## 1. Purpose
 
-Cryptographic implementations are notoriously sensitive to off-by-one errors and endianness mistakes. RFC-published test vectors provide ground-truth inputs and outputs that any compliant implementation must reproduce exactly. This document collects those vectors so that dart_quic developers can verify correctness without relying on peer interop alone.
+Cryptographic implementations are notoriously sensitive to off-by-one errors and endianness mistakes. RFC-published test vectors provide ground-truth inputs and outputs that any compliant implementation must reproduce exactly. This document collects those vectors so that quic_lib developers can verify correctness without relying on peer interop alone.
 
 ## 2. Overview
 

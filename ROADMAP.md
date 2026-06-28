@@ -1,4 +1,4 @@
-# dart_quic Project Roadmap: v0.0.0 → v1.0.0
+# quic_lib Project Roadmap: v0.0.0 → v1.0.0
 
 > **CURRENT STATUS (2026-06-27):** All roadmap phases through v1.0.0 are **COMPLETE**. The project has shipped v1.2.0 with full QUIC, HTTP/3, WebTransport, and libp2p QUIC transport implementations. This document is retained for historical reference and to guide future v2.0.0 planning.
 
@@ -87,7 +87,7 @@ Every release must pass these gates before the version tag is applied:
 - Test vectors from [TEST_VECTORS.md](doc/specs/TEST_VECTORS.md) passing.
 
 **API Surface**:
-- Internal-only. No public API exported from `lib/dart_quic.dart`.
+- Internal-only. No public API exported from `lib/quic_lib.dart`.
 
 **Acceptance Criteria**:
 - [ ] VarInt round-trip for all 4 encoding modes.
@@ -147,7 +147,7 @@ Every release must pass these gates before the version tag is applied:
 
 **API Surface (First Public)**:
 ```dart
-// lib/dart_quic.dart
+// lib/quic_lib.dart
 export 'src/quic_endpoint.dart' show QuicEndpoint;
 export 'src/quic_connection.dart' show QuicConnection;
 export 'src/quic_stream.dart' show QuicStream, QuicSendStream, QuicReceiveStream;
@@ -320,7 +320,7 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 - All public APIs marked `@stable` or `@experimental`.
 - `dartdoc` generated with 100% public API coverage.
 - Breaking change inventory published in `CHANGELOG.md`.
-- `dart_ipfs` integration contract validated: compile `dart_ipfs` against `dart_quic` v0.7.0-beta with zero breaking changes.
+- `dart_ipfs` integration contract validated: compile `dart_ipfs` against `quic_lib` v0.7.0-beta with zero breaking changes.
 - Transport parameter validation hardened: all 17 core parameters + extensions validated per [QUIC_TRANSPORT_PARAMETERS_SPEC.md](doc/specs/QUIC_TRANSPORT_PARAMETERS_SPEC.md).
 
 **API Surface**: Frozen. Only non-breaking additions allowed.
@@ -328,7 +328,7 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 **Acceptance Criteria**:
 - [ ] Zero breaking changes since v0.6.0-alpha (verified by CI diff).
 - [ ] Dartdoc builds without warnings.
-- [ ] `dart_ipfs` compiles and passes its own unit tests using `dart_quic` v0.7.0-beta.
+- [ ] `dart_ipfs` compiles and passes its own unit tests using `quic_lib` v0.7.0-beta.
 - [ ] All public APIs have dartdoc comments.
 
 **Risk Mitigation**:
@@ -402,13 +402,13 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 - Feature freeze. No new code except bug fixes.
 - All open issues labeled `v1.0.0-blocker` resolved.
 - Migration guide from v0.9.0-beta to v1.0.0-rc.1 published.
-- `dart_ipfs` integration validated end-to-end: full IPFS node using `dart_quic` as transport.
+- `dart_ipfs` integration validated end-to-end: full IPFS node using `quic_lib` as transport.
 - Examples directory: `example/echo/`, `example/http3_client/`, `example/webtransport_chat/`, `example/libp2p_dial/`.
 
 **Acceptance Criteria**:
 - [ ] Zero open `v1.0.0-blocker` issues.
 - [ ] All examples run without modification on Windows, macOS, Linux.
-- [ ] `dart_ipfs` can bootstrap to the public IPFS swarm using `dart_quic`.
+- [ ] `dart_ipfs` can bootstrap to the public IPFS swarm using `quic_lib`.
 
 ---
 
@@ -422,7 +422,7 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 - Bug fixes from rc.1 feedback only.
 - Final documentation review: all specs updated to reflect implementation reality (any deviations documented as ADR revisions).
 - Website/docs landing page published (GitHub Pages or similar).
-- Pub.dev package published as `dart_quic: 1.0.0-rc.2`.
+- Pub.dev package published as `quic_lib: 1.0.0-rc.2`.
 
 **Acceptance Criteria**:
 - [ ] Zero new bugs reported in rc.1 within 1 week of release.
@@ -438,10 +438,10 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 **Depends On**: v1.0.0-rc.2
 
 **Deliverables**:
-- `dart_quic` v1.0.0 published to pub.dev.
+- `quic_lib` v1.0.0 published to pub.dev.
 - GitHub Release with changelog, SBOM, and migration guide.
 - Announcement blog post / tweet thread.
-- `dart_ipfs` depends on `dart_quic: ^1.0.0`.
+- `dart_ipfs` depends on `quic_lib: ^1.0.0`.
 - Long-term support commitment: security fixes backported for 12 months.
 
 **Acceptance Criteria**:
@@ -506,7 +506,7 @@ Any delay on the critical path pushes v1.0.0. Non-critical phases (HTTP/3, WebTr
 | TLS 1.3 library immature in Dart | Medium | High | Fallback to `dart:io` SecureSocket for handshake; custom record layer for QUIC. |
 | libp2p spec drift | Low | Medium | Subscribe to libp2p spec changes; 2-week buffer in Phase 3. |
 | Security audit finds critical flaw | Medium | High | 4-week buffer before rc.1; all critical findings block release. |
-| `dart_ipfs` API demands break dart_quic | Medium | Medium | Integration contract locked at v0.7.0-beta; breaking changes require ADR. |
+| `dart_ipfs` API demands break quic_lib | Medium | Medium | Integration contract locked at v0.7.0-beta; breaking changes require ADR. |
 | Maintainer bandwidth drops | Medium | High | Document everything; any Dart developer can pick up a spec and implement. |
 | Interop test infrastructure unavailable | Low | Medium | Dockerize reference implementations; maintain internal test lab. |
 

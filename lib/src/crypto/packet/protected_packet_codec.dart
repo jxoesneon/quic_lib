@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/packet/space_keys.dart';
-import 'package:dart_quic/src/wire/frame.dart';
-import 'package:dart_quic/src/wire/varint.dart';
+import 'package:quic_lib/src/crypto/packet/space_keys.dart';
+import 'package:quic_lib/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 
 /// Full QUIC header protection + AEAD round-trip codec.
 ///

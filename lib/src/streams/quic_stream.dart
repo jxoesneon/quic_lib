@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/streams/send_state_machine.dart';
-import 'package:dart_quic/src/streams/receive_state_machine.dart';
+import 'package:quic_lib/src/streams/send_state_machine.dart';
+import 'package:quic_lib/src/streams/receive_state_machine.dart';
 
 /// Base interface for a QUIC stream, providing common read/write/close operations.
 ///
@@ -21,7 +21,8 @@ abstract class QuicStream {
 
 /// QUIC send-side stream. Buffers outgoing data and tracks the send state machine.
 class QuicSendStream implements QuicStream {
-  @override final int streamId;
+  @override
+  final int streamId;
   final StreamController<Uint8List> _dataController;
   final SendStateMachine _stateMachine;
 
@@ -29,27 +30,42 @@ class QuicSendStream implements QuicStream {
       : _stateMachine = stateMachine,
         _dataController = StreamController<Uint8List>.broadcast();
 
-  @override void write(Uint8List data) { _stateMachine.onDataSent(); _dataController.add(data); }
-  @override void close() {
+  @override
+  void write(Uint8List data) {
+    _stateMachine.onDataSent();
+    _dataController.add(data);
+  }
+
+  @override
+  void close() {
     if (_stateMachine.state == SendStreamState.ready) {
       _stateMachine.onDataSent();
     }
     _stateMachine.onFinSent();
     _dataController.close();
   }
-  @override void reset({int errorCode = 0}) { _stateMachine.onResetSent(); }
-  @override Future<void> get done => _dataController.done;
+
+  @override
+  void reset({int errorCode = 0}) {
+    _stateMachine.onResetSent();
+  }
+
+  @override
+  Future<void> get done => _dataController.done;
 
   Stream<Uint8List> get outgoingData => _dataController.stream;
 
-  @override bool get isBidirectional => (streamId & 0x02) == 0;
-  @override bool get isUnidirectional => (streamId & 0x02) != 0;
+  @override
+  bool get isBidirectional => (streamId & 0x02) == 0;
+  @override
+  bool get isUnidirectional => (streamId & 0x02) != 0;
 }
 
 /// QUIC receive-side stream. Delivers incoming data via [incomingData] and
 /// tracks the receive state machine until the FIN bit is seen.
 class QuicReceiveStream implements QuicStream {
-  @override final int streamId;
+  @override
+  final int streamId;
   final StreamController<Uint8List> _dataController;
   final ReceiveStateMachine _stateMachine;
 
@@ -62,9 +78,11 @@ class QuicReceiveStream implements QuicStream {
   /// [bytesReceived] is the cumulative total of bytes delivered so far
   /// (including this [data]). Required when [fin] is true to validate
   /// against the declared final size.
-  void deliver(Uint8List data, {bool fin = false, int? finalSize, int bytesReceived = 0}) {
+  void deliver(Uint8List data,
+      {bool fin = false, int? finalSize, int bytesReceived = 0}) {
     if (_dataController.isClosed) return;
-    _stateMachine.onDataReceived(fin: fin, finalSize: finalSize, bytesReceived: bytesReceived);
+    _stateMachine.onDataReceived(
+        fin: fin, finalSize: finalSize, bytesReceived: bytesReceived);
     _dataController.add(data);
     if (fin) {
       _stateMachine.onAllDataReceived();
@@ -72,13 +90,23 @@ class QuicReceiveStream implements QuicStream {
     }
   }
 
-  @override void write(Uint8List data) => throw UnsupportedError('ReceiveStream cannot write');
-  @override void close() { /* no-op for receive-only */ }
-  @override void reset({int errorCode = 0}) { _stateMachine.onResetReceived(); }
-  @override Future<void> get done => _dataController.done;
+  @override
+  void write(Uint8List data) =>
+      throw UnsupportedError('ReceiveStream cannot write');
+  @override
+  void close() {/* no-op for receive-only */}
+  @override
+  void reset({int errorCode = 0}) {
+    _stateMachine.onResetReceived();
+  }
+
+  @override
+  Future<void> get done => _dataController.done;
 
   Stream<Uint8List> get incomingData => _dataController.stream;
 
-  @override bool get isBidirectional => (streamId & 0x02) == 0;
-  @override bool get isUnidirectional => (streamId & 0x02) != 0;
+  @override
+  bool get isBidirectional => (streamId & 0x02) == 0;
+  @override
+  bool get isUnidirectional => (streamId & 0x02) != 0;
 }

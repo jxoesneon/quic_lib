@@ -1,6 +1,6 @@
 # RED TEAM Security Audit V2 Report
 
-**Project:** `dart_quic`  
+**Project:** `quic_lib`  
 **Date:** 2026-06-27  
 **Auditor:** Offensive Security Engineer (Red Team)  
 **Scope:** Post-fix re-audit after 30 security fixes applied

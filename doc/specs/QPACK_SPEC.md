@@ -18,7 +18,7 @@ dependencies:
 
 ## 1. Purpose
 
-Reliable QPACK implementation is required for HTTP/3 interop. HTTP/3 cannot reuse HPACK because QUIC streams are delivered out of order; QPACK eliminates head-of-line blocking by decoupling dynamic table updates from individual stream header blocks. Without a specified QPACK codec, dart_quic would be unable to compress or decompress HTTP field sections, breaking interoperability with every HTTP/3 peer.
+Reliable QPACK implementation is required for HTTP/3 interop. HTTP/3 cannot reuse HPACK because QUIC streams are delivered out of order; QPACK eliminates head-of-line blocking by decoupling dynamic table updates from individual stream header blocks. Without a specified QPACK codec, quic_lib would be unable to compress or decompress HTTP field sections, breaking interoperability with every HTTP/3 peer.
 
 
 

@@ -19,7 +19,7 @@ dependencies:
 
 ## 1. Purpose
 
-Packet loss is inevitable on the Internet; without a specified recovery layer, dart_quic would either stall on every dropped packet or overwhelm the network with retransmissions. This document defines the loss detector, RTT estimator, probe timeout, and congestion controller that keep the transport both responsive and network-friendly.
+Packet loss is inevitable on the Internet; without a specified recovery layer, quic_lib would either stall on every dropped packet or overwhelm the network with retransmissions. This document defines the loss detector, RTT estimator, probe timeout, and congestion controller that keep the transport both responsive and network-friendly.
 
 ## 2. Detailed Specification
 ### 2.1 Architecture

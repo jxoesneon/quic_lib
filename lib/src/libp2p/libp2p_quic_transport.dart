@@ -19,7 +19,8 @@ class Libp2pQuicTransport {
   bool get isClosed => _closed;
 
   /// Extract an [InternetAddress] and port from [multiaddr].
-  static (InternetAddress? address, int? port) _parseMultiaddr(Multiaddr multiaddr) {
+  static (InternetAddress? address, int? port) _parseMultiaddr(
+      Multiaddr multiaddr) {
     String? ip;
     int? port;
     for (final c in multiaddr.components) {

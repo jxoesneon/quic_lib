@@ -11,7 +11,8 @@ class PacketBuilder {
   ///
   /// For long headers, computes the Length field automatically.
   /// For short headers, appends frames directly after the header.
-  static Future<Uint8List> build(PacketHeader header, List<Frame> frames) async {
+  static Future<Uint8List> build(
+      PacketHeader header, List<Frame> frames) async {
     final frameBytes = _serializeFrames(frames);
 
     if (header is LongHeader) {
@@ -25,7 +26,8 @@ class PacketBuilder {
     throw UnsupportedError('Unsupported header type: ${header.runtimeType}');
   }
 
-  static Future<Uint8List> _buildLongHeader(LongHeader header, Uint8List frameBytes) async {
+  static Future<Uint8List> _buildLongHeader(
+      LongHeader header, Uint8List frameBytes) async {
     if (header.isRetry) {
       return header.serialize(); // Retry has no frames
     }
@@ -71,7 +73,8 @@ class PacketBuilder {
     if (header.keyPhase) firstByte |= 0x04;
     builder.addByte(firstByte);
     builder.add(header.destinationConnectionId);
-    builder.add(PacketNumber.encode(header.packetNumber, header.packetNumberLength));
+    builder.add(
+        PacketNumber.encode(header.packetNumber, header.packetNumberLength));
     builder.add(frameBytes);
     return Uint8List.fromList(builder.toBytes());
   }

@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/io/udp_socket.dart';
+import 'package:quic_lib/src/io/udp_socket.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -14,7 +14,8 @@ void main() {
 
     test('localAddress matches bind address', () async {
       final socket = await UdpSocket.bind(InternetAddress.loopbackIPv4, 0);
-      expect(socket.localAddress.address, equals(InternetAddress.loopbackIPv4.address));
+      expect(socket.localAddress.address,
+          equals(InternetAddress.loopbackIPv4.address));
       socket.close();
     });
 
@@ -55,7 +56,8 @@ void main() {
       // Send a burst of packets quickly from the same IP
       const packetCount = 1005;
       for (var i = 0; i < packetCount; i++) {
-        socketA.send(Uint8List.fromList([i & 0xFF]), InternetAddress.loopbackIPv4, socketB.localPort);
+        socketA.send(Uint8List.fromList([i & 0xFF]),
+            InternetAddress.loopbackIPv4, socketB.localPort);
       }
 
       // Allow time for packets to be processed
@@ -81,7 +83,8 @@ void main() {
 
       // Send 100 packets well within the 1000/s limit
       for (var i = 0; i < 100; i++) {
-        socketA.send(Uint8List.fromList([i]), InternetAddress.loopbackIPv4, socketB.localPort);
+        socketA.send(Uint8List.fromList([i]), InternetAddress.loopbackIPv4,
+            socketB.localPort);
       }
 
       await Future.delayed(Duration(milliseconds: 500));

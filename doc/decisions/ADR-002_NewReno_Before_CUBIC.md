@@ -8,7 +8,7 @@ status: "Accepted"
 
 ## 1. Purpose
 
-Congestion control is easy to get wrong and hard to debug. Starting with NewReno-a simple, well-documented algorithm-gives dart_quic a conservative, interoperable baseline. CUBIC and BBR can be added later via the pluggable CongestionController interface once the recovery subsystem is proven correct.
+Congestion control is easy to get wrong and hard to debug. Starting with NewReno-a simple, well-documented algorithm-gives quic_lib a conservative, interoperable baseline. CUBIC and BBR can be added later via the pluggable CongestionController interface once the recovery subsystem is proven correct.
 
 ## 2. Detailed Specification
 ### 2.1 Context

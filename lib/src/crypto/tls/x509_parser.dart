@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/cipher_suites.dart';
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/cipher_suites.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
 
 /// A parsed X.509 certificate with all essential fields extracted.
 ///
@@ -69,8 +69,7 @@ class _Asn1Node {
 
   int get end => valueEnd;
 
-  Uint8List rawValue(Uint8List bytes) =>
-      bytes.sublist(valueStart, valueEnd);
+  Uint8List rawValue(Uint8List bytes) => bytes.sublist(valueStart, valueEnd);
 }
 
 /// Parse the length octets of a DER-encoded ASN.1 element starting at
@@ -182,7 +181,8 @@ String _oidToAlgorithm(List<int> oidBytes) {
 // ---------------------------------------------------------------------------
 
 DateTime _parseDerTime(Uint8List bytes, _Asn1Node node) {
-  final value = String.fromCharCodes(bytes.sublist(node.valueStart, node.valueEnd));
+  final value =
+      String.fromCharCodes(bytes.sublist(node.valueStart, node.valueEnd));
   // Strip any fractional seconds or timezone offset for simplicity.
   var clean = value.replaceAll('Z', '').replaceAll('+', '').replaceAll('-', '');
   // Remove any trailing non-digit characters.
@@ -242,12 +242,14 @@ X509Certificate parseX509(List<int> derBytes) {
 
   // Top-level Certificate SEQUENCE
   final certNode = _parseDerNode(bytes, 0);
-  final certChildren = _parseChildren(bytes, certNode.valueStart, certNode.valueEnd);
+  final certChildren =
+      _parseChildren(bytes, certNode.valueStart, certNode.valueEnd);
 
   // SECURITY: Reject malformed certificates instead of returning a synthetic
   // certificate that could bypass signature verification.
   if (certChildren.length < 3) {
-    throw FormatException('Invalid certificate: insufficient top-level elements');
+    throw FormatException(
+        'Invalid certificate: insufficient top-level elements');
   }
 
   // 1. TBSCertificate (SEQUENCE)
@@ -256,7 +258,8 @@ X509Certificate parseX509(List<int> derBytes) {
     throw FormatException('Expected TBSCertificate SEQUENCE');
   }
   final tbsBytes = bytes.sublist(tbsNode.start, tbsNode.end);
-  final tbsChildren = _parseChildren(bytes, tbsNode.valueStart, tbsNode.valueEnd);
+  final tbsChildren =
+      _parseChildren(bytes, tbsNode.valueStart, tbsNode.valueEnd);
 
   // Parse TBSCertificate fields.
   // [0] Version, SerialNumber, Signature AlgorithmIdentifier,
@@ -291,7 +294,8 @@ X509Certificate parseX509(List<int> derBytes) {
   if (tbsIdx < tbsChildren.length) {
     final validityNode = tbsChildren[tbsIdx];
     if (validityNode.tag == 0x30) {
-      final validityChildren = _parseChildren(bytes, validityNode.valueStart, validityNode.valueEnd);
+      final validityChildren =
+          _parseChildren(bytes, validityNode.valueStart, validityNode.valueEnd);
       if (validityChildren.isNotEmpty) {
         notBefore = _parseDerTime(bytes, validityChildren[0]);
       }
@@ -326,9 +330,11 @@ X509Certificate parseX509(List<int> derBytes) {
   String sigAlg = 'unknown';
   final sigAlgNode = certChildren[1];
   if (sigAlgNode.tag == 0x30) {
-    final sigAlgChildren = _parseChildren(bytes, sigAlgNode.valueStart, sigAlgNode.valueEnd);
+    final sigAlgChildren =
+        _parseChildren(bytes, sigAlgNode.valueStart, sigAlgNode.valueEnd);
     if (sigAlgChildren.isNotEmpty && sigAlgChildren[0].tag == 0x06) {
-      final oidBytes = bytes.sublist(sigAlgChildren[0].valueStart, sigAlgChildren[0].valueEnd);
+      final oidBytes = bytes.sublist(
+          sigAlgChildren[0].valueStart, sigAlgChildren[0].valueEnd);
       sigAlg = _oidToAlgorithm(oidBytes);
     }
   }
@@ -339,7 +345,8 @@ X509Certificate parseX509(List<int> derBytes) {
   if (sigValueNode.tag == 0x03) {
     // BIT STRING: first byte is unused bits count, rest is the value.
     if (sigValueNode.length > 1) {
-      sigValue = bytes.sublist(sigValueNode.valueStart + 1, sigValueNode.valueEnd);
+      sigValue =
+          bytes.sublist(sigValueNode.valueStart + 1, sigValueNode.valueEnd);
     }
   }
 
@@ -373,13 +380,17 @@ Future<bool> verifyX509Signature(
   CryptoBackend backend,
 ) async {
   if (cert.signatureAlgorithm == 'ed25519') {
-    return backend.ed25519Verify(pubKey, cert.tbsCertificate, cert.signatureValue);
+    return backend.ed25519Verify(
+        pubKey, cert.tbsCertificate, cert.signatureValue);
   } else if (cert.signatureAlgorithm == 'ecdsaP256') {
-    return backend.ecdsaP256Verify(pubKey, cert.tbsCertificate, cert.signatureValue);
+    return backend.ecdsaP256Verify(
+        pubKey, cert.tbsCertificate, cert.signatureValue);
   } else if (cert.signatureAlgorithm == 'rsaPkcs1Sha256' ||
       cert.signatureAlgorithm == 'rsaPkcs1Sha384') {
-    final hash = cert.signatureAlgorithm == 'rsaPkcs1Sha256' ? Sha256() : Sha384();
-    return backend.rsaPkcs1Verify(pubKey, hash, cert.tbsCertificate, cert.signatureValue);
+    final hash =
+        cert.signatureAlgorithm == 'rsaPkcs1Sha256' ? Sha256() : Sha384();
+    return backend.rsaPkcs1Verify(
+        pubKey, hash, cert.tbsCertificate, cert.signatureValue);
   } else {
     throw UnsupportedError('Signature algorithm: ${cert.signatureAlgorithm}');
   }

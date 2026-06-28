@@ -320,7 +320,7 @@ After a direct connection is established, if either peer's network path changes 
 #### 2.6.3 NAT Rebinding and Connection IDs
 
 - Because the direct connection is identified by QUIC connection IDs and not by the 4-tuple, it can survive NAT rebinding as long as the peer has supplied additional connection IDs via `NEW_CONNECTION_ID` and retired old ones via `RETIRE_CONNECTION_ID`.
-- The `dart_quic` implementation SHOULD issue enough connection IDs to allow migration after a direct connection is established.
+- The `quic_lib` implementation SHOULD issue enough connection IDs to allow migration after a direct connection is established.
 
 
 #### 2.6.4 UDP Burst Handling
@@ -405,12 +405,12 @@ Before path validation completes, the QUIC server (Initiator) MUST respect the R
 
 | Test | Scenario | Expected Result |
 |------|----------|-----------------|
-| `dcutr_quic_basic` | `dart_quic` Responder + `go-libp2p` Initiator on a relayed connection. | Direct QUIC connection established; relay closed after grace period. |
-| `dcutr_quic_dart_initiator` | `dart_quic` Initiator + `go-libp2p` Responder on a relayed connection. | Direct QUIC connection established; roles (client/server) match spec. |
+| `dcutr_quic_basic` | `quic_lib` Responder + `go-libp2p` Initiator on a relayed connection. | Direct QUIC connection established; relay closed after grace period. |
+| `dcutr_quic_dart_initiator` | `quic_lib` Initiator + `go-libp2p` Responder on a relayed connection. | Direct QUIC connection established; roles (client/server) match spec. |
 | `dcutr_quic_symmetric_nat` | Both peers behind symmetric NATs with a public relay. | Direct connection may fail; both peers continue using relay. |
 | `dcutr_quic_retry` | First hole-punch attempt fails; retry succeeds. | Exactly one or more retries occur before success; relay remains usable. |
-| `dcutr_quic_fallback` | All hole-punch attempts fail. | `dart_quic` keeps the relayed connection and reports DCUtR failed. |
-| `dcutr_quic_message_format` | Capture the DCUtR stream bytes from a `go-libp2p` peer. | `dart_quic` parses `CONNECT` and `SYNC` messages identical to go-libp2p. |
+| `dcutr_quic_fallback` | All hole-punch attempts fail. | `quic_lib` keeps the relayed connection and reports DCUtR failed. |
+| `dcutr_quic_message_format` | Capture the DCUtR stream bytes from a `go-libp2p` peer. | `quic_lib` parses `CONNECT` and `SYNC` messages identical to go-libp2p. |
 | `dcutr_quic_security` | Relayed connection authenticated to a specific `PeerId`; direct dial to a different peer. | Direct connection rejected because the authenticated `PeerId` does not match. |
 | `dcutr_quic_migration` | Direct connection established; then one peer's NAT rebinding occurs. | QUIC path migration completes via `PATH_CHALLENGE`/`PATH_RESPONSE`. |
 
@@ -427,7 +427,7 @@ Before path validation completes, the QUIC server (Initiator) MUST respect the R
 - [ ] The Initiator measures RTT and sends `SYNC` after receiving the Responder's `CONNECT`.
 - [ ] The Responder dials the Initiator's addresses immediately upon receiving `SYNC`.
 - [ ] The Initiator sends random UDP packets in the `[10 ms, 200 ms]` interval after the half-RTT timer expires.
-- [ ] A direct QUIC connection can be established between two NATed `dart_quic` peers via DCUtR.
+- [ ] A direct QUIC connection can be established between two NATed `quic_lib` peers via DCUtR.
 - [ ] On failure, the peers fall back to the existing relayed connection and retry up to `MAX_ATTEMPTS` times.
 - [ ] On success, new streams are opened on the direct connection and the relay connection is closed after a grace period.
 - [ ] The direct connection still performs full libp2p TLS authentication and `PeerId` verification.

@@ -1,6 +1,6 @@
 # BLUE TEAM Security Audit V3 Report — Final Verification
 
-**Project:** `dart_quic`  
+**Project:** `quic_lib`  
 **Date:** 2026-06-27  
 **Auditor:** Defensive Security Engineer (Blue Team)  
 **Scope:** Post-V2-fix verification — all findings from V1 and V2 audits
@@ -88,4 +88,4 @@ All 50+ source files under `lib/src/` have been audited at least twice. The foll
 
 ## Conclusion
 
-After five complete audit-fix-verify loops covering 30 individual security fixes, the `dart_quic` codebase is hardened against all identified attack vectors. Both Blue Team (defensive) and Red Team (offensive) audits report **zero remaining findings**.
+After five complete audit-fix-verify loops covering 30 individual security fixes, the `quic_lib` codebase is hardened against all identified attack vectors. Both Blue Team (defensive) and Red Team (offensive) audits report **zero remaining findings**.

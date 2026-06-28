@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/http3/cancel_push_frame.dart';
-import 'package:dart_quic/src/http3/frame_types.dart';
-import 'package:dart_quic/src/http3/http3_connection.dart';
-import 'package:dart_quic/src/http3/push_promise_frame.dart';
+import 'package:quic_lib/src/http3/cancel_push_frame.dart';
+import 'package:quic_lib/src/http3/frame_types.dart';
+import 'package:quic_lib/src/http3/http3_connection.dart';
+import 'package:quic_lib/src/http3/push_promise_frame.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -35,7 +35,8 @@ void main() {
     test('includes pushPromise and cancelPush', () {
       expect(Http3FrameType.pushPromise.value, equals(0x05));
       expect(Http3FrameType.cancelPush.value, equals(0x03));
-      expect(Http3FrameType.fromValue(0x05), equals(Http3FrameType.pushPromise));
+      expect(
+          Http3FrameType.fromValue(0x05), equals(Http3FrameType.pushPromise));
       expect(Http3FrameType.fromValue(0x03), equals(Http3FrameType.cancelPush));
     });
   });

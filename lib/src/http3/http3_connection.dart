@@ -10,8 +10,8 @@ import 'http3_request.dart';
 import 'http3_response.dart';
 import 'push_promise_frame.dart';
 import 'settings_frame.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 
 /// Represents a single HTTP/3 request/response stream mapped to a QUIC stream ID.
 class Http3Stream {
@@ -75,7 +75,8 @@ class Http3Connection {
   int get lastAcceptedStreamId => _lastAcceptedStreamId;
 
   /// GOAWAY frames that have been sent on this connection.
-  List<Http3GoawayFrame> get sentGoawayFrames => List.unmodifiable(_sentGoawayFrames);
+  List<Http3GoawayFrame> get sentGoawayFrames =>
+      List.unmodifiable(_sentGoawayFrames);
 
   /// True once a GOAWAY frame has been sent.
   bool get hasSentGoaway => _sentGoawayFrames.isNotEmpty;
@@ -236,14 +237,16 @@ class Http3Connection {
   /// Gracefully close the HTTP/3 connection.
   void close() {
     _isClosing = true;
-    final goaway = Http3GoawayFrame(lastStreamIdOrPushId: _lastAcceptedStreamId);
+    final goaway =
+        Http3GoawayFrame(lastStreamIdOrPushId: _lastAcceptedStreamId);
     _sentGoawayFrames.add(goaway);
     unawaited(_sendGoawayFrame(goaway.toFrame().serialize()));
   }
 
   /// QUIC packets built by HTTP/3 operations (e.g., GOAWAY) that are
   /// waiting to be sent by the transport layer.
-  List<Uint8List> get pendingQuicPackets => List.unmodifiable(_pendingQuicPackets);
+  List<Uint8List> get pendingQuicPackets =>
+      List.unmodifiable(_pendingQuicPackets);
 
   /// Send a GOAWAY frame by building a QUIC packet containing the frame
   /// as a STREAM frame on the HTTP/3 control stream.

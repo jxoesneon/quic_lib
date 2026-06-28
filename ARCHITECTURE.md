@@ -1,4 +1,4 @@
-# dart_quic Architecture
+# quic_lib Architecture
 
 **Version:** 1.2.0  
 **Last updated:** 2026-06-27
@@ -7,11 +7,11 @@
 
 ## Overview
 
-`dart_quic` is a pure-Dart implementation of QUIC (RFC 9000), HTTP/3 (RFC 9114), WebTransport (RFC 9220), and libp2p QUIC transport. It is organized as a set of loosely-coupled subsystems that are wired together at the connection level.
+`quic_lib` is a pure-Dart implementation of QUIC (RFC 9000), HTTP/3 (RFC 9114), WebTransport (RFC 9220), and libp2p QUIC transport. It is organized as a set of loosely-coupled subsystems that are wired together at the connection level.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         dart_quic                               │
+│                         quic_lib                               │
 ├─────────────┬─────────────┬─────────────┬─────────────────────┤
 │   HTTP/3    │ WebTransport│   libp2p    │      QUIC Core      │
 │   (RFC 9114)│  (RFC 9220) │             │     (RFC 9000)      │

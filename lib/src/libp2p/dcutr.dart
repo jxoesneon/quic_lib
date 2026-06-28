@@ -58,7 +58,6 @@ class DCUtRMessage {
 
   @override
   int get hashCode => Object.hash(type, Object.hashAll(observedAddr));
-
 }
 
 /// Handler for producing and validating DCUtR messages.

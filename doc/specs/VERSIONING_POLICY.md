@@ -21,8 +21,8 @@ During the long pre-1.0 journey, downstream consumers like dart_ipfs need predic
 
 This policy applies to:
 
-- The `dart_quic` package published on [pub.dev](https://pub.dev).
-- Any public, documented API exported from `lib/dart_quic.dart` or its
+- The `quic_lib` package published on [pub.dev](https://pub.dev).
+- Any public, documented API exported from `lib/quic_lib.dart` or its
   documented sub-libraries.
 - Release artifacts, Git tags, and branch conventions in this repository.
 
@@ -37,7 +37,7 @@ It does not apply to:
 
 ### 2.2 Semantic Versioning Rules
 
-`dart_quic` follows [Semantic Versioning 2.0.0](https://semver.org/):
+`quic_lib` follows [Semantic Versioning 2.0.0](https://semver.org/):
 
 ```
 MAJOR.MINOR.PATCH[-prerelease][+build]
@@ -91,7 +91,7 @@ After `1.0.0`:
 
 The public API consists of:
 
-1. All symbols exported from the top-level library `package:dart_quic/dart_quic.dart`.
+1. All symbols exported from the top-level library `package:quic_lib/quic_lib.dart`.
 2. Any documented public members in exported classes, top-level functions,
    constants, and extension methods.
 3. The behavior of documented classes as specified in the subsystem specs.
@@ -105,7 +105,7 @@ without a major version bump.
 
 ### 2.5 Deprecation Policy
 
-Before removing or breaking a public API, `dart_quic` will follow a deprecation
+Before removing or breaking a public API, `quic_lib` will follow a deprecation
 period:
 
 1. **Mark the old API** with `@Deprecated('Use NewApi instead; will be removed in X.Y.Z')`.
@@ -156,7 +156,7 @@ pre-release suffix and may be installed by consumers who explicitly opt in.
 
 ### 2.10 Changelog Maintenance
 
-`dart_quic` follows the [Keep a Changelog](https://keepachangelog.com/) format.
+`quic_lib` follows the [Keep a Changelog](https://keepachangelog.com/) format.
 
 The top-level `CHANGELOG.md` must contain:
 
@@ -178,19 +178,19 @@ e.g., `Add stream ID validation (#123)`.
 
 ### 2.11 Relationship to `dart_ipfs` Downstream Consumption
 
-`dart_ipfs` is the primary downstream consumer of `dart_quic`. The integration
+`dart_ipfs` is the primary downstream consumer of `quic_lib`. The integration
 points are specified in [LIBP2P_QUIC_SPEC.md](LIBP2P_QUIC_SPEC.md) and
 [DCUTR_SPEC.md](DCUTR_SPEC.md). The following rules apply to that relationship:
 
-1. `dart_ipfs` should declare a concrete or compatible version of `dart_quic`
+1. `dart_ipfs` should declare a concrete or compatible version of `quic_lib`
    in `pubspec.yaml` rather than using an open-ended constraint during the
    pre-1.0 phases.
-2. `dart_quic` will maintain a compatibility table in `CHANGELOG.md` or a
-   dedicated `doc/dart_ipfs_compat.md` document showing which `dart_quic`
+2. `quic_lib` will maintain a compatibility table in `CHANGELOG.md` or a
+   dedicated `doc/dart_ipfs_compat.md` document showing which `quic_lib`
    versions are supported by which `dart_ipfs` releases.
-3. Breaking `dart_quic` changes that affect `dart_ipfs` will include a migration
+3. Breaking `quic_lib` changes that affect `dart_ipfs` will include a migration
    guide in `CHANGELOG.md`.
-4. After `1.0.0`, `dart_quic` will not introduce breaking changes in a minor or
+4. After `1.0.0`, `quic_lib` will not introduce breaking changes in a minor or
    patch release that would force an uncoordinated upgrade in `dart_ipfs`.
 5. Security fixes are exempt from the coordinated-upgrade rule but will be
    clearly labeled as such.

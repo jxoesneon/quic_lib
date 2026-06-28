@@ -8,7 +8,7 @@ status: "Accepted"
 
 ## 1. Purpose
 
-Wrapping a native QUIC library via dart:ffi would ship faster, but it would limit support for web, WASM, and embedded targets where FFI is unavailable. This decision commits dart_quic to a pure-Dart core, accepting the performance tradeoff in exchange for broader portability and control over maintenance timelines.
+Wrapping a native QUIC library via dart:ffi would ship faster, but it would limit support for web, WASM, and embedded targets where FFI is unavailable. This decision commits quic_lib to a pure-Dart core, accepting the performance tradeoff in exchange for broader portability and control over maintenance timelines.
 
 ## 2. Detailed Specification
 ### 2.1 Context
@@ -18,7 +18,7 @@ Dart provides `dart:ffi` for binding to native C libraries, and many QUIC implem
 
 ### 2.2 Decision
 
-Build `dart_quic` as a pure Dart implementation with zero `dart:ffi` dependencies in the core library.
+Build `quic_lib` as a pure Dart implementation with zero `dart:ffi` dependencies in the core library.
 
 
 ### 2.3 Consequences

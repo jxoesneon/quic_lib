@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/cipher_suites.dart';
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/tls/certificate_chain.dart';
-import 'package:dart_quic/src/crypto/tls/certificate_message.dart';
-import 'package:dart_quic/src/crypto/tls/x509_parser.dart';
+import 'package:quic_lib/src/crypto/cipher_suites.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/tls/certificate_chain.dart';
+import 'package:quic_lib/src/crypto/tls/certificate_message.dart';
+import 'package:quic_lib/src/crypto/tls/x509_parser.dart';
 
 /// TLS certificate chain verification.
 ///
@@ -113,7 +113,8 @@ class CertificateVerifier {
   ///
   /// Parses the entry's certData as X.509 and delegates signature
   /// verification to [verifyX509Signature].
-  Future<bool> _verifyOneCertificate(CertificateMessage cert, PublicKey issuerKey) async {
+  Future<bool> _verifyOneCertificate(
+      CertificateMessage cert, PublicKey issuerKey) async {
     for (final entry in cert.entries) {
       final x509 = parseX509(entry.certData);
       if (!await verifyX509Signature(x509, issuerKey, _backend)) {

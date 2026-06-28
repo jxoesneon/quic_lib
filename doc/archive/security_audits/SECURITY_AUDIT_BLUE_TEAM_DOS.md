@@ -1,6 +1,6 @@
 # BLUE TEAM DoS / Connection Hardening Security Audit
 
-**Project:** dart_quic  
+**Project:** quic_lib  
 **Auditor:** Defensive Security Engineer (Blue Team)  
 **Date:** 2025-01-18  
 **Scope:** Connection management, recovery mechanisms, stream handling, and anti-amplification controls.  

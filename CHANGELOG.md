@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `dart_quic` will be documented in this file.
+All notable changes to `quic_lib` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Implemented GOAWAY sending** — `Http3Connection.close()` now calls `_sendGoawayFrame()` instead of leaving a TODO
 - **Added frame class docs** — 19 frame classes in `frame.dart` now have RFC 9000 section references
 - **Completed public API exports** — `lib/quic.dart`, `lib/http3.dart`, `lib/libp2p.dart`, `lib/webtransport.dart` now export stable public APIs
-- **Exported V2LongHeader** — added to `lib/dart_quic.dart` barrel file
+- **Exported V2LongHeader** — added to `lib/quic_lib.dart` barrel file
 - **Completed example scaffolds** — `echo_client.dart` and `echo_server.dart` now demonstrate real API usage
 - **Created `doc/README.md`** — explains documentation hierarchy
 

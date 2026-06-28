@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/http3/qpack_decoder.dart';
-import 'package:dart_quic/src/http3/qpack_encoder.dart';
-import 'package:dart_quic/src/http3/qpack_integer.dart';
+import 'package:quic_lib/src/http3/qpack_decoder.dart';
+import 'package:quic_lib/src/http3/qpack_encoder.dart';
+import 'package:quic_lib/src/http3/qpack_integer.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -56,7 +56,8 @@ void main() {
 
     test('decodeFieldLine throws for out-of-bounds static index', () {
       // Indexed representation with a very large index that doesn't exist.
-      final bytes = Uint8List.fromList([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]);
+      final bytes = Uint8List.fromList(
+          [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]);
       expect(
         () => QpackDecoder.decodeFieldLine(bytes, 0),
         throwsArgumentError,
@@ -95,7 +96,9 @@ void main() {
       );
     });
 
-    test('decodeFieldLine throws for literal with name ref to non-existent index', () {
+    test(
+        'decodeFieldLine throws for literal with name ref to non-existent index',
+        () {
       // Literal with name reference: 010 + 5-bit prefix encoding of a very large index.
       final indexBytes = QpackInteger.encode(0xFFFFFF, 5);
       indexBytes[0] |= 0x40; // Set first bits to 010

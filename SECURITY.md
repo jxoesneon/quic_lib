@@ -31,5 +31,5 @@ Please report security vulnerabilities via the repository's private vulnerabilit
 
 ## Pure-Dart Security Constraint
 
-`dart_quic` commits to a pure-Dart implementation with no FFI or native extensions.
+`quic_lib` commits to a pure-Dart implementation with no FFI or native extensions.
 This reduces the risk of memory-safety vulnerabilities associated with native FFI boundaries and simplifies auditing of the Dart layer. See [ADR-001](doc/decisions/ADR-001_Pure_Dart_No_FFI.md).

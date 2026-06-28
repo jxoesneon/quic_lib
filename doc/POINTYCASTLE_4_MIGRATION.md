@@ -25,7 +25,7 @@
 
 ## Breaking Change Analysis
 
-| Change | Impact on dart_quic | Action Required |
+| Change | Impact on quic_lib | Action Required |
 |--------|---------------------|-----------------|
 | `generateKeyPair` generics | `DefaultCryptoBackend` uses `generateKeyPair` via `package:cryptography`, not pointycastle directly | **None** — indirect usage |
 | New block ciphers | We do not use Blowfish, Camellia, or Twofish | **None** |
@@ -35,7 +35,7 @@
 
 ## Migration Risk: LOW
 
-No API breaking changes affect dart_quic's direct usage. The only touchpoint is ASN1 parsing for RSA public keys, which is improved (bug fix, not breakage).
+No API breaking changes affect quic_lib's direct usage. The only touchpoint is ASN1 parsing for RSA public keys, which is improved (bug fix, not breakage).
 
 ## Recommended Action
 
@@ -46,4 +46,4 @@ No API breaking changes affect dart_quic's direct usage. The only touchpoint is 
 
 ## Blocker: None
 
-Migration can proceed at any time. No code changes required in dart_quic.
+Migration can proceed at any time. No code changes required in quic_lib.

@@ -36,7 +36,7 @@ The IPFS network speaks QUIC via /quic-v1 multiaddrs, and Dart cannot participat
 │  - Multiaddr handling              │
 │  - Stream lifecycle                │
 ├─────────────────────────────────────┤
-│      QUIC Transport                 │  (RFC 9000, dart_quic core)
+│      QUIC Transport                 │  (RFC 9000, quic_lib core)
 ├─────────────────────────────────────┤
 │      TLS 1.3                        │  (with libp2p extension)
 ├─────────────────────────────────────┤
@@ -350,7 +350,7 @@ The libp2p QUIC transport Dart API is defined in [DART_API_SPEC.md §2.8](DART_A
 ## 6. Testing Strategy
 
 - Unit: Certificate generation, extension encoding/decoding, peer ID derivation.
-- Integration: Full connection establishment between two dart_quic instances.
+- Integration: Full connection establishment between two quic_lib instances.
 - Interop: Connect to go-libp2p QUIC nodes, verify handshake succeeds.
 - Security: Reject invalid certificates, wrong peer IDs, missing extensions.
 - NAT: Test relay path and hole punching coordination.

@@ -1,4 +1,4 @@
-# dart_quic Documentation Index
+# quic_lib Documentation Index
 
 ## Architecture
 

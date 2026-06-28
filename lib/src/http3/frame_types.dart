@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/utils/collections.dart';
-import 'package:dart_quic/src/wire/varint.dart';
+import 'package:quic_lib/src/utils/collections.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 
 /// HTTP/3 frame types per RFC 9114 Section 7.2.
 enum Http3FrameType {
@@ -39,10 +39,13 @@ class Http3Frame {
   Uint8List serialize() {
     final typeBytes = VarInt.encode(type.value);
     final lengthBytes = VarInt.encode(payload.length);
-    final result = Uint8List(typeBytes.length + lengthBytes.length + payload.length);
+    final result =
+        Uint8List(typeBytes.length + lengthBytes.length + payload.length);
     result.setRange(0, typeBytes.length, typeBytes);
-    result.setRange(typeBytes.length, typeBytes.length + lengthBytes.length, lengthBytes);
-    result.setRange(typeBytes.length + lengthBytes.length, result.length, payload);
+    result.setRange(
+        typeBytes.length, typeBytes.length + lengthBytes.length, lengthBytes);
+    result.setRange(
+        typeBytes.length + lengthBytes.length, result.length, payload);
     return result;
   }
 
@@ -112,6 +115,4 @@ class Http3Frame {
 
   @override
   int get hashCode => Object.hash(type, Object.hashAll(payload));
-
-
 }

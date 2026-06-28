@@ -18,7 +18,7 @@ dependencies:
 
 ## 1. Purpose
 
-QUIC design eliminates many TCP/TLS attack vectors, but it also introduces new ones-amplification via Initial packets, migration linkability, and 0-RTT replay. Without an explicit security model, implementers will make inconsistent trust assumptions. This spec enumerates the threats and mandates the mitigations that keep dart_quic safe for P2P and server use.
+QUIC design eliminates many TCP/TLS attack vectors, but it also introduces new ones-amplification via Initial packets, migration linkability, and 0-RTT replay. Without an explicit security model, implementers will make inconsistent trust assumptions. This spec enumerates the threats and mandates the mitigations that keep quic_lib safe for P2P and server use.
 
 ## 2. Detailed Specification
 ### 2.1 Threat Model

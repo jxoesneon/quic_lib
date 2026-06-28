@@ -20,7 +20,7 @@ dependencies:
 
 ## 1. Purpose
 
-Every QUIC implementation begins with the wire format: if varints, headers, or frames are encoded incorrectly, no peer will ever interoperate. This specification is the foundational contract for all other dart_quic specs, defining the exact byte sequences that the packet engine must produce and consume.
+Every QUIC implementation begins with the wire format: if varints, headers, or frames are encoded incorrectly, no peer will ever interoperate. This specification is the foundational contract for all other quic_lib specs, defining the exact byte sequences that the packet engine must produce and consume.
 
 ## 2. Detailed Specification
 ### 2.1 Variable-Length Integer Encoding (RFC 9000 Section 16)

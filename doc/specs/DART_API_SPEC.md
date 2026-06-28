@@ -25,7 +25,7 @@ dependencies:
 
 ## 1. Purpose
 
-Developers building on dart_quic need a public API that feels native to Dart-Stream-based, async-first, and free of FFI boilerplate. Without a unified surface specification, each subsystem would expose inconsistent patterns, forcing consumers to learn multiple idioms. This document establishes the single authoritative API contract that all layers (QUIC, HTTP/3, WebTransport, libp2p) must implement, enabling seamless downstream integration.
+Developers building on quic_lib need a public API that feels native to Dart-Stream-based, async-first, and free of FFI boilerplate. Without a unified surface specification, each subsystem would expose inconsistent patterns, forcing consumers to learn multiple idioms. This document establishes the single authoritative API contract that all layers (QUIC, HTTP/3, WebTransport, libp2p) must implement, enabling seamless downstream integration.
 
 ## 2. Detailed Specification
 ### 2.1 Design Principles
@@ -43,7 +43,7 @@ Developers building on dart_quic need a public API that feels native to Dart-Str
 ### 2.2 Package Structure
 
 ```
-dart_quic/
+quic_lib/
 ├── lib/
 │   ├── quic.dart              // Core QUIC transport (public)
 │   ├── http3.dart             // HTTP/3 layer (public)
@@ -574,7 +574,7 @@ class QuicConnectionStats {
 - Mock testing: Use mock I/O backends to test without network.
 - Integration: Full client-server exchange.
 - Documentation: All public APIs have examples in dartdoc.
-- Lint: `package:dart_quic` passes `dart analyze` with no issues.
+- Lint: `package:quic_lib` passes `dart analyze` with no issues.
 
 ---
 

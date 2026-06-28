@@ -1,5 +1,5 @@
-import 'package:dart_quic/src/connection/migration_helper.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/connection/migration_helper.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -86,7 +86,8 @@ void main() {
       // 8 challenges now. Generate one more to trigger eviction.
       helper.generateChallenge(currentTimeUs: 8);
       // The challenge with timestamp 0 should have been evicted.
-      expect(helper.onResponseReceived(PathResponseFrame(data: oldest.data)), isFalse);
+      expect(helper.onResponseReceived(PathResponseFrame(data: oldest.data)),
+          isFalse);
     });
 
     test('evicts oldest validated path when at capacity', () {

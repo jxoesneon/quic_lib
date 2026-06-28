@@ -55,7 +55,7 @@ abstract class AeadResult {
 /// Crypto primitive backend abstraction.
 ///
 /// TLS 1.3 and QUIC packet protection need AES-GCM, ChaCha20-Poly1305,
-/// HKDF, X25519, and Ed25519. This interface lets dart_quic swap between
+/// HKDF, X25519, and Ed25519. This interface lets quic_lib swap between
 /// package:cryptography, package:pointycastle, and future backends without
 /// rewriting protocol logic.
 abstract class CryptoBackend {
@@ -143,7 +143,8 @@ abstract class CryptoBackend {
   Future<KeyPair> x25519GenerateKeyPair();
 
   /// Performs X25519 ECDH.
-  Future<SecretKey> x25519SharedSecret(SecretKey privateKey, PublicKey publicKey);
+  Future<SecretKey> x25519SharedSecret(
+      SecretKey privateKey, PublicKey publicKey);
 
   // -------------------------------------------------------------------------
   // Signatures (Ed25519)

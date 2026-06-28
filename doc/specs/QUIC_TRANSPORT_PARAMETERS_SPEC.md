@@ -18,7 +18,7 @@ dependencies:
 
 ## 1. Purpose
 
-Transport parameters are the primary mechanism for negotiating connection behavior; a canonical spec prevents interop failures. Without precise agreement on which parameters are sent, how they are encoded, and what values are legal, peers will mis-negotiate flow-control windows, idle timeouts, and extension support. This document defines the wire format, semantics, validation rules, and Dart API surface for QUIC transport parameters in `dart_quic`.
+Transport parameters are the primary mechanism for negotiating connection behavior; a canonical spec prevents interop failures. Without precise agreement on which parameters are sent, how they are encoded, and what values are legal, peers will mis-negotiate flow-control windows, idle timeouts, and extension support. This document defines the wire format, semantics, validation rules, and Dart API surface for QUIC transport parameters in `quic_lib`.
 
 ## 2. Overview
 

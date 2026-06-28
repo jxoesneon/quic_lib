@@ -17,14 +17,16 @@ class ConnectionRegistry {
   ///
   /// Throws [ArgumentError] if the CID length is invalid or the registry is full.
   void register(List<int> connectionId, Object connection) {
-    if (connectionId.length < minCidLength || connectionId.length > maxCidLength) {
+    if (connectionId.length < minCidLength ||
+        connectionId.length > maxCidLength) {
       throw ArgumentError(
         'CID length must be $minCidLength..$maxCidLength, got ${connectionId.length}',
       );
     }
     final key = bytesToHex(connectionId);
     if (!_registry.containsKey(key) && _registry.length >= maxConnections) {
-      throw StateError('ConnectionRegistry: max connections ($maxConnections) reached');
+      throw StateError(
+          'ConnectionRegistry: max connections ($maxConnections) reached');
     }
     _registry[key] = connection;
   }
@@ -43,5 +45,4 @@ class ConnectionRegistry {
 
   /// Returns the number of registered connection ID mappings.
   int get length => _registry.length;
-
 }

@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/tls/x509_parser.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/tls/x509_parser.dart';
 import 'package:test/test.dart';
 
 import '../../helpers/mock_crypto_backend.dart';
@@ -9,7 +9,8 @@ import '../../helpers/minimal_cert.dart';
 
 void main() {
   group('parseX509', () {
-    test('returns an X509Certificate for valid DER-like bytes (starting with 0x30)',
+    test(
+        'returns an X509Certificate for valid DER-like bytes (starting with 0x30)',
         () {
       final derBytes = buildMinimalCert();
       final cert = parseX509(derBytes);
@@ -21,7 +22,8 @@ void main() {
       expect(() => parseX509([]), throwsFormatException);
     });
 
-    test('rejects malformed certificate with insufficient top-level elements', () {
+    test('rejects malformed certificate with insufficient top-level elements',
+        () {
       expect(
         () => parseX509([0x30, 0x02, 0xAA, 0xBB]),
         throwsFormatException,

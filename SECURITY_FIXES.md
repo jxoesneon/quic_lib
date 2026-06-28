@@ -1,7 +1,7 @@
 # Security Fixes Summary
 
 ## Date: 2026-06-27
-## Project: dart_quic
+## Project: quic_lib
 ## Status: COMPLETE - All critical/high findings addressed
 
 ---

@@ -1,7 +1,7 @@
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
-import 'package:dart_quic/src/crypto/initial_secrets.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_key_exchange.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/initial_secrets.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_key_exchange.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -37,7 +37,8 @@ void main() {
       expect(masterSecret.extractSync(), isNotEmpty);
     });
 
-    test('deriveApplicationSecrets returns distinct client/server secrets', () async {
+    test('deriveApplicationSecrets returns distinct client/server secrets',
+        () async {
       final exchange = HandshakeKeyExchange(backend, HandshakeRole.client);
       final masterSecret = SimpleSecretKey(List<int>.filled(32, 0xAB));
       final transcriptHash = List<int>.filled(32, 0xCD);
@@ -75,7 +76,8 @@ void main() {
     test('deriveNextGenerationSecret returns a SecretKey', () async {
       final exchange = HandshakeKeyExchange(backend, HandshakeRole.client);
       final currentSecret = SimpleSecretKey(List<int>.filled(32, 0xAB));
-      final nextSecret = await exchange.deriveNextGenerationSecret(currentSecret);
+      final nextSecret =
+          await exchange.deriveNextGenerationSecret(currentSecret);
       expect(nextSecret, isA<SecretKey>());
       expect(nextSecret.extractSync(), isNotEmpty);
     });

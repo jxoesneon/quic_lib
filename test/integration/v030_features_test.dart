@@ -1,12 +1,12 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
-import 'package:dart_quic/src/crypto/packet/retry_integrity_tag.dart';
-import 'package:dart_quic/src/crypto/retry_token_generator.dart';
-import 'package:dart_quic/src/crypto/session_ticket_store.dart';
-import 'package:dart_quic/src/crypto/initial_secrets.dart';
-import 'package:dart_quic/src/http3/http3_connection.dart';
-import 'package:dart_quic/src/wire/retry_packet_builder.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/packet/retry_integrity_tag.dart';
+import 'package:quic_lib/src/crypto/retry_token_generator.dart';
+import 'package:quic_lib/src/crypto/session_ticket_store.dart';
+import 'package:quic_lib/src/crypto/initial_secrets.dart';
+import 'package:quic_lib/src/http3/http3_connection.dart';
+import 'package:quic_lib/src/wire/retry_packet_builder.dart';
 import 'package:test/test.dart';
 
 class FakeQuicConnection {
@@ -18,7 +18,7 @@ class FakeQuicConnection {
   }
 }
 
-/// Integration tests for dart_quic v0.3.0 features.
+/// Integration tests for quic_lib v0.3.0 features.
 void main() {
   final backend = DefaultCryptoBackend();
 

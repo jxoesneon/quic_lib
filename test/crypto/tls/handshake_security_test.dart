@@ -1,11 +1,11 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/key_manager.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_coordinator.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_key_exchange.dart';
-import 'package:dart_quic/src/crypto/tls/tls_message_builder.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/key_manager.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_coordinator.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_key_exchange.dart';
+import 'package:quic_lib/src/crypto/tls/tls_message_builder.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 import 'package:test/test.dart';
 
 import '../../helpers/mock_crypto_backend.dart';

@@ -10,7 +10,7 @@ subsystem: "Integration Contract"
 
 ## 1. Purpose
 
-dart_ipfs is the primary downstream consumer of dart_quic, yet a generic QUIC library cannot guess the exact shapes its consumer needs. This integration contract defines the four-class API surface-transport, connection, stream, and peer ID-that dart_ipfs requires, ensuring that dart_quic ships with a ready-made libp2p adapter rather than forcing consumers to bridge the gap themselves.
+dart_ipfs is the primary downstream consumer of quic_lib, yet a generic QUIC library cannot guess the exact shapes its consumer needs. This integration contract defines the four-class API surface-transport, connection, stream, and peer ID-that dart_ipfs requires, ensuring that quic_lib ships with a ready-made libp2p adapter rather than forcing consumers to bridge the gap themselves.
 
 ## 2. Detailed Specification
 ### 2.1 Consumer: `dart_ipfs`
@@ -27,7 +27,7 @@ dart_ipfs is the primary downstream consumer of dart_quic, yet a generic QUIC li
 
 ### 2.2 Required API Surface
 
-The contract is four public Dart classes consumed by `dart_ipfs` and implemented by `dart_quic`. The authoritative API definitions are in [DART_API_SPEC.md §2.8](../specs/DART_API_SPEC.md#28-libp2p-api). The following summarizes their roles in the integration:
+The contract is four public Dart classes consumed by `dart_ipfs` and implemented by `quic_lib`. The authoritative API definitions are in [DART_API_SPEC.md §2.8](../specs/DART_API_SPEC.md#28-libp2p-api). The following summarizes their roles in the integration:
 
 - `Libp2pQuicTransport`: Entry point for listen/dial operations.
 - `Libp2pConnection`: Represents an established peer connection.
@@ -46,7 +46,7 @@ The contract is four public Dart classes consumed by `dart_ipfs` and implemented
 
 ### 2.3 Protocol Negotiation
 
-`multistream-select` is handled internally by `dart_quic`. The consumer passes the protocol ID to `openStream()` and receives a `Libp2pStream` with the negotiated `protocol` value. `StreamError` is emitted on negotiation failure.
+`multistream-select` is handled internally by `quic_lib`. The consumer passes the protocol ID to `openStream()` and receives a `Libp2pStream` with the negotiated `protocol` value. `StreamError` is emitted on negotiation failure.
 
 
 ### 2.4 Events `dart_ipfs` Needs

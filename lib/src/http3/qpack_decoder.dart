@@ -83,7 +83,8 @@ class QpackDecoder {
   }
 
   // Literal with name reference: 010 + 5-bit prefix
-  static (QpackFieldLine, int) _decodeLiteralWithNameRef(Uint8List bytes, int offset) {
+  static (QpackFieldLine, int) _decodeLiteralWithNameRef(
+      Uint8List bytes, int offset) {
     final (nameIndex, nameOffset) = QpackInteger.decode(bytes, offset, 5);
     final entry = QpackStaticTable.get(nameIndex);
     if (entry == null) {
@@ -94,7 +95,8 @@ class QpackDecoder {
   }
 
   // Literal without name reference: 001 + 5-bit prefix
-  static (QpackFieldLine, int) _decodeLiteralWithoutNameRef(Uint8List bytes, int offset) {
+  static (QpackFieldLine, int) _decodeLiteralWithoutNameRef(
+      Uint8List bytes, int offset) {
     // Skip the 5-bit prefix (which is always 0 for this instruction).
     final nameOffset = offset + 1;
     final (name, nameEnd) = QpackString.decode(bytes, nameOffset);

@@ -3,6 +3,9 @@
 # IDE local domains
 .windsurf/
 
+# Local environment
+.ciel/
+
 # Dart / Pub
 .dart_tool/
 .packages

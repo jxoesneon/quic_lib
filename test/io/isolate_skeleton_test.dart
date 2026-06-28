@@ -1,16 +1,16 @@
 import 'dart:isolate';
 
-import 'package:dart_quic/src/connection/connection_id_manager.dart';
-import 'package:dart_quic/src/connection/connection_state_machine.dart';
-import 'package:dart_quic/src/connection/quic_connection.dart';
-import 'package:dart_quic/src/io/connection_isolate.dart';
-import 'package:dart_quic/src/io/isolate_supervisor.dart';
-import 'package:dart_quic/src/recovery/congestion_controller.dart';
-import 'package:dart_quic/src/recovery/loss_detector.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/recovery/pto_scheduler.dart';
-import 'package:dart_quic/src/recovery/rtt_estimator.dart';
-import 'package:dart_quic/src/streams/stream_id.dart';
+import 'package:quic_lib/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/connection/connection_state_machine.dart';
+import 'package:quic_lib/src/connection/quic_connection.dart';
+import 'package:quic_lib/src/io/connection_isolate.dart';
+import 'package:quic_lib/src/io/isolate_supervisor.dart';
+import 'package:quic_lib/src/recovery/congestion_controller.dart';
+import 'package:quic_lib/src/recovery/loss_detector.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/recovery/pto_scheduler.dart';
+import 'package:quic_lib/src/recovery/rtt_estimator.dart';
+import 'package:quic_lib/src/streams/stream_id.dart';
 import 'package:test/test.dart';
 
 QuicConnection _makeFakeConnection() {

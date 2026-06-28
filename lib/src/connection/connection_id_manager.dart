@@ -166,8 +166,6 @@ class ConnectionIdManager {
     }
     return bytes;
   }
-
-
 }
 
 class _ConnectionIdEntry {

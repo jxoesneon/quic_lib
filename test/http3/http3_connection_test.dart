@@ -1,15 +1,15 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/http3/cancel_push_frame.dart';
-import 'package:dart_quic/src/http3/data_frame.dart';
-import 'package:dart_quic/src/http3/frame_types.dart';
-import 'package:dart_quic/src/http3/goaway_frame.dart';
-import 'package:dart_quic/src/http3/headers_frame.dart';
-import 'package:dart_quic/src/http3/http3_connection.dart';
-import 'package:dart_quic/src/http3/http3_request.dart';
-import 'package:dart_quic/src/http3/http3_response.dart';
-import 'package:dart_quic/src/http3/push_promise_frame.dart';
-import 'package:dart_quic/src/http3/settings_frame.dart';
+import 'package:quic_lib/src/http3/cancel_push_frame.dart';
+import 'package:quic_lib/src/http3/data_frame.dart';
+import 'package:quic_lib/src/http3/frame_types.dart';
+import 'package:quic_lib/src/http3/goaway_frame.dart';
+import 'package:quic_lib/src/http3/headers_frame.dart';
+import 'package:quic_lib/src/http3/http3_connection.dart';
+import 'package:quic_lib/src/http3/http3_request.dart';
+import 'package:quic_lib/src/http3/http3_response.dart';
+import 'package:quic_lib/src/http3/push_promise_frame.dart';
+import 'package:quic_lib/src/http3/settings_frame.dart';
 import 'package:test/test.dart';
 
 class FakeQuicConnection {
@@ -260,7 +260,8 @@ void main() {
 
     test('getResponse decodes pending headers', () async {
       final conn = Http3Connection(quicConnection: FakeQuicConnection());
-      final response = Http3Response(statusCode: 200, headers: {'content-type': 'text/plain'});
+      final response = Http3Response(
+          statusCode: 200, headers: {'content-type': 'text/plain'});
       final encoded = response.encodeHeaders();
 
       final frame = Http3Frame(
@@ -306,7 +307,8 @@ void main() {
       expect(conn.sentGoawayFrames.first.lastStreamIdOrPushId, equals(8));
     });
 
-    test('pendingQuicPackets accumulates after close with build-capable quic', () async {
+    test('pendingQuicPackets accumulates after close with build-capable quic',
+        () async {
       final fakeQuic = FakeQuicConnection();
       final conn = Http3Connection(quicConnection: fakeQuic);
       conn.close();
@@ -329,12 +331,15 @@ void main() {
     test('lastAcceptedStreamId tracks highest seen stream', () {
       final conn = Http3Connection(quicConnection: Object());
       expect(conn.lastAcceptedStreamId, equals(0));
-      conn.onStreamFrame(4, Http3Frame(type: Http3FrameType.data, payload: [0x01]));
+      conn.onStreamFrame(
+          4, Http3Frame(type: Http3FrameType.data, payload: [0x01]));
       expect(conn.lastAcceptedStreamId, equals(4));
-      conn.onStreamFrame(8, Http3Frame(type: Http3FrameType.headers, payload: [0x01]));
+      conn.onStreamFrame(
+          8, Http3Frame(type: Http3FrameType.headers, payload: [0x01]));
       expect(conn.lastAcceptedStreamId, equals(8));
       // Lower stream ID should not decrease lastAcceptedStreamId
-      conn.onStreamFrame(2, Http3Frame(type: Http3FrameType.data, payload: [0x01]));
+      conn.onStreamFrame(
+          2, Http3Frame(type: Http3FrameType.data, payload: [0x01]));
       expect(conn.lastAcceptedStreamId, equals(8));
     });
   });

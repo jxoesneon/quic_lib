@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/http3/frame_types.dart';
-import 'package:dart_quic/src/utils/collections.dart';
+import 'package:quic_lib/src/http3/frame_types.dart';
+import 'package:quic_lib/src/utils/collections.dart';
 
 /// HTTP/3 DATA frame payload.
 ///
@@ -40,5 +40,4 @@ class Http3DataFrame {
 
   @override
   int get hashCode => Object.hashAll(data);
-
 }

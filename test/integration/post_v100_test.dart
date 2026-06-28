@@ -3,24 +3,25 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
-import 'package:dart_quic/src/crypto/key_manager.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_coordinator.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_key_exchange.dart' show HandshakeRole;
-import 'package:dart_quic/src/crypto/tls/transcript_hash.dart';
-import 'package:dart_quic/src/http3/frame_types.dart';
-import 'package:dart_quic/src/http3/goaway_frame.dart';
-import 'package:dart_quic/src/http3/http3_connection.dart';
-import 'package:dart_quic/src/io/quic_endpoint.dart';
-import 'package:dart_quic/src/webtransport/capsule_types.dart';
-import 'package:dart_quic/src/webtransport/goaway_capsule.dart';
-import 'package:dart_quic/src/webtransport/webtransport_session.dart';
-import 'package:dart_quic/src/wire/frame.dart';
-import 'package:dart_quic/src/wire/packet_builder.dart';
-import 'package:dart_quic/src/wire/packet_header.dart';
-import 'package:dart_quic/src/wire/quic_versions.dart';
-import 'package:dart_quic/src/crypto/tls/tls_message_builder.dart';
-import 'package:dart_quic/src/wire/v2_header.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/key_manager.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_coordinator.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_key_exchange.dart'
+    show HandshakeRole;
+import 'package:quic_lib/src/crypto/tls/transcript_hash.dart';
+import 'package:quic_lib/src/http3/frame_types.dart';
+import 'package:quic_lib/src/http3/goaway_frame.dart';
+import 'package:quic_lib/src/http3/http3_connection.dart';
+import 'package:quic_lib/src/io/quic_endpoint.dart';
+import 'package:quic_lib/src/webtransport/capsule_types.dart';
+import 'package:quic_lib/src/webtransport/goaway_capsule.dart';
+import 'package:quic_lib/src/webtransport/webtransport_session.dart';
+import 'package:quic_lib/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/packet_builder.dart';
+import 'package:quic_lib/src/wire/packet_header.dart';
+import 'package:quic_lib/src/wire/quic_versions.dart';
+import 'package:quic_lib/src/crypto/tls/tls_message_builder.dart';
+import 'package:quic_lib/src/wire/v2_header.dart';
 
 /// Builds a raw key_share extension for x25519.
 Uint8List _buildKeyShareExtension(List<int> keyBytes) {
@@ -42,7 +43,7 @@ Uint8List _buildKeyShareExtension(List<int> keyBytes) {
   return Uint8List.fromList(buffer.toBytes());
 }
 
-/// Integration tests for dart_quic post-v1.0 features.
+/// Integration tests for quic_lib post-v1.0 features.
 void main() {
   group('TranscriptHash', () {
     test('produces consistent hashes for same input', () async {
@@ -164,10 +165,8 @@ void main() {
       expect(bytes[0], equals(0xC3));
 
       // Verify version is v2.
-      final version = (bytes[1] << 24) |
-          (bytes[2] << 16) |
-          (bytes[3] << 8) |
-          bytes[4];
+      final version =
+          (bytes[1] << 24) | (bytes[2] << 16) | (bytes[3] << 8) | bytes[4];
       expect(version, equals(QuicVersions.v2));
     });
 
@@ -184,7 +183,8 @@ void main() {
       final parsed = V2LongHeader.parse(bytes);
 
       expect(parsed.packetType, equals(header.packetType));
-      expect(parsed.destinationConnectionId, equals(header.destinationConnectionId));
+      expect(parsed.destinationConnectionId,
+          equals(header.destinationConnectionId));
       expect(parsed.sourceConnectionId, equals(header.sourceConnectionId));
       expect(parsed.version, equals(QuicVersions.v2));
     });
@@ -226,7 +226,8 @@ void main() {
   });
 
   group('QuicEndpoint.rebindToAddress', () {
-    test('initiates path validation and updates remote address after validation',
+    test(
+        'initiates path validation and updates remote address after validation',
         () async {
       final endpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
       final conn = await endpoint.connect(InternetAddress.loopbackIPv4, 12345);
@@ -243,7 +244,8 @@ void main() {
 
       // Bind a raw UDP socket to the destination port so the send does not
       // fail with a SocketException on Windows.
-      final destSocket = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, newPort);
+      final destSocket =
+          await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, newPort);
       addTearDown(destSocket.close);
 
       // rebindToAddress sends a PATH_CHALLENGE via UDP and awaits a

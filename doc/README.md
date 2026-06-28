@@ -1,6 +1,6 @@
-# dart_quic Documentation
+# quic_lib Documentation
 
-This directory contains the documentation hierarchy for the `dart_quic` project.
+This directory contains the documentation hierarchy for the `quic_lib` project.
 
 ## Structure
 

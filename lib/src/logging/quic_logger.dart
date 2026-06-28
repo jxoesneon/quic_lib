@@ -1,4 +1,4 @@
-/// Lightweight logging abstraction for dart_quic.
+/// Lightweight logging abstraction for quic_lib.
 ///
 /// Production code should set [QuicLogger.sink] to a no-op or structured
 /// logger. The default sink prints to stdout for development convenience.

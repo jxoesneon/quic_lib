@@ -1,4 +1,4 @@
-﻿# RFC and Research Notes Consolidated
+# RFC and Research Notes Consolidated
 
 > This document consolidates all prior research notes into a single reference file.
 > Original files are preserved in full, demarcated by source filename.
@@ -23,7 +23,7 @@ companion_rfcs:
 
 ## 1. Purpose
 
-RFC 9000 is a dense, 150-page specification that every implementer must internalize. These notes distill the core concepts-packet structure, stream types, connection lifecycle, migration, and transport parameters-into a quick-reference format that keeps the dart_quic team aligned without requiring constant re-reading of the full RFC.
+RFC 9000 is a dense, 150-page specification that every implementer must internalize. These notes distill the core concepts-packet structure, stream types, connection lifecycle, migration, and transport parameters-into a quick-reference format that keeps the quic_lib team aligned without requiring constant re-reading of the full RFC.
 
 ## 2. Abstract
 
@@ -177,7 +177,7 @@ Exchanged during handshake via TLS extensions. Key parameters:
 ---
 
 
-## 11. Relevance to dart_quic
+## 11. Relevance to quic_lib
 
 1. **Variable-length integer encoding** must be a foundational codec in Dart.
 2. **Packet parsing** must handle both long and short headers with zero-copy where possible.
@@ -392,7 +392,7 @@ Parameters are encoded as a sequence of (ID, length, value) tuples.
 ---
 
 
-## 13. Security Considerations for dart_quic
+## 13. Security Considerations for quic_lib
 
 1. **Initial secrets are public**: Any observer who sees the DCID can derive Initial keys. Initial packets provide integrity but not true confidentiality.
 2. **Constant-time operations**: Key derivation and packet protection must use constant-time comparisons to prevent timing attacks.
@@ -625,7 +625,7 @@ Pacing reduces burstiness and improves fairness with other flows.
 ---
 
 
-## 12. Relevance to dart_quic
+## 12. Relevance to quic_lib
 
 1. **Timer precision**: Dart's timer system (`Timer`, `Stopwatch`) must provide at least millisecond granularity for PTO and loss detection.
 2. **Per-space tracking**: The implementation needs separate sent-packet lists per encryption level.
@@ -833,7 +833,7 @@ HTTP/2 settings (like SETTINGS_ENABLE_PUSH) are **not** valid in HTTP/3 and MUST
 ---
 
 
-## 12. Relevance to dart_quic
+## 12. Relevance to quic_lib
 
 1. **Stream type detection**: First bytes of unidirectional streams indicate their type â€” need a dispatcher.
 2. **QPACK integration**: Separate encoder/decoder streams must be managed alongside request streams.
@@ -1021,7 +1021,7 @@ Two modes:
 ---
 
 
-## 13. Relevance to dart_quic
+## 13. Relevance to quic_lib
 
 1. **Separate codec**: QPACK encoder/decoder should be a standalone module, testable independently.
 2. **Static table**: Hardcode the 99-entry static table as a const list.
@@ -1226,7 +1226,7 @@ WebTransport uses the Capsule Protocol (RFC 9297) on the CONNECT stream for:
 ---
 
 
-## 11. Relevance to dart_quic
+## 11. Relevance to quic_lib
 
 1. **Layering**: WebTransport sits on top of HTTP/3, which sits on top of QUIC. The Dart implementation should maintain this layering cleanly.
 2. **Session abstraction**: A `WebTransportSession` class should encapsulate:
@@ -1264,7 +1264,7 @@ companion_rfcs: []
 
 ## 1. Purpose
 
-The Dart ecosystem lacks a production-ready pure-Dart QUIC stack, which limits HTTP/3 adoption, WebTransport support, and libp2p participation in Dart projects that prefer pure-Dart dependencies. Understanding exactly what is missingâ€”and which existing packages fall shortâ€”helps justify the investment in dart_quic and shapes the architecture decisions that follow.
+The Dart ecosystem lacks a production-ready pure-Dart QUIC stack, which limits HTTP/3 adoption, WebTransport support, and libp2p participation in Dart projects that prefer pure-Dart dependencies. Understanding exactly what is missingâ€”and which existing packages fall shortâ€”helps justify the investment in quic_lib and shapes the architecture decisions that follow.
 
 ## 2. The Problem
 
@@ -1293,7 +1293,7 @@ As of mid-2026, the Dart ecosystem has **no production-ready, pure-Dart QUIC imp
 |---------|----------|------|--------|-----------|------------|
 | `cronet_http` | FFI to Chromium Cronet | Yes | Yes | No (native) | Mobile only |
 | `pure_dart_quic` | Pure Dart | Partial | Basic | Yes | No (PoC) |
-| `dart_quic` (this project) | Pure Dart | Planned | Planned | Yes | Spec stage |
+| `quic_lib` (this project) | Pure Dart | Planned | Planned | Yes | Spec stage |
 
 ### Gap Summary
 
@@ -1429,7 +1429,7 @@ companion_rfcs: []
 
 ## 1. Purpose
 
-libp2p QUIC transport has subtle differences from standard QUIC-self-signed certificates, peer ID derivation, mandatory mutual TLS, and /quic-v1 multiaddrs. Building dart_quic without internalizing these differences would produce a stack that speaks RFC 9000 but cannot join the IPFS network. These notes capture the libp2p-specific requirements that shape the adapter design.
+libp2p QUIC transport has subtle differences from standard QUIC-self-signed certificates, peer ID derivation, mandatory mutual TLS, and /quic-v1 multiaddrs. Building quic_lib without internalizing these differences would produce a stack that speaks RFC 9000 but cannot join the IPFS network. These notes capture the libp2p-specific requirements that shape the adapter design.
 
 ## 2. Abstract
 
@@ -1617,7 +1617,7 @@ Server: /ipfs/bitswap/1.2.0\n
 ---
 
 
-## 10. Relevance to dart_quic
+## 10. Relevance to quic_lib
 
 1. **Custom TLS verifier**: Must implement a TLS certificate verifier that:
    - Accepts self-signed certificates.
@@ -1658,7 +1658,7 @@ companion_rfcs: []
 
 ## 1. Purpose
 
-Studying existing implementations helps dart_quic adopt proven patternsâ€”event-driven engines, pluggable congestion control, zero-copy pathsâ€”and avoid mistakes already identified in other languages.
+Studying existing implementations helps quic_lib adopt proven patternsâ€”event-driven engines, pluggable congestion control, zero-copy pathsâ€”and avoid mistakes already identified in other languages.
 
 ## 2. Overview
 
@@ -1837,7 +1837,7 @@ This document surveys major QUIC implementations across languages and evaluates 
 - Appears to be a proof-of-concept; not production-ready.
 - Missing: congestion control, connection migration, full stream lifecycle, comprehensive error handling.
 
-**Lessons for dart_quic**:
+**Lessons for quic_lib**:
 - `RawDatagramSocket` is the correct Dart API for UDP.
 - TLS 1.3 in pure Dart is achievable (with crypto primitives from a native-backed library).
 - The primary challenge is completeness and correctness, not feasibility.
@@ -1893,7 +1893,7 @@ Note: Dart's single-threaded event loop may limit raw throughput compared to C/R
 ---
 
 
-## 7. Conclusions for dart_quic Design
+## 7. Conclusions for quic_lib Design
 
 1. **Follow ngtcp2/aioquic pattern**: Separate protocol engine from I/O.
 2. **Use Dart Streams/Futures natively**: Don't fight the language's async model.

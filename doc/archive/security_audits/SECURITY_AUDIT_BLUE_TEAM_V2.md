@@ -1,4 +1,4 @@
-# dart_quic Blue Team Security Audit – V2
+# quic_lib Blue Team Security Audit – V2
 
 **Auditor:** Defensive Security Engineer (Blue Team)  
 **Scope:** All source files under `lib/src/`  
@@ -353,4 +353,4 @@ The following components were reviewed and confirmed to contain effective defens
 
 ## Conclusion
 
-The dart_quic project has made significant defensive improvements since V1. Core QUIC recovery, flow-control, and state-machine components now have appropriate caps and validations. However, the **CRYPTO stream assembler was overlooked** and remains an unbounded growth vector. Additionally, several parsing utilities (`CoalescedPacket`, `HeaderProtection`) contain custom varint decoders that lack the bounds checking present in the shared `VarInt` class, creating crash-on-malformed-input vulnerabilities. Fixing these remaining gaps will bring the codebase to a robust defensive posture.
+The quic_lib project has made significant defensive improvements since V1. Core QUIC recovery, flow-control, and state-machine components now have appropriate caps and validations. However, the **CRYPTO stream assembler was overlooked** and remains an unbounded growth vector. Additionally, several parsing utilities (`CoalescedPacket`, `HeaderProtection`) contain custom varint decoders that lack the bounds checking present in the shared `VarInt` class, creating crash-on-malformed-input vulnerabilities. Fixing these remaining gaps will bring the codebase to a robust defensive posture.

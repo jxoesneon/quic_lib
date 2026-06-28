@@ -15,7 +15,7 @@ dependencies:
 
 
 ## 1. Purpose
-A transport stack as large as dart_quic cannot be built in a single sprint; without a phased plan, contributors duplicate effort, integrate prematurely, and lose sight of the path to production. This roadmap sequences specification, core transport, HTTP/3, WebTransport, libp2p integration, and hardening so that each phase delivers a testable milestone.
+A transport stack as large as quic_lib cannot be built in a single sprint; without a phased plan, contributors duplicate effort, integrate prematurely, and lose sight of the path to production. This roadmap sequences specification, core transport, HTTP/3, WebTransport, libp2p integration, and hardening so that each phase delivers a testable milestone.
 
 ## 2. Phases
 ### 2.1 Phases Overview
@@ -144,7 +144,7 @@ Phase 6: dart_ipfs Integration
 
 #### Exit Criteria
 
-- dart_quic ↔ go-libp2p QUIC connection succeeds.
+- quic_lib ↔ go-libp2p QUIC connection succeeds.
 - Peer ID verification works end-to-end.
 - Can run libp2p protocols (ping, identify) over the transport.
 
@@ -177,7 +177,7 @@ Phase 6: dart_ipfs Integration
 
 ### 2.8 Phase 6: dart_ipfs Integration
 
-**Goal**: `dart_quic` consumed by `dart_ipfs` as the QUIC transport.
+**Goal**: `quic_lib` consumed by `dart_ipfs` as the QUIC transport.
 
 #### Integration Points
 

@@ -1,14 +1,14 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/cipher_suites.dart';
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/key_manager.dart';
-import 'package:dart_quic/src/crypto/tls/crypto_message_parser.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_key_exchange.dart';
-import 'package:dart_quic/src/crypto/tls/tls_handshake_types.dart';
-import 'package:dart_quic/src/crypto/tls/transcript_hash.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/crypto/cipher_suites.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/key_manager.dart';
+import 'package:quic_lib/src/crypto/tls/crypto_message_parser.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_key_exchange.dart';
+import 'package:quic_lib/src/crypto/tls/tls_handshake_types.dart';
+import 'package:quic_lib/src/crypto/tls/transcript_hash.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 
 class _SimplePublicKey implements PublicKey {
   @override
@@ -159,7 +159,8 @@ class HandshakeCoordinator {
     List<int> finishedData,
     List<int> transcriptHash,
   ) async {
-    final expected = await computeFinishedVerifyData(peerSecret, transcriptHash);
+    final expected =
+        await computeFinishedVerifyData(peerSecret, transcriptHash);
     if (expected.length != finishedData.length) return false;
     // SECURITY: Constant-time comparison to prevent timing side-channels.
     var diff = 0;
@@ -174,7 +175,8 @@ class HandshakeCoordinator {
   /// Per RFC 8446 Section 4.6.3, updates the current application traffic
   /// secret and derives new packet protection keys from it.
   Future<void> performKeyUpdate(SecretKey currentAppSecret) async {
-    final nextSecret = await _keyExchange.deriveNextGenerationSecret(currentAppSecret);
+    final nextSecret =
+        await _keyExchange.deriveNextGenerationSecret(currentAppSecret);
     // Derive new client/server app secrets from the next-gen secret.
     final hash = Sha256();
     const secretLength = 32;
@@ -224,29 +226,37 @@ class HandshakeCoordinator {
       offset += 34;
 
       // legacy_session_id
-      if (offset >= payload.length) throw StateError('Failed to parse ClientHello');
+      if (offset >= payload.length)
+        throw StateError('Failed to parse ClientHello');
       final sessionIdLen = payload[offset++];
-      if (offset + sessionIdLen > payload.length) throw StateError('Failed to parse ClientHello');
+      if (offset + sessionIdLen > payload.length)
+        throw StateError('Failed to parse ClientHello');
       offset += sessionIdLen;
 
       // cipher_suites
-      if (offset + 2 > payload.length) throw StateError('Failed to parse ClientHello');
+      if (offset + 2 > payload.length)
+        throw StateError('Failed to parse ClientHello');
       final csLen = (payload[offset] << 8) | payload[offset + 1];
       offset += 2;
-      if (offset + csLen > payload.length) throw StateError('Failed to parse ClientHello');
+      if (offset + csLen > payload.length)
+        throw StateError('Failed to parse ClientHello');
       offset += csLen;
 
       // legacy_compression_methods
-      if (offset >= payload.length) throw StateError('Failed to parse ClientHello');
+      if (offset >= payload.length)
+        throw StateError('Failed to parse ClientHello');
       final cmLen = payload[offset++];
-      if (offset + cmLen > payload.length) throw StateError('Failed to parse ClientHello');
+      if (offset + cmLen > payload.length)
+        throw StateError('Failed to parse ClientHello');
       offset += cmLen;
 
       // extensions
-      if (offset + 2 > payload.length) throw StateError('Failed to parse ClientHello');
+      if (offset + 2 > payload.length)
+        throw StateError('Failed to parse ClientHello');
       final extLen = (payload[offset] << 8) | payload[offset + 1];
       offset += 2;
-      if (offset + extLen > payload.length) throw StateError('Failed to parse ClientHello');
+      if (offset + extLen > payload.length)
+        throw StateError('Failed to parse ClientHello');
       final extEnd = offset + extLen;
 
       while (offset + 4 <= extEnd) {
@@ -256,7 +266,8 @@ class HandshakeCoordinator {
 
         if (extType == 0x0033) {
           // key_share
-          if (offset + 2 > extEnd) throw StateError('Failed to parse ClientHello');
+          if (offset + 2 > extEnd)
+            throw StateError('Failed to parse ClientHello');
           final ksListLen = (payload[offset] << 8) | payload[offset + 1];
           var ksOffset = offset + 2;
           final ksEnd = ksOffset + ksListLen;
@@ -264,10 +275,10 @@ class HandshakeCoordinator {
 
           while (ksOffset + 4 <= ksEnd) {
             final group = (payload[ksOffset] << 8) | payload[ksOffset + 1];
-            final keyLen =
-                (payload[ksOffset + 2] << 8) | payload[ksOffset + 3];
+            final keyLen = (payload[ksOffset + 2] << 8) | payload[ksOffset + 3];
             ksOffset += 4;
-            if (ksOffset + keyLen > ksEnd) throw StateError('Failed to parse ClientHello');
+            if (ksOffset + keyLen > ksEnd)
+              throw StateError('Failed to parse ClientHello');
 
             if (group == 0x001d) {
               // x25519

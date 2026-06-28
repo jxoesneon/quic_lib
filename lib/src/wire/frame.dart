@@ -14,8 +14,10 @@ abstract class Frame {
 class PaddingFrame implements Frame {
   final int length;
   PaddingFrame({this.length = 1});
-  @override int get frameType => 0x00;
-  @override Uint8List serialize() => Uint8List(length);
+  @override
+  int get frameType => 0x00;
+  @override
+  Uint8List serialize() => Uint8List(length);
 }
 
 // ---------------------------------------------------------------------------
@@ -24,8 +26,10 @@ class PaddingFrame implements Frame {
 /// A PING frame (RFC 9000 Section 19.2).
 class PingFrame implements Frame {
   PingFrame();
-  @override int get frameType => 0x01;
-  @override Uint8List serialize() => Uint8List(1)..[0] = 0x01;
+  @override
+  int get frameType => 0x01;
+  @override
+  Uint8List serialize() => Uint8List(1)..[0] = 0x01;
 }
 
 // ---------------------------------------------------------------------------
@@ -43,7 +47,8 @@ class AckFrame implements Frame {
     this.ackRanges = const [],
   });
 
-  @override int get frameType => 0x02;
+  @override
+  int get frameType => 0x02;
 
   @override
   Uint8List serialize() {
@@ -88,7 +93,8 @@ class AckEcnFrame extends AckFrame {
     this.ceCount = 0,
   });
 
-  @override int get frameType => 0x03;
+  @override
+  int get frameType => 0x03;
 
   @override
   Uint8List serialize() {
@@ -113,9 +119,13 @@ class ResetStreamFrame implements Frame {
   final int errorCode;
   final int finalSize;
 
-  ResetStreamFrame({required this.streamId, required this.errorCode, required this.finalSize});
+  ResetStreamFrame(
+      {required this.streamId,
+      required this.errorCode,
+      required this.finalSize});
 
-  @override int get frameType => 0x04;
+  @override
+  int get frameType => 0x04;
 
   @override
   Uint8List serialize() {
@@ -138,7 +148,8 @@ class StopSendingFrame implements Frame {
 
   StopSendingFrame({required this.streamId, required this.errorCode});
 
-  @override int get frameType => 0x05;
+  @override
+  int get frameType => 0x05;
 
   @override
   Uint8List serialize() {
@@ -160,7 +171,8 @@ class CryptoFrame implements Frame {
 
   CryptoFrame({required this.offset, required this.data});
 
-  @override int get frameType => 0x06;
+  @override
+  int get frameType => 0x06;
 
   @override
   Uint8List serialize() {
@@ -182,7 +194,8 @@ class NewTokenFrame implements Frame {
 
   NewTokenFrame({required this.token});
 
-  @override int get frameType => 0x07;
+  @override
+  int get frameType => 0x07;
 
   @override
   Uint8List serialize() {
@@ -245,8 +258,11 @@ class StreamFrame implements Frame {
 class MaxDataFrame implements Frame {
   final int maxData;
   MaxDataFrame({required this.maxData});
-  @override int get frameType => 0x10;
-  @override Uint8List serialize() => Uint8List.fromList([0x10, ...VarInt.encode(maxData)]);
+  @override
+  int get frameType => 0x10;
+  @override
+  Uint8List serialize() =>
+      Uint8List.fromList([0x10, ...VarInt.encode(maxData)]);
 }
 
 // ---------------------------------------------------------------------------
@@ -259,7 +275,8 @@ class MaxStreamDataFrame implements Frame {
 
   MaxStreamDataFrame({required this.streamId, required this.maxStreamData});
 
-  @override int get frameType => 0x11;
+  @override
+  int get frameType => 0x11;
 
   @override
   Uint8List serialize() {
@@ -281,7 +298,8 @@ class MaxStreamsFrame implements Frame {
 
   MaxStreamsFrame({required this.maxStreams, required this.isUnidirectional});
 
-  @override int get frameType => isUnidirectional ? 0x13 : 0x12;
+  @override
+  int get frameType => isUnidirectional ? 0x13 : 0x12;
 
   @override
   Uint8List serialize() {
@@ -299,8 +317,11 @@ class MaxStreamsFrame implements Frame {
 class DataBlockedFrame implements Frame {
   final int maxData;
   DataBlockedFrame({required this.maxData});
-  @override int get frameType => 0x14;
-  @override Uint8List serialize() => Uint8List.fromList([0x14, ...VarInt.encode(maxData)]);
+  @override
+  int get frameType => 0x14;
+  @override
+  Uint8List serialize() =>
+      Uint8List.fromList([0x14, ...VarInt.encode(maxData)]);
 }
 
 // ---------------------------------------------------------------------------
@@ -313,7 +334,8 @@ class StreamDataBlockedFrame implements Frame {
 
   StreamDataBlockedFrame({required this.streamId, required this.maxStreamData});
 
-  @override int get frameType => 0x15;
+  @override
+  int get frameType => 0x15;
 
   @override
   Uint8List serialize() {
@@ -333,9 +355,11 @@ class StreamsBlockedFrame implements Frame {
   final int maxStreams;
   final bool isUnidirectional;
 
-  StreamsBlockedFrame({required this.maxStreams, required this.isUnidirectional});
+  StreamsBlockedFrame(
+      {required this.maxStreams, required this.isUnidirectional});
 
-  @override int get frameType => isUnidirectional ? 0x17 : 0x16;
+  @override
+  int get frameType => isUnidirectional ? 0x17 : 0x16;
 
   @override
   Uint8List serialize() {
@@ -367,7 +391,8 @@ class NewConnectionIdFrame implements Frame {
     }
   }
 
-  @override int get frameType => 0x18;
+  @override
+  int get frameType => 0x18;
 
   @override
   Uint8List serialize() {
@@ -389,8 +414,11 @@ class NewConnectionIdFrame implements Frame {
 class RetireConnectionIdFrame implements Frame {
   final int sequenceNumber;
   RetireConnectionIdFrame({required this.sequenceNumber});
-  @override int get frameType => 0x19;
-  @override Uint8List serialize() => Uint8List.fromList([0x19, ...VarInt.encode(sequenceNumber)]);
+  @override
+  int get frameType => 0x19;
+  @override
+  Uint8List serialize() =>
+      Uint8List.fromList([0x19, ...VarInt.encode(sequenceNumber)]);
 }
 
 // ---------------------------------------------------------------------------
@@ -401,11 +429,14 @@ class PathChallengeFrame implements Frame {
   final List<int> data; // 8 bytes
 
   PathChallengeFrame({required this.data}) {
-    if (data.length != 8) throw ArgumentError('PATH_CHALLENGE data must be 8 bytes');
+    if (data.length != 8)
+      throw ArgumentError('PATH_CHALLENGE data must be 8 bytes');
   }
 
-  @override int get frameType => 0x1a;
-  @override Uint8List serialize() => Uint8List.fromList([0x1a, ...data]);
+  @override
+  int get frameType => 0x1a;
+  @override
+  Uint8List serialize() => Uint8List.fromList([0x1a, ...data]);
 }
 
 // ---------------------------------------------------------------------------
@@ -416,11 +447,14 @@ class PathResponseFrame implements Frame {
   final List<int> data; // 8 bytes
 
   PathResponseFrame({required this.data}) {
-    if (data.length != 8) throw ArgumentError('PATH_RESPONSE data must be 8 bytes');
+    if (data.length != 8)
+      throw ArgumentError('PATH_RESPONSE data must be 8 bytes');
   }
 
-  @override int get frameType => 0x1b;
-  @override Uint8List serialize() => Uint8List.fromList([0x1b, ...data]);
+  @override
+  int get frameType => 0x1b;
+  @override
+  Uint8List serialize() => Uint8List.fromList([0x1b, ...data]);
 }
 
 // ---------------------------------------------------------------------------
@@ -438,7 +472,8 @@ class ConnectionCloseFrame implements Frame {
     this.reasonPhrase = '',
   });
 
-  @override int get frameType => 0x1c;
+  @override
+  int get frameType => 0x1c;
 
   @override
   Uint8List serialize() {
@@ -463,7 +498,8 @@ class ApplicationCloseFrame implements Frame {
 
   ApplicationCloseFrame({required this.errorCode, this.reasonPhrase = ''});
 
-  @override int get frameType => 0x1d;
+  @override
+  int get frameType => 0x1d;
 
   @override
   Uint8List serialize() {
@@ -483,8 +519,10 @@ class ApplicationCloseFrame implements Frame {
 /// A HANDSHAKE_DONE frame (RFC 9000 Section 19.20).
 class HandshakeDoneFrame implements Frame {
   HandshakeDoneFrame();
-  @override int get frameType => 0x1e;
-  @override Uint8List serialize() => Uint8List(1)..[0] = 0x1e;
+  @override
+  int get frameType => 0x1e;
+  @override
+  Uint8List serialize() => Uint8List(1)..[0] = 0x1e;
 }
 
 // ---------------------------------------------------------------------------
@@ -510,7 +548,8 @@ class FrameCodec {
   }
 
   // SECURITY: Helper for safe buffer access during frame parsing.
-  static Uint8List _safeSublist(Uint8List bytes, int start, int length, {int? maxLength}) {
+  static Uint8List _safeSublist(Uint8List bytes, int start, int length,
+      {int? maxLength}) {
     if (start < 0 || start > bytes.length) {
       throw ArgumentError('Invalid start offset');
     }
@@ -612,7 +651,8 @@ class FrameCodec {
         pos += varIntLength(pos);
         final lengthValue = readVarInt(pos);
         pos += varIntLength(pos);
-        final data = _safeSublist(bytes, pos, lengthValue, maxLength: 16 * 1024 * 1024);
+        final data =
+            _safeSublist(bytes, pos, lengthValue, maxLength: 16 * 1024 * 1024);
         return CryptoFrame(offset: offsetValue, data: data);
       case 0x07: // NEW_TOKEN
         final lengthValue = readVarInt(pos);
@@ -668,22 +708,28 @@ class FrameCodec {
         final streamId = readVarInt(pos);
         pos += varIntLength(pos);
         final maxStreamData = readVarInt(pos);
-        return MaxStreamDataFrame(streamId: streamId, maxStreamData: maxStreamData);
+        return MaxStreamDataFrame(
+            streamId: streamId, maxStreamData: maxStreamData);
       case 0x12: // MAX_STREAMS (bidi)
-        return MaxStreamsFrame(maxStreams: readVarInt(pos), isUnidirectional: false);
+        return MaxStreamsFrame(
+            maxStreams: readVarInt(pos), isUnidirectional: false);
       case 0x13: // MAX_STREAMS (uni)
-        return MaxStreamsFrame(maxStreams: readVarInt(pos), isUnidirectional: true);
+        return MaxStreamsFrame(
+            maxStreams: readVarInt(pos), isUnidirectional: true);
       case 0x14: // DATA_BLOCKED
         return DataBlockedFrame(maxData: readVarInt(pos));
       case 0x15: // STREAM_DATA_BLOCKED
         final streamId = readVarInt(pos);
         pos += varIntLength(pos);
         final maxStreamData = readVarInt(pos);
-        return StreamDataBlockedFrame(streamId: streamId, maxStreamData: maxStreamData);
+        return StreamDataBlockedFrame(
+            streamId: streamId, maxStreamData: maxStreamData);
       case 0x16: // STREAMS_BLOCKED (bidi)
-        return StreamsBlockedFrame(maxStreams: readVarInt(pos), isUnidirectional: false);
+        return StreamsBlockedFrame(
+            maxStreams: readVarInt(pos), isUnidirectional: false);
       case 0x17: // STREAMS_BLOCKED (uni)
-        return StreamsBlockedFrame(maxStreams: readVarInt(pos), isUnidirectional: true);
+        return StreamsBlockedFrame(
+            maxStreams: readVarInt(pos), isUnidirectional: true);
       case 0x18: // NEW_CONNECTION_ID
         final sequenceNumber = readVarInt(pos);
         pos += varIntLength(pos);
@@ -720,7 +766,8 @@ class FrameCodec {
         pos += varIntLength(pos);
         final reasonPhraseLength = readVarInt(pos);
         pos += varIntLength(pos);
-        final reasonPhraseBytes = _safeSublist(bytes, pos, reasonPhraseLength, maxLength: 1024);
+        final reasonPhraseBytes =
+            _safeSublist(bytes, pos, reasonPhraseLength, maxLength: 1024);
         final reasonPhrase = String.fromCharCodes(reasonPhraseBytes);
         return ConnectionCloseFrame(
           errorCode: errorCode,
@@ -732,7 +779,8 @@ class FrameCodec {
         pos += varIntLength(pos);
         final reasonPhraseLength = readVarInt(pos);
         pos += varIntLength(pos);
-        final reasonPhraseBytes = _safeSublist(bytes, pos, reasonPhraseLength, maxLength: 1024);
+        final reasonPhraseBytes =
+            _safeSublist(bytes, pos, reasonPhraseLength, maxLength: 1024);
         final reasonPhrase = String.fromCharCodes(reasonPhraseBytes);
         return ApplicationCloseFrame(
           errorCode: errorCode,
@@ -741,7 +789,8 @@ class FrameCodec {
       case 0x1e: // HANDSHAKE_DONE
         return HandshakeDoneFrame();
       default:
-        throw UnsupportedError('Frame parsing not yet implemented for type 0x${type.toRadixString(16)}');
+        throw UnsupportedError(
+            'Frame parsing not yet implemented for type 0x${type.toRadixString(16)}');
     }
   }
 

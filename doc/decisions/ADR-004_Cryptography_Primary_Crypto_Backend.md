@@ -8,7 +8,7 @@ status: "Accepted"
 
 ## 1. Purpose
 
-Crypto is the performance bottleneck of any QUIC implementation, yet Dart ecosystem lacks a single package that is both fast everywhere and pure-Dart everywhere. Selecting package:cryptography as the default-with package:pointycastle as a fallback-gives dart_quic hardware acceleration on native platforms and web crypto on browsers, while preserving a zero-FFI core.
+Crypto is the performance bottleneck of any QUIC implementation, yet Dart ecosystem lacks a single package that is both fast everywhere and pure-Dart everywhere. Selecting package:cryptography as the default-with package:pointycastle as a fallback-gives quic_lib hardware acceleration on native platforms and web crypto on browsers, while preserving a zero-FFI core.
 
 ## 2. Detailed Specification
 ### 2.1 Context

@@ -51,7 +51,8 @@ class ReceiveStateMachine {
   ///
   /// Throws [StateError] if the declared [finalSize] is inconsistent with
   /// data already received, or if [bytesReceived] exceeds [finalSize].
-  void onDataReceived({bool fin = false, int? finalSize, int bytesReceived = 0}) {
+  void onDataReceived(
+      {bool fin = false, int? finalSize, int bytesReceived = 0}) {
     if (bytesReceived < 0) bytesReceived = 0;
     _bytesReceived = bytesReceived;
 
@@ -67,7 +68,8 @@ class ReceiveStateMachine {
 
     // SECURITY: reject data that exceeds the known final size.
     if (_finalSize != null && _bytesReceived > _finalSize!) {
-      throw StateError('Received $_bytesReceived bytes exceeds final size $_finalSize');
+      throw StateError(
+          'Received $_bytesReceived bytes exceeds final size $_finalSize');
     }
 
     if (_state == ReceiveStreamState.recv) {
@@ -79,7 +81,8 @@ class ReceiveStateMachine {
   }
 
   void onAllDataReceived() {
-    if (_state == ReceiveStreamState.recv || _state == ReceiveStreamState.sizeKnown) {
+    if (_state == ReceiveStreamState.recv ||
+        _state == ReceiveStreamState.sizeKnown) {
       _state = ReceiveStreamState.dataReceived;
     }
   }
@@ -110,7 +113,8 @@ class ReceiveStateMachine {
 
   void _setFinalSize(int size) {
     if (_finalSize != null && _finalSize != size) {
-      throw StateError('Final size already set to $_finalSize, cannot change to $size');
+      throw StateError(
+          'Final size already set to $_finalSize, cannot change to $size');
     }
     _finalSize = size;
   }

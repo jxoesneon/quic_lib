@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/tls/x509_parser.dart';
+import 'package:quic_lib/src/crypto/tls/x509_parser.dart';
 
 /// Parsed certificate metadata used for chain validation.
 class CertificateInfo {
@@ -47,8 +47,7 @@ bool isExpired(CertificateInfo cert, DateTime now) {
 
 /// Returns `true` if [cert] is self-signed (subject == issuer and both are non-empty).
 bool isSelfSigned(CertificateInfo cert) {
-  return cert.subjectName.isNotEmpty &&
-      cert.subjectName == cert.issuerName;
+  return cert.subjectName.isNotEmpty && cert.subjectName == cert.issuerName;
 }
 
 /// A chain of certificates ordered from end-entity to root-adjacent.

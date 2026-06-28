@@ -17,8 +17,7 @@ class DCUtRUdpCoordinator {
 
   final UdpSocket _socket;
   final DCUtRStateMachine _stateMachine;
-  StreamSubscription<
-          ({Uint8List data, InternetAddress address, int port})>?
+  StreamSubscription<({Uint8List data, InternetAddress address, int port})>?
       _subscription;
 
   DCUtRUdpCoordinator(this._socket, this._stateMachine);

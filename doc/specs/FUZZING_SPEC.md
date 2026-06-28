@@ -14,7 +14,7 @@ dependencies:
 
 ## 1. Purpose
 
-Network parsers that consume untrusted input are the most common source of security vulnerabilities in transport stacks. Structured fuzzing gives dart_quic a systematic way to discover crashes, hangs, and correctness violations before they reach production, reducing the risk of zero-days in downstream applications like dart_ipfs.
+Network parsers that consume untrusted input are the most common source of security vulnerabilities in transport stacks. Structured fuzzing gives quic_lib a systematic way to discover crashes, hangs, and correctness violations before they reach production, reducing the risk of zero-days in downstream applications like dart_ipfs.
 
 ## 2. Detailed Specification
 ### 2.1 Fuzzing Targets
@@ -89,7 +89,7 @@ The following components MUST be fuzzed because they process untrusted network i
 
 #### 2.2.1 Dart-Specific Approach
 
-Dart does not have a mature, general-purpose integration with AFL or libFuzzer for pure Dart code. Therefore, the primary fuzzing approach for `dart_quic` is **structured fuzzing implemented in Dart** using the existing test framework.
+Dart does not have a mature, general-purpose integration with AFL or libFuzzer for pure Dart code. Therefore, the primary fuzzing approach for `quic_lib` is **structured fuzzing implemented in Dart** using the existing test framework.
 
 Each fuzz target is a Dart program or test that:
 1. Accepts a random seed (or reads from a corpus file).
@@ -126,7 +126,7 @@ Because pure Dart fuzzing lacks native coverage feedback, supplement with:
 
 #### 2.2.4 Native Library Integration
 
-If `dart_quic` binds to a native cryptographic or transport library (e.g., via `dart:ffi`):
+If `quic_lib` binds to a native cryptographic or transport library (e.g., via `dart:ffi`):
 
 - Provide a thin C/C++ shim that exposes the same entry points to AFL++ or libFuzzer.
 - Run the native fuzzer on the shim independently from the Dart fuzzer.

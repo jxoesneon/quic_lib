@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/http3/frame_types.dart';
-import 'package:dart_quic/src/utils/collections.dart';
-import 'package:dart_quic/src/wire/varint.dart';
+import 'package:quic_lib/src/http3/frame_types.dart';
+import 'package:quic_lib/src/utils/collections.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 
 /// HTTP/3 PUSH_PROMISE frame payload.
 ///
@@ -69,5 +69,4 @@ class Http3PushPromiseFrame {
 
   @override
   int get hashCode => Object.hash(pushId, Object.hashAll(encodedFieldSection));
-
 }

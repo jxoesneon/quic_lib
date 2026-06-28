@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/http3/data_frame.dart';
-import 'package:dart_quic/src/http3/goaway_frame.dart';
-import 'package:dart_quic/src/http3/headers_frame.dart';
-import 'package:dart_quic/src/http3/max_push_id_frame.dart';
-import 'package:dart_quic/src/http3/push_promise_frame.dart';
+import 'package:quic_lib/src/http3/data_frame.dart';
+import 'package:quic_lib/src/http3/goaway_frame.dart';
+import 'package:quic_lib/src/http3/headers_frame.dart';
+import 'package:quic_lib/src/http3/max_push_id_frame.dart';
+import 'package:quic_lib/src/http3/push_promise_frame.dart';
 import 'package:test/test.dart';
 
 void main() {

@@ -1,32 +1,32 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/connection/connection_state_machine.dart';
-import 'package:dart_quic/src/connection/connection_id_manager.dart';
-import 'package:dart_quic/src/connection/packet_receiver.dart';
-import 'package:dart_quic/src/connection/packet_sender.dart';
-import 'package:dart_quic/src/crypto/key_manager.dart';
-import 'package:dart_quic/src/crypto/tls/crypto_frame_assembler.dart';
-import 'package:dart_quic/src/crypto/tls/crypto_frame_handler.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_state_machine.dart';
-import 'package:dart_quic/src/streams/stream_id.dart';
-import 'package:dart_quic/src/streams/stream_manager.dart';
-import 'package:dart_quic/src/streams/stream_scheduler.dart';
-import 'package:dart_quic/src/streams/flow_controller.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/recovery/rtt_estimator.dart';
-import 'package:dart_quic/src/recovery/loss_detector.dart';
-import 'package:dart_quic/src/recovery/pto_scheduler.dart';
-import 'package:dart_quic/src/recovery/congestion_controller.dart';
-import 'package:dart_quic/src/recovery/recovery_manager.dart';
-import 'package:dart_quic/src/recovery/pacing_calculator.dart';
-import 'package:dart_quic/src/recovery/sent_packet_tracker.dart';
-import 'package:dart_quic/src/security/anti_amplification_limit.dart';
-import 'package:dart_quic/src/utils/hex.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/connection/connection_state_machine.dart';
+import 'package:quic_lib/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/connection/packet_receiver.dart';
+import 'package:quic_lib/src/connection/packet_sender.dart';
+import 'package:quic_lib/src/crypto/key_manager.dart';
+import 'package:quic_lib/src/crypto/tls/crypto_frame_assembler.dart';
+import 'package:quic_lib/src/crypto/tls/crypto_frame_handler.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_state_machine.dart';
+import 'package:quic_lib/src/streams/stream_id.dart';
+import 'package:quic_lib/src/streams/stream_manager.dart';
+import 'package:quic_lib/src/streams/stream_scheduler.dart';
+import 'package:quic_lib/src/streams/flow_controller.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/recovery/rtt_estimator.dart';
+import 'package:quic_lib/src/recovery/loss_detector.dart';
+import 'package:quic_lib/src/recovery/pto_scheduler.dart';
+import 'package:quic_lib/src/recovery/congestion_controller.dart';
+import 'package:quic_lib/src/recovery/recovery_manager.dart';
+import 'package:quic_lib/src/recovery/pacing_calculator.dart';
+import 'package:quic_lib/src/recovery/sent_packet_tracker.dart';
+import 'package:quic_lib/src/security/anti_amplification_limit.dart';
+import 'package:quic_lib/src/utils/hex.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 import 'migration_helper.dart';
-import 'package:dart_quic/src/wire/coalesced_packet.dart';
-import 'package:dart_quic/src/crypto/packet/protected_packet_codec.dart';
+import 'package:quic_lib/src/wire/coalesced_packet.dart';
+import 'package:quic_lib/src/crypto/packet/protected_packet_codec.dart';
 
 /// Internal subclass that tracks challenge data by content hash so parsed
 /// frames (which carry [Uint8List]) can be matched against generated
@@ -75,7 +75,8 @@ class QuicConnection {
   final StreamManager _streamManager = StreamManager();
   final KeyManager? _keyManager;
   CryptoFrameHandler? _cryptoFrameHandler;
-  final FlowController _connectionFlowController = FlowController(initialLimit: 65536);
+  final FlowController _connectionFlowController =
+      FlowController(initialLimit: 65536);
 
   QuicConnection({
     required ConnectionStateMachine stateMachine,
@@ -176,10 +177,12 @@ class QuicConnection {
   }
 
   /// Allocate a packet number for the given space.
-  int allocatePacketNumber(PacketNumberSpace space) => _pnSpaceManager.allocate(space);
+  int allocatePacketNumber(PacketNumberSpace space) =>
+      _pnSpaceManager.allocate(space);
 
   /// Record an ACK for packet tracking and update recovery subsystems.
-  void onAckReceived(int spaceIndex, int largestAcked, List<({int gap, int length})> ranges) {
+  void onAckReceived(
+      int spaceIndex, int largestAcked, List<({int gap, int length})> ranges) {
     _recoveryManager.onAckReceived(
       spaceIndex,
       largestAcked,
@@ -188,7 +191,8 @@ class QuicConnection {
       ranges: ranges,
     );
     _pacingCalculator.updateRtt(_rttEstimator.smoothedRtt);
-    _pacingCalculator.updateCongestionWindow(_congestionController.congestionWindow);
+    _pacingCalculator
+        .updateCongestionWindow(_congestionController.congestionWindow);
   }
 
   /// Register a sent packet with the recovery manager.
@@ -209,10 +213,12 @@ class QuicConnection {
   }
 
   /// Check if a PTO timer has expired.
-  bool isPtoExpired(int currentTimeUs) => _recoveryManager.isPtoExpired(currentTimeUs);
+  bool isPtoExpired(int currentTimeUs) =>
+      _recoveryManager.isPtoExpired(currentTimeUs);
 
   /// Handle a PTO firing: update scheduler and return current PTO duration.
-  void onPtoFired(int currentTimeUs) => _recoveryManager.onPtoFired(currentTimeUs);
+  void onPtoFired(int currentTimeUs) =>
+      _recoveryManager.onPtoFired(currentTimeUs);
 
   /// The recovery manager coordinating loss detection, congestion control,
   /// PTO scheduling, and RTT estimation.
@@ -243,7 +249,8 @@ class QuicConnection {
   PathChallengeFrame? getPendingChallenge() => _lastPendingChallenge;
 
   /// Check if a path is validated.
-  bool isPathValidated(List<int> pathId) => _migrationHelper.isPathValidated(pathId);
+  bool isPathValidated(List<int> pathId) =>
+      _migrationHelper.isPathValidated(pathId);
 
   /// Called when a path is validated; increments a counter for stats.
   void onPathValidated() {
@@ -259,7 +266,8 @@ class QuicConnection {
   /// [PathChallengeFrame], and returns a [Future] that completes when the
   /// corresponding PATH_RESPONSE is received and the path is validated.
   Future<void> probeNewPath(List<int> dcid) async {
-    final challenge = (_migrationHelper as _QuicMigrationHelper).generateChallenge();
+    final challenge =
+        (_migrationHelper as _QuicMigrationHelper).generateChallenge();
     _lastProbePacket = await buildPacket(
       space: PacketNumberSpace.application,
       frames: [challenge],
@@ -274,7 +282,8 @@ class QuicConnection {
   Uint8List? get lastProbePacket => _lastProbePacket;
 
   /// True while a path probe initiated by [probeNewPath] is pending.
-  bool get isProbingPath => _probeCompleter != null && !_probeCompleter!.isCompleted;
+  bool get isProbingPath =>
+      _probeCompleter != null && !_probeCompleter!.isCompleted;
 
   // -----------------------------------------------------------------------
   // Incoming packet pipeline
@@ -324,12 +333,13 @@ class QuicConnection {
           _lastPendingChallenge = challenge;
           break;
         case PathResponseFrame f:
-          final originalData =
-              (_migrationHelper as _QuicMigrationHelper).lookupChallenge(f.data);
+          final originalData = (_migrationHelper as _QuicMigrationHelper)
+              .lookupChallenge(f.data);
           if (originalData != null) {
             final response = PathResponseFrame(data: originalData);
             if (_migrationHelper.onResponseReceived(response)) {
-              (_migrationHelper as _QuicMigrationHelper).removeChallenge(f.data);
+              (_migrationHelper as _QuicMigrationHelper)
+                  .removeChallenge(f.data);
               onAddressValidated();
               onPathValidated();
               if (_probeCompleter != null && !_probeCompleter!.isCompleted) {
@@ -513,7 +523,8 @@ class QuicConnection {
   /// returns the space and parsed frames. Otherwise falls back to plaintext
   /// parsing via [PacketReceiver]. Returns null if the packet cannot be
   /// processed.
-  Future<({PacketNumberSpace space, List<Frame> frames})?> _processEncryptedPacket(Uint8List rawPacket) async {
+  Future<({PacketNumberSpace space, List<Frame> frames})?>
+      _processEncryptedPacket(Uint8List rawPacket) async {
     if (rawPacket.isEmpty) return null;
     final isLong = (rawPacket[0] & 0x80) != 0;
 
@@ -572,7 +583,8 @@ class QuicConnection {
   void onAddressValidated() {
     validateAddress();
     if (_stateMachine.isHandshaking) {
-      _stateMachine.transitionTo(ConnectionState.established, reason: 'Address validated');
+      _stateMachine.transitionTo(ConnectionState.established,
+          reason: 'Address validated');
     }
   }
 
@@ -583,8 +595,7 @@ class QuicConnection {
   /// True if [bytes] can be sent without violating the anti-amplification
   /// limit or congestion window.
   bool canSend(int bytes) {
-    return _congestionController.canSend(bytes) &&
-        _antiAmpLimit.canSend(bytes);
+    return _congestionController.canSend(bytes) && _antiAmpLimit.canSend(bytes);
   }
 
   /// Record bytes received from the peer (for anti-amplification accounting).
@@ -649,5 +660,6 @@ class QuicConnection {
   int get activeConnectionIdCount => _cidManager.activeIds.length;
 
   /// Update the connection-level flow control limit.
-  void updateConnectionFlowControl(int newLimit) => _connectionFlowController.updateLimit(newLimit);
+  void updateConnectionFlowControl(int newLimit) =>
+      _connectionFlowController.updateLimit(newLimit);
 }

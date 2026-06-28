@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/cipher_suites.dart';
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/tls/x509_parser.dart';
+import 'package:quic_lib/src/crypto/cipher_suites.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/tls/x509_parser.dart';
 import 'package:test/test.dart';
 
 /// Helpers to build DER-encoded ASN.1 structures for testing.
@@ -75,17 +75,23 @@ Uint8List _buildMinimalCert({
   final serial = _int(1);
   final sigAlg = _seq([oidSig]);
   final name = _seq([
-    _set([_seq([oidCommonName, _utf8('test-issuer')])])
+    _set([
+      _seq([oidCommonName, _utf8('test-issuer')])
+    ])
   ]);
   final validity = _seq([
     _utc('250101000000Z'),
     if (useGenTime) _genTime('20260101000000Z') else _utc('260101000000Z'),
   ]);
   final subject = _seq([
-    _set([_seq([oidCommonName, _utf8('test-subject')])])
+    _set([
+      _seq([oidCommonName, _utf8('test-subject')])
+    ])
   ]);
   final spki = _seq([
-    _seq([_oid([0x2b, 0x65, 0x70])]),
+    _seq([
+      _oid([0x2b, 0x65, 0x70])
+    ]),
     _bitString([0xAA, 0xBB]),
   ]);
 
@@ -135,7 +141,8 @@ void main() {
     });
 
     test('handles unknown OID as unknown algorithm', () {
-      final cert = parseX509(_buildMinimalCert(sigAlgOid: [0x2a, 0x86, 0x48, 0xce, 0x3d, 0x04, 0x03, 0x99]));
+      final cert = parseX509(_buildMinimalCert(
+          sigAlgOid: [0x2a, 0x86, 0x48, 0xce, 0x3d, 0x04, 0x03, 0x99]));
       expect(cert.signatureAlgorithm, equals('unknown'));
     });
   });
@@ -229,56 +236,79 @@ class _RecordingBackend implements CryptoBackend {
   Future<List<int>> sha384(List<int> data) async => [];
 
   @override
-  Future<List<int>> hmac(HashAlgorithm hash, SecretKey key, List<int> data) async => [];
+  Future<List<int>> hmac(
+          HashAlgorithm hash, SecretKey key, List<int> data) async =>
+      [];
 
   @override
-  Future<SecretKey> hkdfExtract(HashAlgorithm hash, SecretKey salt, SecretKey ikm) async => _SimpleSecretKey([]);
+  Future<SecretKey> hkdfExtract(
+          HashAlgorithm hash, SecretKey salt, SecretKey ikm) async =>
+      _SimpleSecretKey([]);
 
   @override
-  Future<List<int>> hkdfExpand(HashAlgorithm hash, SecretKey prk, List<int> info, int length) async => [];
+  Future<List<int>> hkdfExpand(HashAlgorithm hash, SecretKey prk,
+          List<int> info, int length) async =>
+      [];
 
   @override
-  Future<List<int>> hkdfExpandLabel(HashAlgorithm hash, SecretKey secret, String label, List<int> context, int length) async => [];
+  Future<List<int>> hkdfExpandLabel(HashAlgorithm hash, SecretKey secret,
+          String label, List<int> context, int length) async =>
+      [];
 
   @override
-  Future<AeadResult> aeadEncrypt(AeadAlgorithm aead, SecretKey key, List<int> nonce, List<int> plaintext, {List<int>? associatedData}) async =>
+  Future<AeadResult> aeadEncrypt(AeadAlgorithm aead, SecretKey key,
+          List<int> nonce, List<int> plaintext,
+          {List<int>? associatedData}) async =>
       _SimpleAeadResult([], []);
 
   @override
-  Future<Uint8List> aeadDecrypt(AeadAlgorithm aead, SecretKey key, List<int> nonce, List<int> ciphertext, {List<int>? associatedData}) async => Uint8List(0);
+  Future<Uint8List> aeadDecrypt(AeadAlgorithm aead, SecretKey key,
+          List<int> nonce, List<int> ciphertext,
+          {List<int>? associatedData}) async =>
+      Uint8List(0);
 
   @override
-  Future<bool> ed25519Verify(PublicKey publicKey, List<int> message, List<int> signature) async {
+  Future<bool> ed25519Verify(
+      PublicKey publicKey, List<int> message, List<int> signature) async {
     lastAlgorithm = 'ed25519';
     return true;
   }
 
   @override
-  Future<bool> ecdsaP256Verify(PublicKey publicKey, List<int> message, List<int> signature) async {
+  Future<bool> ecdsaP256Verify(
+      PublicKey publicKey, List<int> message, List<int> signature) async {
     lastAlgorithm = 'ecdsaP256';
     return true;
   }
 
   @override
-  Future<bool> rsaPkcs1Verify(PublicKey publicKey, HashAlgorithm hash, List<int> message, List<int> signature) async {
+  Future<bool> rsaPkcs1Verify(PublicKey publicKey, HashAlgorithm hash,
+      List<int> message, List<int> signature) async {
     lastAlgorithm = hash is Sha256 ? 'rsaPkcs1Sha256' : 'rsaPkcs1Sha384';
     return true;
   }
 
   @override
-  Future<KeyPair> x25519GenerateKeyPair() async => _SimpleKeyPair(_SimpleSecretKey([]), _SimplePublicKey([]));
+  Future<KeyPair> x25519GenerateKeyPair() async =>
+      _SimpleKeyPair(_SimpleSecretKey([]), _SimplePublicKey([]));
 
   @override
-  Future<SecretKey> x25519SharedSecret(SecretKey privateKey, PublicKey publicKey) async => _SimpleSecretKey([]);
+  Future<SecretKey> x25519SharedSecret(
+          SecretKey privateKey, PublicKey publicKey) async =>
+      _SimpleSecretKey([]);
 
   @override
-  Future<KeyPair> ed25519GenerateKeyPair() async => _SimpleKeyPair(_SimpleSecretKey([]), _SimplePublicKey([]));
+  Future<KeyPair> ed25519GenerateKeyPair() async =>
+      _SimpleKeyPair(_SimpleSecretKey([]), _SimplePublicKey([]));
 
   @override
-  Future<List<int>> ed25519Sign(SecretKey privateKey, List<int> message) async => [];
+  Future<List<int>> ed25519Sign(
+          SecretKey privateKey, List<int> message) async =>
+      [];
 
   @override
-  Future<KeyPair> ecdsaP256GenerateKeyPair() async => _SimpleKeyPair(_SimpleSecretKey([]), _SimplePublicKey([]));
+  Future<KeyPair> ecdsaP256GenerateKeyPair() async =>
+      _SimpleKeyPair(_SimpleSecretKey([]), _SimplePublicKey([]));
 }
 
 class _SimpleSecretKey implements SecretKey {

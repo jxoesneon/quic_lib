@@ -15,7 +15,7 @@ dependencies:
 
 ## 1. Purpose
 
-Performance claims should be backed by reproducible measurements. Without a benchmarking specification, regressions may go unnoticed and users will lack a basis for comparing dart_quic against other stacks. This document defines the methodology, baselines, and CI integration needed to give the project reproducible data as it evolves.
+Performance claims should be backed by reproducible measurements. Without a benchmarking specification, regressions may go unnoticed and users will lack a basis for comparing quic_lib against other stacks. This document defines the methodology, baselines, and CI integration needed to give the project reproducible data as it evolves.
 
 ## 2. Detailed Specification
 ### 2.1 Benchmark Framework

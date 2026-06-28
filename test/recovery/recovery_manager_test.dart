@@ -1,9 +1,9 @@
-import 'package:dart_quic/src/recovery/congestion_controller.dart';
-import 'package:dart_quic/src/recovery/loss_detector.dart';
-import 'package:dart_quic/src/recovery/pto_scheduler.dart';
-import 'package:dart_quic/src/recovery/recovery_manager.dart';
-import 'package:dart_quic/src/recovery/rtt_estimator.dart';
-import 'package:dart_quic/src/recovery/sent_packet_tracker.dart';
+import 'package:quic_lib/src/recovery/congestion_controller.dart';
+import 'package:quic_lib/src/recovery/loss_detector.dart';
+import 'package:quic_lib/src/recovery/pto_scheduler.dart';
+import 'package:quic_lib/src/recovery/recovery_manager.dart';
+import 'package:quic_lib/src/recovery/rtt_estimator.dart';
+import 'package:quic_lib/src/recovery/sent_packet_tracker.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -38,7 +38,8 @@ void main() {
 
     test('onAckReceived with computed acked bytes', () {
       manager.onPacketSent(0, 1, 1000, 100, ackEliciting: true, inFlight: true);
-      manager.onAckReceived(0, 1, 2000, 0); // ackedBytes=0 triggers computed path
+      manager.onAckReceived(
+          0, 1, 2000, 0); // ackedBytes=0 triggers computed path
       expect(congestion.bytesInFlight, equals(0));
     });
 
@@ -57,7 +58,8 @@ void main() {
     });
 
     test('onPacketSent tracks non-ack-eliciting packet', () {
-      manager.onPacketSent(0, 1, 1000, 100, ackEliciting: false, inFlight: true);
+      manager.onPacketSent(0, 1, 1000, 100,
+          ackEliciting: false, inFlight: true);
       expect(tracker.getUnackedPackets(0).length, equals(1));
     });
 

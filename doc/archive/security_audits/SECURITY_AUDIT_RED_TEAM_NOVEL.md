@@ -1,6 +1,6 @@
 # RED TEAM Report — Novel Attack Vector Research
 
-**Project:** `dart_quic`  
+**Project:** `quic_lib`  
 **Date:** 2026-06-27  
 **Auditor:** Elite Offensive Security Researcher (Red Team)  
 **Scope:** Creative, non-obvious attack vectors beyond standard audit checklists
@@ -94,7 +94,7 @@
 **Severity:** LOW  
 **Files:** `lib/src/http3/data_frame.dart`, `lib/src/http3/headers_frame.dart`, `lib/src/http3/settings_frame.dart`  
 **Attack Scenario:**
-1. Application uses `dart_quic` and has centralized logging/error tracking (e.g., Sentry, Datadog)
+1. Application uses `quic_lib` and has centralized logging/error tracking (e.g., Sentry, Datadog)
 2. An exception occurs in HTTP/3 frame processing
 3. The logging framework calls `toString()` on the frame object
 4. Raw data/headers/settings are written to persistent logs
@@ -137,7 +137,7 @@
 
 ## Conclusion
 
-The 36-fix hardened `dart_quic` codebase is now resistant to both standard and novel attack vectors:
+The 36-fix hardened `quic_lib` codebase is now resistant to both standard and novel attack vectors:
 
 1. **Standard vectors** (memory exhaustion, integer overflow, replay, info disclosure) — fixed in loops 1-6
 2. **Novel vectors** (timing oracles, partial injection, logging disclosure) — fixed in meta-analysis loop 7

@@ -15,7 +15,7 @@ dependencies:
 
 ## 1. Purpose
 
-High-BDP networks demand congestion controllers that scale beyond TCP-Reno linear window growth. CUBIC provides a cubic-function window evolution that is TCP-friendly for small windows yet aggressive for large ones, enabling dart_quic to perform competitively on long-fat links. This spec defines the pluggable CUBIC implementation so that downstream consumers such as dart_ipfs can saturate P2P links without rewriting the recovery subsystem.
+High-BDP networks demand congestion controllers that scale beyond TCP-Reno linear window growth. CUBIC provides a cubic-function window evolution that is TCP-friendly for small windows yet aggressive for large ones, enabling quic_lib to perform competitively on long-fat links. This spec defines the pluggable CUBIC implementation so that downstream consumers such as dart_ipfs can saturate P2P links without rewriting the recovery subsystem.
 
 ## 2. Detailed Specification
 ### 2.1 Relationship to QUIC Recovery (RFC 9002)

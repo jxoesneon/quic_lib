@@ -2,24 +2,24 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/connection/connection_id_manager.dart';
-import 'package:dart_quic/src/connection/connection_state_machine.dart';
-import 'package:dart_quic/src/connection/quic_connection.dart';
-import 'package:dart_quic/src/crypto/cipher_suites.dart';
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
-import 'package:dart_quic/src/crypto/key_manager.dart';
-import 'package:dart_quic/src/crypto/tls/crypto_frame_assembler.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_state_machine.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_key_exchange.dart' as hke;
-import 'package:dart_quic/src/io/quic_endpoint.dart';
-import 'package:dart_quic/src/recovery/congestion_controller.dart';
-import 'package:dart_quic/src/recovery/loss_detector.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/recovery/pto_scheduler.dart';
-import 'package:dart_quic/src/recovery/rtt_estimator.dart';
-import 'package:dart_quic/src/streams/stream_id.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/connection/connection_state_machine.dart';
+import 'package:quic_lib/src/connection/quic_connection.dart';
+import 'package:quic_lib/src/crypto/cipher_suites.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/key_manager.dart';
+import 'package:quic_lib/src/crypto/tls/crypto_frame_assembler.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_state_machine.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_key_exchange.dart' as hke;
+import 'package:quic_lib/src/io/quic_endpoint.dart';
+import 'package:quic_lib/src/recovery/congestion_controller.dart';
+import 'package:quic_lib/src/recovery/loss_detector.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/recovery/pto_scheduler.dart';
+import 'package:quic_lib/src/recovery/rtt_estimator.dart';
+import 'package:quic_lib/src/streams/stream_id.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 import 'package:test/test.dart';
 
 /// Build a minimal QUIC Initial packet that the endpoint will accept.
@@ -74,7 +74,8 @@ void main() {
 
       // Send directly from client endpoint's UDP socket to server.
       // Seed anti-amplification budget so the packet is not dropped.
-      final clientConn = await client.connect(InternetAddress.loopbackIPv4, server.localPort);
+      final clientConn =
+          await client.connect(InternetAddress.loopbackIPv4, server.localPort);
       clientConn.onBytesReceived(1000);
       client.send(clientConn, initialPacket);
 
@@ -87,8 +88,10 @@ void main() {
     });
 
     test('two endpoints exchange plaintext packets', () async {
-      final serverEndpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
-      final clientEndpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
+      final serverEndpoint =
+          await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
+      final clientEndpoint =
+          await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
 
       // Server listens for connections
       final serverConnections = <QuicConnection>[];
@@ -122,10 +125,12 @@ void main() {
     });
 
     test('endpoint send receives packet on remote', () async {
-      final endpointA = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
+      final endpointA =
+          await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
 
       // Bind a raw socket on a fixed port to receive
-      final rawSocket = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final rawSocket =
+          await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
       final targetPort = rawSocket.port;
 
       final received = <Uint8List>[];
@@ -245,8 +250,10 @@ void main() {
       );
 
       // Transport over UDP using RawDatagramSocket
-      final socketA = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
-      final socketB = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final socketA =
+          await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final socketB =
+          await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
       final receivedPackets = <Uint8List>[];
       final sub = socketB.listen((event) {
         if (event == RawSocketEvent.read) {
@@ -261,7 +268,8 @@ void main() {
       expect(receivedPackets.length, equals(1));
 
       // Receiver decrypts
-      final processed = await receiver.processEncryptedDatagram(receivedPackets.first);
+      final processed =
+          await receiver.processEncryptedDatagram(receivedPackets.first);
       expect(processed, equals(1));
       expect(cryptoAssembler.nextOffset, greaterThan(0));
 
@@ -275,16 +283,21 @@ void main() {
       final keyManager = await KeyManager.deriveInitial(dcid, backend);
 
       final sender = _createConnection(keyManager: keyManager);
-      sender.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
-      sender.stateMachine.transitionTo(ConnectionState.established, reason: 'test');
+      sender.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
+      sender.stateMachine
+          .transitionTo(ConnectionState.established, reason: 'test');
       sender.onBytesReceived(100);
 
       final receiver = _createConnection(keyManager: keyManager);
-      receiver.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
-      receiver.stateMachine.transitionTo(ConnectionState.established, reason: 'test');
+      receiver.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
+      receiver.stateMachine
+          .transitionTo(ConnectionState.established, reason: 'test');
       receiver.onBytesReceived(100);
 
-      final streamData = Uint8List.fromList([0x48, 0x65, 0x6C, 0x6C, 0x6F]); // "Hello"
+      final streamData =
+          Uint8List.fromList([0x48, 0x65, 0x6C, 0x6C, 0x6F]); // "Hello"
       final encryptedPacket = await sender.buildEncryptedPacket(
         space: PacketNumberSpace.application,
         frames: [
@@ -293,8 +306,10 @@ void main() {
         dcid: dcid,
       );
 
-      final socketA = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
-      final socketB = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final socketA =
+          await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final socketB =
+          await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
       final received = <Uint8List>[];
       final sub = socketB.listen((event) {
         if (event == RawSocketEvent.read) {
@@ -408,8 +423,10 @@ void main() {
 
     test('STREAM frame is dispatched to StreamManager', () async {
       final conn = _createConnection();
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
-      conn.stateMachine.transitionTo(ConnectionState.established, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.established, reason: 'test');
       conn.onBytesReceived(1000);
 
       final streamData = Uint8List.fromList([0x01, 0x02, 0x03]);
@@ -428,14 +445,18 @@ void main() {
   });
 
   group('E2E Connection lifecycle', () {
-    test('connection transitions: idle → handshaking → established → closing → closed', () {
+    test(
+        'connection transitions: idle → handshaking → established → closing → closed',
+        () {
       final conn = _createConnection();
       expect(conn.state, equals(ConnectionState.idle));
 
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
       expect(conn.state, equals(ConnectionState.handshaking));
 
-      conn.stateMachine.transitionTo(ConnectionState.established, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.established, reason: 'test');
       expect(conn.state, equals(ConnectionState.established));
       expect(conn.isEstablished, isTrue);
 
@@ -449,14 +470,19 @@ void main() {
 
     test('connection transitions to draining on CONNECTION_CLOSE', () async {
       final conn = _createConnection();
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
-      conn.stateMachine.transitionTo(ConnectionState.established, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.established, reason: 'test');
       conn.onBytesReceived(1000);
 
       final packet = await conn.buildPacket(
         space: PacketNumberSpace.application,
         frames: [
-          ConnectionCloseFrame(errorCode: 0x0100, offendingFrameType: 0x00, reasonPhrase: 'test'),
+          ConnectionCloseFrame(
+              errorCode: 0x0100,
+              offendingFrameType: 0x00,
+              reasonPhrase: 'test'),
         ],
         dcid: List<int>.filled(8, 0xAB),
       );
@@ -468,8 +494,10 @@ void main() {
 
     test('connection transitions to draining on ApplicationClose', () async {
       final conn = _createConnection();
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
-      conn.stateMachine.transitionTo(ConnectionState.established, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.established, reason: 'test');
       conn.onBytesReceived(1000);
 
       final packet = await conn.buildPacket(
@@ -489,8 +517,10 @@ void main() {
   group('E2E Recovery and flow control', () {
     test('onAckReceived updates recovery state', () {
       final conn = _createConnection();
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
-      conn.stateMachine.transitionTo(ConnectionState.established, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.established, reason: 'test');
       expect(
         () => conn.onAckReceived(0, 5, []),
         returnsNormally,
@@ -499,7 +529,8 @@ void main() {
 
     test('onPacketSent tracks sent packets', () async {
       final conn = _createConnection();
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
       conn.onBytesReceived(1000);
 
       final packet = await conn.buildPacket(
@@ -518,8 +549,10 @@ void main() {
 
     test('MAX_DATA frame updates connection flow controller', () async {
       final conn = _createConnection();
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
-      conn.stateMachine.transitionTo(ConnectionState.established, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.established, reason: 'test');
       conn.onBytesReceived(1000);
 
       final before = conn.connectionFlowController.availableWindow;
@@ -530,7 +563,8 @@ void main() {
       );
       conn.processIncomingDatagram(packet);
 
-      expect(conn.connectionFlowController.availableWindow, greaterThan(before));
+      expect(
+          conn.connectionFlowController.availableWindow, greaterThan(before));
     });
   });
 
@@ -538,18 +572,23 @@ void main() {
     test('multiple Initial packets in one datagram are processed', () async {
       final conn = _createConnection();
       final cryptoAssembler = CryptoFrameAssembler();
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
       conn.onBytesReceived(1000);
 
       final dcid = conn.cidManager.issueNewId().connectionId;
       final packet1 = await conn.buildPacket(
         space: PacketNumberSpace.initial,
-        frames: [CryptoFrame(offset: 0, data: [0x01])],
+        frames: [
+          CryptoFrame(offset: 0, data: [0x01])
+        ],
         dcid: dcid,
       );
       final packet2 = await conn.buildPacket(
         space: PacketNumberSpace.initial,
-        frames: [CryptoFrame(offset: 1, data: [0x02])],
+        frames: [
+          CryptoFrame(offset: 1, data: [0x02])
+        ],
         dcid: dcid,
       );
 
@@ -565,22 +604,28 @@ void main() {
   group('E2E Path validation', () {
     test('generateChallenge produces 8-byte PATH_CHALLENGE frame', () {
       final conn = _createConnection();
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
-      conn.stateMachine.transitionTo(ConnectionState.established, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.established, reason: 'test');
       conn.onBytesReceived(1000);
 
-      final challenge = conn.migrationHelper.generateChallenge(currentTimeUs: 0);
+      final challenge =
+          conn.migrationHelper.generateChallenge(currentTimeUs: 0);
       expect(challenge.data.length, equals(8));
       expect(challenge.frameType, equals(0x1a));
     });
 
     test('PATH_CHALLENGE + PATH_RESPONSE validates path', () async {
       final conn = _createConnection();
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
-      conn.stateMachine.transitionTo(ConnectionState.established, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.established, reason: 'test');
       conn.onBytesReceived(1000);
 
-      final challenge = conn.migrationHelper.generateChallenge(currentTimeUs: 0);
+      final challenge =
+          conn.migrationHelper.generateChallenge(currentTimeUs: 0);
       final packet1 = await conn.buildPacket(
         space: PacketNumberSpace.application,
         frames: [challenge],

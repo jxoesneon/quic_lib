@@ -11,7 +11,7 @@ subsystem: "Crypto Backend"
 
 ## 1. Purpose
 
-TLS 1.3 and QUIC packet protection need AES-GCM, ChaCha20-Poly1305, HKDF, X25519, and Ed25519-but no single Dart package covers all platforms optimally. Without a backend abstraction, the project would be locked into one dependency that might become unmaintained or unsupported on WASM. This architecture defines the CryptoBackend interface that lets dart_quic swap between package:cryptography, package:pointycastle, and future backends without rewriting protocol logic.
+TLS 1.3 and QUIC packet protection need AES-GCM, ChaCha20-Poly1305, HKDF, X25519, and Ed25519-but no single Dart package covers all platforms optimally. Without a backend abstraction, the project would be locked into one dependency that might become unmaintained or unsupported on WASM. This architecture defines the CryptoBackend interface that lets quic_lib swap between package:cryptography, package:pointycastle, and future backends without rewriting protocol logic.
 
 ## 2. Detailed Specification
 ### 2.1 Design Principles
@@ -42,7 +42,7 @@ The backend advertises support via `supportedCipherSuites()` so that the TLS eng
 
 ### 2.3 Backend Interface
 
-> **Note:** The public crypto backend API consumed by applications is defined in [DART_API_SPEC.md §2.9](../specs/DART_API_SPEC.md#29-crypto-backend-abstraction). The following interface documents the internal architecture contract between the crypto backend and the rest of the `dart_quic` stack. It is documented as pseudocode; concrete implementations may add factory constructors, helper methods, or platform-specific optimizations.
+> **Note:** The public crypto backend API consumed by applications is defined in [DART_API_SPEC.md §2.9](../specs/DART_API_SPEC.md#29-crypto-backend-abstraction). The following interface documents the internal architecture contract between the crypto backend and the rest of the `quic_lib` stack. It is documented as pseudocode; concrete implementations may add factory constructors, helper methods, or platform-specific optimizations.
 
 ```dart
 /// Opaque handle to a secret key.

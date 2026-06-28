@@ -1,7 +1,7 @@
-import 'package:dart_quic/src/http3/frame_types.dart';
-import 'package:dart_quic/src/http3/goaway_frame.dart';
-import 'package:dart_quic/src/http3/headers_frame.dart';
-import 'package:dart_quic/src/http3/http3_connection.dart';
+import 'package:quic_lib/src/http3/frame_types.dart';
+import 'package:quic_lib/src/http3/goaway_frame.dart';
+import 'package:quic_lib/src/http3/headers_frame.dart';
+import 'package:quic_lib/src/http3/http3_connection.dart';
 import 'package:test/test.dart';
 
 void main() {

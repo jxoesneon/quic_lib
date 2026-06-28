@@ -1,9 +1,9 @@
 import 'dart:isolate';
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/io/isolate_supervisor.dart';
-import 'package:dart_quic/src/io/connection_isolate.dart';
-import 'package:dart_quic/src/connection/quic_connection.dart';
+import 'package:quic_lib/src/io/isolate_supervisor.dart';
+import 'package:quic_lib/src/io/connection_isolate.dart';
+import 'package:quic_lib/src/connection/quic_connection.dart';
 import 'package:test/test.dart';
 
 class _FakeConnection implements QuicConnection {
@@ -113,7 +113,8 @@ void main() {
       test('handles ready message with port', () async {
         final receivePort = ReceivePort();
         final messages = <Map<String, dynamic>>[];
-        receivePort.listen((msg) => messages.add(Map<String, dynamic>.from(msg as Map)));
+        receivePort.listen(
+            (msg) => messages.add(Map<String, dynamic>.from(msg as Map)));
 
         supervisor.onIsolateMessage({
           'type': 'ready',
@@ -137,7 +138,8 @@ void main() {
           'connectionId': 'conn-1',
           'port': null,
         });
-        expect(() => supervisor.sendPacket('conn-1', Uint8List.fromList([1])), returnsNormally);
+        expect(() => supervisor.sendPacket('conn-1', Uint8List.fromList([1])),
+            returnsNormally);
       });
 
       test('handles close message by removing isolate', () {
@@ -157,10 +159,12 @@ void main() {
       });
 
       test('handles close message on unknown connectionId', () {
-        expect(() => supervisor.onIsolateMessage({
-          'type': 'close',
-          'connectionId': 'unknown',
-        }), returnsNormally);
+        expect(
+            () => supervisor.onIsolateMessage({
+                  'type': 'close',
+                  'connectionId': 'unknown',
+                }),
+            returnsNormally);
       });
 
       test('handles unknown type gracefully', () {
@@ -184,7 +188,8 @@ void main() {
       test('sends packet to registered port', () async {
         final receivePort = ReceivePort();
         final messages = <Map<String, dynamic>>[];
-        receivePort.listen((msg) => messages.add(Map<String, dynamic>.from(msg as Map)));
+        receivePort.listen(
+            (msg) => messages.add(Map<String, dynamic>.from(msg as Map)));
 
         supervisor.onIsolateMessage({
           'type': 'ready',
@@ -204,11 +209,13 @@ void main() {
       });
 
       test('does nothing for unknown connectionId', () {
-        expect(() => supervisor.sendPacket('unknown', Uint8List.fromList([1])), returnsNormally);
+        expect(() => supervisor.sendPacket('unknown', Uint8List.fromList([1])),
+            returnsNormally);
       });
 
       test('does nothing when port is null', () {
-        expect(() => supervisor.sendPacket('no-port', Uint8List.fromList([1])), returnsNormally);
+        expect(() => supervisor.sendPacket('no-port', Uint8List.fromList([1])),
+            returnsNormally);
       });
     });
 
@@ -216,7 +223,8 @@ void main() {
       test('sends stop to registered port', () async {
         final receivePort = ReceivePort();
         final messages = <Map<String, dynamic>>[];
-        receivePort.listen((msg) => messages.add(Map<String, dynamic>.from(msg as Map)));
+        receivePort.listen(
+            (msg) => messages.add(Map<String, dynamic>.from(msg as Map)));
 
         supervisor.onIsolateMessage({
           'type': 'ready',

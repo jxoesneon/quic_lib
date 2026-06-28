@@ -19,7 +19,7 @@ dependencies:
 
 ## 1. Purpose
 
-HTTP/3 is becoming the default for modern web infrastructure, yet Dart has no pure-Dart implementation. Without a specified HTTP/3 layer, dart_quic would remain a low-level transport with no path to serving web traffic or interoping with browsers. This spec defines the mapping from QUIC streams to HTTP semantics, enabling Dart servers and clients to speak the same protocol as CDN edge nodes.
+HTTP/3 is becoming the default for modern web infrastructure, yet Dart has no pure-Dart implementation. Without a specified HTTP/3 layer, quic_lib would remain a low-level transport with no path to serving web traffic or interoping with browsers. This spec defines the mapping from QUIC streams to HTTP semantics, enabling Dart servers and clients to speak the same protocol as CDN edge nodes.
 
 ## 2. Detailed Specification
 ### 2.1 Architecture
@@ -161,7 +161,7 @@ Client tells server the maximum Push ID it will accept.
 :authority = example.com
 :path = /resource
 accept = application/json
-user-agent = dart_quic/1.0
+user-agent = quic_lib/1.0
 ```
 
 #### 2.4.2 Encoding Response Headers

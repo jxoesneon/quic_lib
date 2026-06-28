@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:dart_quic/src/webtransport/goaway_capsule.dart';
-import 'package:dart_quic/src/webtransport/capsule_types.dart';
-import 'package:dart_quic/src/webtransport/webtransport_session.dart';
+import 'package:quic_lib/src/webtransport/goaway_capsule.dart';
+import 'package:quic_lib/src/webtransport/capsule_types.dart';
+import 'package:quic_lib/src/webtransport/webtransport_session.dart';
 
 void main() {
   group('GoawayCapsule', () {
@@ -90,7 +90,8 @@ void main() {
       final goaway = GoawayCapsule(streamId: 10);
       final capsule = Capsule(
         type: CapsuleType.goaway,
-        payload: Uint8List.sublistView(goaway.serialize(), 1), // strip type varint
+        payload:
+            Uint8List.sublistView(goaway.serialize(), 1), // strip type varint
       );
 
       session.onCapsuleReceived(capsule);

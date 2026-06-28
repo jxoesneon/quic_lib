@@ -5,16 +5,16 @@ import 'dart:typed_data';
 import 'udp_socket.dart';
 import 'connection_isolate.dart';
 import 'isolate_supervisor.dart';
-import 'package:dart_quic/src/connection/connection_registry.dart';
-import 'package:dart_quic/src/connection/quic_connection.dart';
-import 'package:dart_quic/src/connection/connection_state_machine.dart';
-import 'package:dart_quic/src/connection/connection_id_manager.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/recovery/rtt_estimator.dart';
-import 'package:dart_quic/src/recovery/loss_detector.dart';
-import 'package:dart_quic/src/recovery/pto_scheduler.dart';
-import 'package:dart_quic/src/recovery/congestion_controller.dart';
-import 'package:dart_quic/src/streams/stream_id.dart';
+import 'package:quic_lib/src/connection/connection_registry.dart';
+import 'package:quic_lib/src/connection/quic_connection.dart';
+import 'package:quic_lib/src/connection/connection_state_machine.dart';
+import 'package:quic_lib/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/recovery/rtt_estimator.dart';
+import 'package:quic_lib/src/recovery/loss_detector.dart';
+import 'package:quic_lib/src/recovery/pto_scheduler.dart';
+import 'package:quic_lib/src/recovery/congestion_controller.dart';
+import 'package:quic_lib/src/streams/stream_id.dart';
 
 /// A QUIC endpoint that can listen for and initiate connections.
 class QuicEndpoint {
@@ -29,7 +29,8 @@ class QuicEndpoint {
   final Map<QuicConnection, int> _remotePorts = {};
   final IsolateSupervisor _isolateSupervisor = IsolateSupervisor();
   final ConnectionRegistry _connectionRegistry = ConnectionRegistry();
-  StreamSubscription<({Uint8List data, InternetAddress address, int port})>? _incomingSubscription;
+  StreamSubscription<({Uint8List data, InternetAddress address, int port})>?
+      _incomingSubscription;
   bool _listening = false;
 
   QuicEndpoint._(this._localAddress, this._localPort, this._udpSocket) {
@@ -81,7 +82,8 @@ class QuicEndpoint {
     );
 
     // Transition to handshaking to begin the QUIC handshake.
-    stateMachine.transitionTo(ConnectionState.handshaking, reason: 'Connect to $address:$port');
+    stateMachine.transitionTo(ConnectionState.handshaking,
+        reason: 'Connect to $address:$port');
 
     final isolate = ConnectionIsolate(
       connection: connection,
@@ -118,7 +120,8 @@ class QuicEndpoint {
     );
   }
 
-  void _onIncomingDatagram(({Uint8List data, InternetAddress address, int port}) datagram) {
+  void _onIncomingDatagram(
+      ({Uint8List data, InternetAddress address, int port}) datagram) {
     final dcid = _extractDcid(datagram.data);
     if (dcid == null) return;
 
@@ -165,7 +168,8 @@ class QuicEndpoint {
   }
 
   /// Accept a new server-side connection from an incoming Initial packet.
-  QuicConnection _acceptConnection(List<int> dcid, InternetAddress address, int port) {
+  QuicConnection _acceptConnection(
+      List<int> dcid, InternetAddress address, int port) {
     if (_connections.length >= _maxConnections) {
       throw StateError('Endpoint connection limit reached');
     }
@@ -189,7 +193,8 @@ class QuicEndpoint {
       streamIdAllocator: streamIdAllocator,
     );
 
-    stateMachine.transitionTo(ConnectionState.handshaking, reason: 'Incoming connection from $address:$port');
+    stateMachine.transitionTo(ConnectionState.handshaking,
+        reason: 'Incoming connection from $address:$port');
 
     final isolate = ConnectionIsolate(
       connection: connection,
@@ -223,19 +228,22 @@ class QuicEndpoint {
   }
 
   /// Returns the remote address for a given connection, or null if unknown.
-  InternetAddress? getRemoteAddress(QuicConnection conn) => _remoteAddresses[conn];
+  InternetAddress? getRemoteAddress(QuicConnection conn) =>
+      _remoteAddresses[conn];
 
   /// Returns the remote port for a given connection, or null if unknown.
   int? getRemotePort(QuicConnection conn) => _remotePorts[conn];
 
   /// Migrate a connection to a new remote address and port.
-  Future<void> migrateConnection(QuicConnection conn, InternetAddress newAddress, int newPort) async {
+  Future<void> migrateConnection(
+      QuicConnection conn, InternetAddress newAddress, int newPort) async {
     _remoteAddresses[conn] = newAddress;
     _remotePorts[conn] = newPort;
   }
 
   /// Check whether the stored remote address for [conn] differs from [addr]:[port].
-  bool isRemoteAddressChanged(QuicConnection conn, InternetAddress addr, int port) {
+  bool isRemoteAddressChanged(
+      QuicConnection conn, InternetAddress addr, int port) {
     final currentAddr = _remoteAddresses[conn];
     final currentPort = _remotePorts[conn];
     if (currentAddr == null || currentPort == null) return true;
@@ -248,7 +256,8 @@ class QuicEndpoint {
   /// Sends a PATH_CHALLENGE to [newAddress]:[newPort] via the underlying UDP
   /// socket. When a matching PATH_RESPONSE is received, the remote address
   /// is updated.
-  Future<void> changeConnectionAddress(QuicConnection conn, InternetAddress newAddress, int newPort) async {
+  Future<void> changeConnectionAddress(
+      QuicConnection conn, InternetAddress newAddress, int newPort) async {
     const dcid = <int>[];
     final future = conn.probeNewPath(dcid);
     final packet = conn.lastProbePacket;
@@ -269,7 +278,8 @@ class QuicEndpoint {
   /// `IP_RECVERR`, `SO_REUSEPORT`, or platform-specific APIs). This method
   /// updates the logical remote address used for [send] via the existing
   /// [UdpSocket] instance.
-  Future<void> rebindToAddress(QuicConnection conn, InternetAddress newAddress, int newPort) async {
+  Future<void> rebindToAddress(
+      QuicConnection conn, InternetAddress newAddress, int newPort) async {
     // Validate the new path via PATH_CHALLENGE/PATH_RESPONSE.
     await changeConnectionAddress(conn, newAddress, newPort);
     // Update the logical remote address used for sending packets.

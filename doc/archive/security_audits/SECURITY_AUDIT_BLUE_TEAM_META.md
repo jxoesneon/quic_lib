@@ -1,6 +1,6 @@
 # BLUE TEAM Meta-Analysis Report — Systemic Architecture Review
 
-**Project:** `dart_quic`  
+**Project:** `quic_lib`  
 **Date:** 2026-06-27  
 **Auditor:** Defensive Security Architect (Blue Team)  
 **Scope:** Post-component-hardening meta-analysis for emergent/systemic weaknesses
@@ -132,7 +132,7 @@ The `QuicConnection` class is the central orchestrator. All subsystems are indep
 
 ## Conclusion
 
-After 36 fixes across 7 audit loops, the `dart_quic` codebase is hardened against:
+After 36 fixes across 7 audit loops, the `quic_lib` codebase is hardened against:
 1. Memory exhaustion DoS (all collections capped)
 2. Integer overflow (all growth paths clamped)
 3. Replay attacks (64-packet sliding window)

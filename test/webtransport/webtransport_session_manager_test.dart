@@ -1,5 +1,5 @@
-import 'package:dart_quic/src/webtransport/capsule_types.dart';
-import 'package:dart_quic/src/webtransport/webtransport_session_manager.dart';
+import 'package:quic_lib/src/webtransport/capsule_types.dart';
+import 'package:quic_lib/src/webtransport/webtransport_session_manager.dart';
 import 'package:test/test.dart';
 
 void main() {

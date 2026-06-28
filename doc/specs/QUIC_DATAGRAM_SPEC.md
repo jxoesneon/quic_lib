@@ -15,7 +15,7 @@ dependencies:
 
 ## 1. Purpose
 
-Real-time applications-gaming, DNS-over-QUIC, live media-need unreliable, low-latency messaging that QUIC streams cannot provide because of head-of-line blocking and retransmission. The QUIC Datagram extension fills this gap without abandoning the connection encryption and congestion control, giving dart_quic a complete transport portfolio.
+Real-time applications-gaming, DNS-over-QUIC, live media-need unreliable, low-latency messaging that QUIC streams cannot provide because of head-of-line blocking and retransmission. The QUIC Datagram extension fills this gap without abandoning the connection encryption and congestion control, giving quic_lib a complete transport portfolio.
 
 ## 2. Overview
 

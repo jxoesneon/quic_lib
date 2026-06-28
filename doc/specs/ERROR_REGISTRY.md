@@ -18,13 +18,13 @@ A fragmented error model-where QUIC transport, HTTP/3, QPACK, WebTransport, and 
 
 ## 2. Overview
 
-`dart_quic` uses three disjoint code spaces. The code space is determined by the protocol layer that emits the error.
+`quic_lib` uses three disjoint code spaces. The code space is determined by the protocol layer that emits the error.
 
 | Code Space | Range | Authority | Used By |
 |------------|-------|-----------|---------|
 | **QUIC Transport** | `0x00` – `0x10` and `0x0100` – `0x01ff` | RFC 9000 §20 | QUIC transport `CONNECTION_CLOSE` (type `0x1c`) |
 | **HTTP/3** | `0x0100` – `0x01ff` | RFC 9114 §8.1 | HTTP/3 `CONNECTION_CLOSE` (type `0x1d`) and `RESET_STREAM` |
-| **Application-defined** | `0x1000` – `0x1fff` | `dart_quic` | WebTransport sessions, libp2p multistream negotiation |
+| **Application-defined** | `0x1000` – `0x1fff` | `quic_lib` | WebTransport sessions, libp2p multistream negotiation |
 
 HTTP/3 reuses the same `0x0100`–`0x01ff` range as QUIC transport `CRYPTO_ERROR` values, but they are distinguished by the QUIC frame type that carries them (`0x1c` for QUIC transport errors vs. `0x1d` for application errors). In the HTTP/3 context, these values are interpreted as HTTP/3 error codes, not TLS alerts.
 
@@ -134,9 +134,9 @@ The following codes are used in HTTP/3 `CONNECTION_CLOSE` (type `0x1d`) and `RES
 ---
 
 
-### 3.3 Application Error Codes (dart_quic Defined)
+### 3.3 Application Error Codes (quic_lib Defined)
 
-The range `0x1000` – `0x1fff` is reserved for `dart_quic` application-layer protocols. It is divided into two sub-ranges: WebTransport session errors and libp2p protocol negotiation errors.
+The range `0x1000` – `0x1fff` is reserved for `quic_lib` application-layer protocols. It is divided into two sub-ranges: WebTransport session errors and libp2p protocol negotiation errors.
 
 #### 3.3.1 WebTransport Session Errors
 
@@ -168,7 +168,7 @@ These codes are used in the libp2p QUIC adapter, primarily during multistream-se
 | `0x1104` | `LP2P_STREAM_RESET` | Stream reset by libp2p protocol layer. | Protocol handler reset stream. |
 | `0x1105` | `LP2P_MULTISTREAM_PROTOCOL_ERROR` | multistream-select protocol violation. | Invalid `/multistream/` line, unexpected message. |
 | `0x1106` – `0x11ff` | Reserved | Reserved for future libp2p application errors. | — |
-| `0x1200` – `0x1fff` | Reserved | Reserved for future `dart_quic` application-layer definitions. | — |
+| `0x1200` – `0x1fff` | Reserved | Reserved for future `quic_lib` application-layer definitions. | — |
 
 ---
 
@@ -200,7 +200,7 @@ For stream-level errors (`RESET_STREAM` or `STOP_SENDING`), the implementation e
 - [ ] All `CRYPTO_ERROR` values in `0x0100` – `0x01ff` are recognized and mapped to TLS alert descriptions.
 - [ ] All HTTP/3 error codes from RFC 9114 §8.1 are defined as constants.
 - [ ] All QPACK error codes from RFC 9204 §3 are defined as constants.
-- [ ] All `dart_quic` application error codes in `0x1000` – `0x1fff` are defined and documented.
+- [ ] All `quic_lib` application error codes in `0x1000` – `0x1fff` are defined and documented.
 - [ ] The Dart API error mapping table is implemented consistently with [DART_API_SPEC.md](DART_API_SPEC.md).
 - [ ] No error code from a private or experimental range is emitted without explicit documentation.
 - [ ] `CONNECTION_CLOSE` reason phrases are sanitized before logging (see §5 Security Considerations).

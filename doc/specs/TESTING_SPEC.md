@@ -15,7 +15,7 @@ dependencies:
 
 ## 1. Purpose
 
-Specifications need verification to be trustworthy. dart_quic needs a multi-layer testing strategy—unit, integration, interop, fuzz—to catch regressions before they reach downstream consumers. This document defines the test levels, target implementations, and CI plan that verify the stack against its own specifications.
+Specifications need verification to be trustworthy. quic_lib needs a multi-layer testing strategy—unit, integration, interop, fuzz—to catch regressions before they reach downstream consumers. This document defines the test levels, target implementations, and CI plan that verify the stack against its own specifications.
 
 ## 2. Detailed Specification
 ### 2.1 Testing Levels
@@ -177,7 +177,7 @@ Participate in the QUIC Interop Runner (https://interop.seemann.io/):
 
 ```
 ┌─────────────────┐         ┌─────────────────┐
-│  dart_quic      │ <-----> │  quic-go        │
+│  quic_lib      │ <-----> │  quic-go        │
 │  (client/server)│  QUIC   │  (client/server)│
 └─────────────────┘         └─────────────────┘
         │                           │
@@ -268,7 +268,7 @@ Run h3spec (https://github.com/kazu-yamamoto/h3spec) test suite:
 | QPACK | Static table, dynamic table, blocking |
 | Stream handling | Concurrency, cancellation, push |
 
-#### 2.7.2 dart_quic HTTP/3 Tests
+#### 2.7.2 quic_lib HTTP/3 Tests
 
 | Test | Description |
 |------|-------------|

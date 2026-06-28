@@ -8,7 +8,7 @@
 
 ## 1. Purpose
 
-This document defines the process for adding a new protocol extension, formal specification, or research note to `dart_quic`. Following these conventions keeps the documentation consistent, discoverable, and ready for implementation.
+This document defines the process for adding a new protocol extension, formal specification, or research note to `quic_lib`. Following these conventions keeps the documentation consistent, discoverable, and ready for implementation.
 
 ---
 
@@ -72,7 +72,7 @@ Threat model, edge cases, and mitigations.
 
 ## 11. References
 
-Links to RFCs, drafts, and related `dart_quic` documents.
+Links to RFCs, drafts, and related `quic_lib` documents.
 ```
 
 Use sentence case for headings. Number top-level sections. Use tables for option comparisons and code blocks for wire formats or pseudo-code.
@@ -117,7 +117,7 @@ Brief summary of the document.
 
 Numbered list of the most important design choices.
 
-## Relevance to dart_quic
+## Relevance to quic_lib
 
 Numbered list of what we must implement, change, or watch out for.
 

@@ -1,10 +1,10 @@
-# dart_quic
+# quic_lib
 
 A comprehensive, pure-Dart QUIC protocol stack specification and architecture.
 
 ## Charter
 
-`dart_quic` is a pure-Dart implementation of QUIC (RFC 9000), HTTP/3 (RFC 9114),
+`quic_lib` is a pure-Dart implementation of QUIC (RFC 9000), HTTP/3 (RFC 9114),
 WebTransport (RFC 9220), and libp2p QUIC transport. The codebase is fully
 implemented with comprehensive tests and security hardening.
 
@@ -34,11 +34,11 @@ implemented with comprehensive tests and security hardening.
 
 ## Installation
 
-Add `dart_quic` to your `pubspec.yaml`:
+Add `quic_lib` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  dart_quic: ^1.2.0
+  quic_lib: ^1.2.0
 ```
 
 Requires Dart SDK `^3.0.0`.
@@ -46,7 +46,7 @@ Requires Dart SDK `^3.0.0`.
 ## Quickstart
 
 ```dart
-import 'package:dart_quic/dart_quic.dart';
+import 'package:quic_lib/quic_lib.dart';
 
 void main() async {
   // Create a QUIC endpoint bound to a local address.

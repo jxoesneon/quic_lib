@@ -30,7 +30,5 @@ List<int> hexDecode(String hex) {
 /// final hex = hexEncode([0xc0, 0x00, 0x00]); // 'c0 00 00'
 /// ```
 String hexEncode(List<int> bytes) {
-  return bytes
-      .map((b) => b.toRadixString(16).padLeft(2, '0'))
-      .join(' ');
+  return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ');
 }

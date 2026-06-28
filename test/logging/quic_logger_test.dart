@@ -1,4 +1,4 @@
-import 'package:dart_quic/src/logging/quic_logger.dart';
+import 'package:quic_lib/src/logging/quic_logger.dart';
 import 'package:test/test.dart';
 
 void main() {

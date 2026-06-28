@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/io/udp_socket.dart';
-import 'package:dart_quic/src/libp2p/dcutr.dart';
-import 'package:dart_quic/src/libp2p/dcutr_state_machine.dart';
-import 'package:dart_quic/src/libp2p/dcutr_udp_coordinator.dart';
+import 'package:quic_lib/src/io/udp_socket.dart';
+import 'package:quic_lib/src/libp2p/dcutr.dart';
+import 'package:quic_lib/src/libp2p/dcutr_state_machine.dart';
+import 'package:quic_lib/src/libp2p/dcutr_udp_coordinator.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -172,7 +172,8 @@ void main() {
       final coordinator = DCUtRUdpCoordinator(socketA, sm);
       coordinator.startListening();
 
-      socketB.send(Uint8List.fromList([0x01, 0x02]), InternetAddress.loopbackIPv4, socketA.localPort);
+      socketB.send(Uint8List.fromList([0x01, 0x02]),
+          InternetAddress.loopbackIPv4, socketA.localPort);
       await Future<void>.delayed(const Duration(milliseconds: 50));
       // Should not crash
     });
@@ -189,7 +190,8 @@ void main() {
       final coordinator = DCUtRUdpCoordinator(socketA, sm);
       coordinator.startListening();
 
-      socketB.send(Uint8List.fromList([0xFF, 0xFF, 0xFF, 0xFF]), InternetAddress.loopbackIPv4, socketA.localPort);
+      socketB.send(Uint8List.fromList([0xFF, 0xFF, 0xFF, 0xFF]),
+          InternetAddress.loopbackIPv4, socketA.localPort);
       await Future<void>.delayed(const Duration(milliseconds: 50));
       // Should not crash
     });
@@ -207,7 +209,8 @@ void main() {
       coordinator.startListening();
 
       socketB.send(
-        Uint8List.fromList([0x44, 0x43, 0x54, 0x52, 0xFF]), // magic + invalid message
+        Uint8List.fromList(
+            [0x44, 0x43, 0x54, 0x52, 0xFF]), // magic + invalid message
         InternetAddress.loopbackIPv4,
         socketA.localPort,
       );
@@ -229,7 +232,8 @@ void main() {
 
       // Build a message with unknown type that fails isValid
       final msg = DCUtRMessage(type: 0x99, observedAddr: [1, 2, 3]);
-      final bytes = Uint8List.fromList([0x44, 0x43, 0x54, 0x52, ...msg.serialize()]);
+      final bytes =
+          Uint8List.fromList([0x44, 0x43, 0x54, 0x52, ...msg.serialize()]);
       socketB.send(bytes, InternetAddress.loopbackIPv4, socketA.localPort);
       await Future<void>.delayed(const Duration(milliseconds: 50));
       // Should not crash

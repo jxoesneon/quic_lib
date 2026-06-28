@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/tls/tls_handshake_types.dart';
+import 'package:quic_lib/src/crypto/tls/tls_handshake_types.dart';
 
 /// Builder for TLS 1.3 handshake messages in wire format:
 /// `type(1) + length(3) + payload(length)`.
@@ -25,10 +25,10 @@ class TlsMessageBuilder {
       throw ArgumentError('random must be 32 bytes, got ${random.length}');
     }
 
-    final extensionsLength = extensions.fold<int>(0, (sum, e) => sum + e.length);
+    final extensionsLength =
+        extensions.fold<int>(0, (sum, e) => sum + e.length);
 
-    final payloadLength =
-        2 + // legacy_version
+    final payloadLength = 2 + // legacy_version
         32 + // random
         1 + // legacy_session_id_length
         legacySessionId.length +
@@ -122,10 +122,10 @@ class TlsMessageBuilder {
       throw ArgumentError('random must be 32 bytes, got ${random.length}');
     }
 
-    final extensionsLength = extensions.fold<int>(0, (sum, e) => sum + e.length);
+    final extensionsLength =
+        extensions.fold<int>(0, (sum, e) => sum + e.length);
 
-    final payloadLength =
-        2 + // legacy_version
+    final payloadLength = 2 + // legacy_version
         32 + // random
         1 + // legacy_session_id_echo_length
         legacySessionId.length +

@@ -1,8 +1,8 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/wire/packet_builder.dart';
-import 'package:dart_quic/src/wire/packet_header.dart';
-import 'package:dart_quic/src/wire/frame.dart';
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/wire/packet_builder.dart';
+import 'package:quic_lib/src/wire/packet_header.dart';
+import 'package:quic_lib/src/wire/frame.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
 
 void main() {
   group('PacketBuilder.build', () {
@@ -15,7 +15,9 @@ void main() {
         packetNumber: 0,
         token: const [],
       );
-      final frames = [CryptoFrame(offset: 0, data: [0x01, 0x02])];
+      final frames = [
+        CryptoFrame(offset: 0, data: [0x01, 0x02])
+      ];
       final packet = await PacketBuilder.build(header, frames);
       expect(packet.isNotEmpty, isTrue);
       expect(packet[0] & 0x80, isNonZero); // long header
@@ -27,7 +29,9 @@ void main() {
         packetNumber: 42,
         packetNumberLength: 1,
       );
-      final frames = [StreamFrame(streamId: 0, data: [0xAA, 0xBB, 0xCC])];
+      final frames = [
+        StreamFrame(streamId: 0, data: [0xAA, 0xBB, 0xCC])
+      ];
       final packet = await PacketBuilder.build(header, frames);
       expect(packet.isNotEmpty, isTrue);
       expect(packet[0] & 0x80, equals(0)); // short header

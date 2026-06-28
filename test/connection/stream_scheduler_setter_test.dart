@@ -1,4 +1,4 @@
-import 'package:dart_quic/dart_quic.dart';
+import 'package:quic_lib/quic_lib.dart';
 import 'package:test/test.dart';
 
 void main() {

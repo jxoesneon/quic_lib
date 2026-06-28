@@ -1,8 +1,8 @@
 import 'dart:isolate';
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/connection/quic_connection.dart';
-import 'package:dart_quic/src/io/connection_isolate.dart';
+import 'package:quic_lib/src/connection/quic_connection.dart';
+import 'package:quic_lib/src/io/connection_isolate.dart';
 import 'package:test/test.dart';
 
 class _FakeConnection implements QuicConnection {
@@ -48,7 +48,8 @@ void main() {
     test('stop sets not running and sends close message', () {
       final receivePort = ReceivePort();
       final messages = <Map<String, dynamic>>[];
-      receivePort.listen((msg) => messages.add(Map<String, dynamic>.from(msg as Map)));
+      receivePort
+          .listen((msg) => messages.add(Map<String, dynamic>.from(msg as Map)));
 
       final conn = _FakeConnection();
       final isolate = ConnectionIsolate(
@@ -154,7 +155,8 @@ void main() {
     test('sendPacket forwards packet to supervisor', () async {
       final receivePort = ReceivePort();
       final messages = <Map<String, dynamic>>[];
-      receivePort.listen((msg) => messages.add(Map<String, dynamic>.from(msg as Map)));
+      receivePort
+          .listen((msg) => messages.add(Map<String, dynamic>.from(msg as Map)));
 
       final conn = _FakeConnection();
       final isolate = ConnectionIsolate(

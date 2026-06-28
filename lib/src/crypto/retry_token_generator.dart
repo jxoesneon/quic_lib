@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/cipher_suites.dart';
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/initial_secrets.dart';
-import 'package:dart_quic/src/utils/collections.dart';
+import 'package:quic_lib/src/crypto/cipher_suites.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/initial_secrets.dart';
+import 'package:quic_lib/src/utils/collections.dart';
 
 /// Generates and validates QUIC Retry tokens per RFC 9000.
 ///
@@ -114,5 +114,4 @@ class RetryTokenGenerator {
     }
     return result;
   }
-
 }

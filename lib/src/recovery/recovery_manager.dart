@@ -48,8 +48,10 @@ class RecoveryManager {
   }) {
     // Compute acked bytes from the tracker before removing packets.
     final acked = _sentPacketTracker.onAck(space, largestAcked, ranges);
-    final computedAckedBytes = acked.fold<int>(0, (sum, info) => sum + info.sizeInBytes);
-    final effectiveAckedBytes = ackedBytes > 0 ? ackedBytes : computedAckedBytes;
+    final computedAckedBytes =
+        acked.fold<int>(0, (sum, info) => sum + info.sizeInBytes);
+    final effectiveAckedBytes =
+        ackedBytes > 0 ? ackedBytes : computedAckedBytes;
 
     // 1. Detect lost packets (using previous largest acked).
     final lost = _lossDetector.onAckReceived(
@@ -78,7 +80,8 @@ class RecoveryManager {
     bool inFlight = true,
     List<int> frames = const [],
   }) {
-    _lossDetector.onPacketSent(packetNumber, sentTimeUs, ackEliciting: ackEliciting);
+    _lossDetector.onPacketSent(packetNumber, sentTimeUs,
+        ackEliciting: ackEliciting);
     _congestionController.onPacketSent(sizeInBytes);
     _sentPacketTracker.track(SentPacketInfo(
       packetNumber: packetNumber,
@@ -92,7 +95,8 @@ class RecoveryManager {
   }
 
   /// Check if the PTO timer has expired.
-  bool isPtoExpired(int currentTimeUs) => _ptoScheduler.isExpired(currentTimeUs);
+  bool isPtoExpired(int currentTimeUs) =>
+      _ptoScheduler.isExpired(currentTimeUs);
 
   /// Handle PTO firing: increment backoff and arm next timer.
   void onPtoFired(int currentTimeUs) => _ptoScheduler.onPtoFired(currentTimeUs);

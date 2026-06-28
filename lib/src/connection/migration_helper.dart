@@ -1,7 +1,7 @@
 import 'dart:math';
 
-import 'package:dart_quic/src/utils/hex.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/utils/hex.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 
 /// Helper for QUIC connection path validation via PATH_CHALLENGE / PATH_RESPONSE.
 ///
@@ -64,8 +64,7 @@ class MigrationHelper {
     final expired = <List<int>>[];
     _pendingChallenges.removeWhere((data, sentTime) {
       // SECURITY: Guard against clock backward jumps.
-      if (currentTimeUs >= sentTime &&
-          currentTimeUs - sentTime > timeoutUs) {
+      if (currentTimeUs >= sentTime && currentTimeUs - sentTime > timeoutUs) {
         expired.add(data);
         return true;
       }

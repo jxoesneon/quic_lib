@@ -21,7 +21,8 @@ class V2LongHeader implements PacketHeader {
 
   final int version;
   final int packetType;
-  @override final List<int> destinationConnectionId;
+  @override
+  final List<int> destinationConnectionId;
   final List<int> sourceConnectionId;
   final int packetNumber;
   final List<int> payload;
@@ -92,7 +93,8 @@ class V2LongHeader implements PacketHeader {
 
     if (!isRetry) {
       // Packet number + payload length as varint
-      final pnBytes = _encodePacketNumber(packetNumber, _pnLengthFromValue(packetNumber));
+      final pnBytes =
+          _encodePacketNumber(packetNumber, _pnLengthFromValue(packetNumber));
       final length = pnBytes.length + payload.length;
       builder.add(VarInt.encode(length));
       builder.add(pnBytes);
@@ -117,7 +119,12 @@ class V2LongHeader implements PacketHeader {
 
   @override
   int get byteLength {
-    var len = 1 + 4 + 1 + destinationConnectionId.length + 1 + sourceConnectionId.length;
+    var len = 1 +
+        4 +
+        1 +
+        destinationConnectionId.length +
+        1 +
+        sourceConnectionId.length;
     if (isInitial) {
       final t = token ?? const <int>[];
       len += VarInt.encode(t.length).length + t.length;
@@ -154,7 +161,8 @@ class V2LongHeader implements PacketHeader {
     offset += 4;
 
     if (version != QuicVersions.v2) {
-      throw ArgumentError('Expected v2 version, got 0x${version.toRadixString(16)}');
+      throw ArgumentError(
+          'Expected v2 version, got 0x${version.toRadixString(16)}');
     }
 
     final packetType = (firstByte >> 2) & 0x03;

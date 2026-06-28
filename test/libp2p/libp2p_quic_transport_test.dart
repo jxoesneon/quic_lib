@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/libp2p/libp2p_quic_transport.dart';
-import 'package:dart_quic/src/libp2p/multiaddr.dart';
+import 'package:quic_lib/src/libp2p/libp2p_quic_transport.dart';
+import 'package:quic_lib/src/libp2p/multiaddr.dart';
 import 'package:test/test.dart';
 
 void main() {

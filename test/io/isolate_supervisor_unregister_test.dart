@@ -1,6 +1,6 @@
 import 'dart:isolate';
 
-import 'package:dart_quic/dart_quic.dart';
+import 'package:quic_lib/quic_lib.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -22,5 +22,6 @@ void main() {
 }
 
 class _FakeConnection implements QuicConnection {
-  @override dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

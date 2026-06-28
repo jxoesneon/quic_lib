@@ -3,9 +3,9 @@ import 'dart:typed_data';
 import 'package:asn1lib/asn1lib.dart';
 import 'package:cryptography/cryptography.dart' as crypto;
 import 'package:cryptography/helpers.dart' as crypto_helpers;
-import 'package:dart_quic/src/crypto/cipher_suites.dart';
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/cipher_suites.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
 import 'package:pointycastle/export.dart' as pc;
 import 'package:test/test.dart';
 
@@ -229,7 +229,8 @@ void main() {
       final signature = await backend.ed25519Sign(privateKey, message);
       expect(signature.length, equals(64));
 
-      final verified = await backend.ed25519Verify(publicKey, message, signature);
+      final verified =
+          await backend.ed25519Verify(publicKey, message, signature);
       expect(verified, isTrue);
 
       final tampered = Uint8List.fromList([1, 2, 3, 4, 6]);
@@ -238,7 +239,8 @@ void main() {
       expect(verifiedTampered, isFalse);
     });
 
-    test('ecdsaP256GenerateKeyPair produces 65-byte uncompressed public key', () async {
+    test('ecdsaP256GenerateKeyPair produces 65-byte uncompressed public key',
+        () async {
       final keyPair = await backend.ecdsaP256GenerateKeyPair();
       final publicKey = await keyPair.publicKey;
       expect(publicKey.bytes.length, equals(65));
@@ -260,14 +262,17 @@ void main() {
       final d = _decodeBigInt(privateKey.extractSync());
       final priv = pc.ECPrivateKey(d, domainParams);
       final signer = pc.ECDSASigner(pc.SHA256Digest(), null);
-      final secureRandom = pc.SecureRandom('Fortuna')..seed(pc.KeyParameter(Uint8List(32)));
-      signer.init(true, pc.ParametersWithRandom(pc.PrivateKeyParameter(priv), secureRandom));
+      final secureRandom = pc.SecureRandom('Fortuna')
+        ..seed(pc.KeyParameter(Uint8List(32)));
+      signer.init(true,
+          pc.ParametersWithRandom(pc.PrivateKeyParameter(priv), secureRandom));
       final sig = signer.generateSignature(message) as pc.ECSignature;
       final signature = Uint8List(64);
       signature.setRange(0, 32, _encodeBigInt(sig.r, 32));
       signature.setRange(32, 64, _encodeBigInt(sig.s, 32));
 
-      final verified = await backend.ecdsaP256Verify(publicKey, message, signature);
+      final verified =
+          await backend.ecdsaP256Verify(publicKey, message, signature);
       expect(verified, isTrue);
     });
 
@@ -278,7 +283,8 @@ void main() {
       final message = Uint8List.fromList([1, 2, 3, 4, 5]);
       final badSignature = Uint8List(64);
 
-      final verified = await backend.ecdsaP256Verify(publicKey, message, badSignature);
+      final verified =
+          await backend.ecdsaP256Verify(publicKey, message, badSignature);
       expect(verified, isFalse);
     });
 
@@ -301,7 +307,8 @@ void main() {
 
     test('hmac throws on unsupported hash', () async {
       expect(
-        () => backend.hmac(_MockHashAlgorithm(), _secretKey([1, 2, 3]), [4, 5, 6]),
+        () => backend
+            .hmac(_MockHashAlgorithm(), _secretKey([1, 2, 3]), [4, 5, 6]),
         throwsA(isA<UnsupportedError>()),
       );
     });
@@ -320,7 +327,8 @@ void main() {
 
     test('rsaPkcs1Verify with valid signature (PKCS#1 key)', () async {
       final rsaKeyPair = _generateRsaKeyPair();
-      final publicKey = _SimplePublicKey(_rsaPublicKeyToPkcs1(rsaKeyPair.publicKey));
+      final publicKey =
+          _SimplePublicKey(_rsaPublicKeyToPkcs1(rsaKeyPair.publicKey));
       final message = Uint8List.fromList([1, 2, 3, 4, 5]);
       final signature = _rsaPkcs1Sign(rsaKeyPair.privateKey, message);
 
@@ -350,7 +358,8 @@ void main() {
 
     test('rsaPkcs1Verify with valid signature (SHA-384)', () async {
       final rsaKeyPair = _generateRsaKeyPair();
-      final publicKey = _SimplePublicKey(_rsaPublicKeyToPkcs1(rsaKeyPair.publicKey));
+      final publicKey =
+          _SimplePublicKey(_rsaPublicKeyToPkcs1(rsaKeyPair.publicKey));
       final message = Uint8List.fromList([1, 2, 3, 4, 5]);
       final signature = _rsaPkcs1SignSha384(rsaKeyPair.privateKey, message);
 
@@ -365,7 +374,8 @@ void main() {
 
     test('rsaPkcs1Verify rejects invalid signature', () async {
       final rsaKeyPair = _generateRsaKeyPair();
-      final publicKey = _SimplePublicKey(_rsaPublicKeyToPkcs1(rsaKeyPair.publicKey));
+      final publicKey =
+          _SimplePublicKey(_rsaPublicKeyToPkcs1(rsaKeyPair.publicKey));
       final message = Uint8List.fromList([1, 2, 3, 4, 5]);
       final badSignature = Uint8List(256);
 
@@ -380,7 +390,8 @@ void main() {
 
     test('rsaPkcs1Verify rejects bad signature format', () async {
       final rsaKeyPair = _generateRsaKeyPair();
-      final publicKey = _SimplePublicKey(_rsaPublicKeyToPkcs1(rsaKeyPair.publicKey));
+      final publicKey =
+          _SimplePublicKey(_rsaPublicKeyToPkcs1(rsaKeyPair.publicKey));
       final message = Uint8List.fromList([1, 2, 3, 4, 5]);
       // Signature that is too short to be a valid RSA signature.
       final shortSignature = Uint8List(10);
@@ -396,7 +407,8 @@ void main() {
 
     test('rsaPkcs1Verify throws on unsupported hash', () async {
       final rsaKeyPair = _generateRsaKeyPair();
-      final publicKey = _SimplePublicKey(_rsaPublicKeyToPkcs1(rsaKeyPair.publicKey));
+      final publicKey =
+          _SimplePublicKey(_rsaPublicKeyToPkcs1(rsaKeyPair.publicKey));
 
       expect(
         () => backend.rsaPkcs1Verify(
@@ -453,7 +465,8 @@ Uint8List _encodeBigInt(BigInt value, int length) {
   return result;
 }
 
-({pc.RSAPublicKey publicKey, pc.RSAPrivateKey privateKey}) _generateRsaKeyPair() {
+({pc.RSAPublicKey publicKey, pc.RSAPrivateKey privateKey})
+    _generateRsaKeyPair() {
   final keyGen = pc.RSAKeyGenerator();
   keyGen.init(
     pc.ParametersWithRandom(
@@ -493,22 +506,26 @@ Uint8List _rsaPublicKeyToPkcs1(pc.RSAPublicKey key) {
 
 Uint8List _rsaPkcs1Sign(pc.RSAPrivateKey privateKey, Uint8List message) {
   final signer = pc.Signer('SHA-256/RSA');
-  signer.init(true, pc.ParametersWithRandom(
-    pc.PrivateKeyParameter<pc.RSAPrivateKey>(privateKey),
-    pc.SecureRandom('Fortuna')
-      ..seed(pc.KeyParameter(crypto_helpers.randomBytes(32))),
-  ));
+  signer.init(
+      true,
+      pc.ParametersWithRandom(
+        pc.PrivateKeyParameter<pc.RSAPrivateKey>(privateKey),
+        pc.SecureRandom('Fortuna')
+          ..seed(pc.KeyParameter(crypto_helpers.randomBytes(32))),
+      ));
   final sig = signer.generateSignature(message) as pc.RSASignature;
   return sig.bytes;
 }
 
 Uint8List _rsaPkcs1SignSha384(pc.RSAPrivateKey privateKey, Uint8List message) {
   final signer = pc.Signer('SHA-384/RSA');
-  signer.init(true, pc.ParametersWithRandom(
-    pc.PrivateKeyParameter<pc.RSAPrivateKey>(privateKey),
-    pc.SecureRandom('Fortuna')
-      ..seed(pc.KeyParameter(crypto_helpers.randomBytes(32))),
-  ));
+  signer.init(
+      true,
+      pc.ParametersWithRandom(
+        pc.PrivateKeyParameter<pc.RSAPrivateKey>(privateKey),
+        pc.SecureRandom('Fortuna')
+          ..seed(pc.KeyParameter(crypto_helpers.randomBytes(32))),
+      ));
   final sig = signer.generateSignature(message) as pc.RSASignature;
   return sig.bytes;
 }

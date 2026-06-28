@@ -20,18 +20,21 @@ class ReassemblyBuffer {
 
     // SECURITY: Reject data past max offset gap to prevent sparse-buffer DoS.
     if (offset - _readOffset > maxOffsetGap) {
-      throw StateError('ReassemblyBuffer: offset gap exceeds max ($maxOffsetGap)');
+      throw StateError(
+          'ReassemblyBuffer: offset gap exceeds max ($maxOffsetGap)');
     }
 
     // SECURITY: Reject if total buffered bytes would exceed max.
     if (_bufferedBytes + data.length > maxBufferSize) {
-      throw StateError('ReassemblyBuffer: size limit ($maxBufferSize) exceeded');
+      throw StateError(
+          'ReassemblyBuffer: size limit ($maxBufferSize) exceeded');
     }
 
     // SECURITY: Reject if fragment count would exceed max.
     final newFragment = !_buffer.containsKey(offset);
     if (newFragment && _buffer.length >= maxFragmentCount) {
-      throw StateError('ReassemblyBuffer: fragment limit ($maxFragmentCount) exceeded');
+      throw StateError(
+          'ReassemblyBuffer: fragment limit ($maxFragmentCount) exceeded');
     }
 
     _buffer[offset] = data;

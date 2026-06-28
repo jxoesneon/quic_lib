@@ -2,9 +2,9 @@ import 'dart:mirrors';
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:dart_quic/src/wire/packet_builder.dart';
-import 'package:dart_quic/src/wire/packet_header.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/packet_builder.dart';
+import 'package:quic_lib/src/wire/packet_header.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 
 class _UnknownHeader implements PacketHeader {
   @override
@@ -93,8 +93,10 @@ void main() {
       final classMirror = reflectClass(PacketBuilder);
       final methodMirror = classMirror.declarations.values
           .whereType<MethodMirror>()
-          .firstWhere((m) => MirrorSystem.getName(m.simpleName) == '_encodeVarInt');
-      final result = classMirror.invoke(methodMirror.simpleName, [100]).reflectee as Uint8List;
+          .firstWhere(
+              (m) => MirrorSystem.getName(m.simpleName) == '_encodeVarInt');
+      final result = classMirror
+          .invoke(methodMirror.simpleName, [100]).reflectee as Uint8List;
       expect(result.length, equals(2));
       expect(result[0], equals(0x40 | (100 >> 8)));
       expect(result[1], equals(100 & 0xFF));
@@ -104,9 +106,11 @@ void main() {
       final classMirror = reflectClass(PacketBuilder);
       final methodMirror = classMirror.declarations.values
           .whereType<MethodMirror>()
-          .firstWhere((m) => MirrorSystem.getName(m.simpleName) == '_encodeVarInt');
+          .firstWhere(
+              (m) => MirrorSystem.getName(m.simpleName) == '_encodeVarInt');
       final value = 0x12345678;
-      final result = classMirror.invoke(methodMirror.simpleName, [value]).reflectee as Uint8List;
+      final result = classMirror
+          .invoke(methodMirror.simpleName, [value]).reflectee as Uint8List;
       expect(result.length, equals(4));
       expect(result[0], equals(0x80 | (value >> 24)));
       expect(result[1], equals((value >> 16) & 0xFF));
@@ -118,9 +122,11 @@ void main() {
       final classMirror = reflectClass(PacketBuilder);
       final methodMirror = classMirror.declarations.values
           .whereType<MethodMirror>()
-          .firstWhere((m) => MirrorSystem.getName(m.simpleName) == '_encodeVarInt');
+          .firstWhere(
+              (m) => MirrorSystem.getName(m.simpleName) == '_encodeVarInt');
       final value = 0x123456789ABCDEF0;
-      final result = classMirror.invoke(methodMirror.simpleName, [value]).reflectee as Uint8List;
+      final result = classMirror
+          .invoke(methodMirror.simpleName, [value]).reflectee as Uint8List;
       expect(result.length, equals(8));
       expect(result[0], equals(0xC0 | ((value >> 56) & 0xFF)));
       expect(result[1], equals((value >> 48) & 0xFF));
@@ -136,8 +142,10 @@ void main() {
       final classMirror = reflectClass(PacketBuilder);
       final methodMirror = classMirror.declarations.values
           .whereType<MethodMirror>()
-          .firstWhere((m) => MirrorSystem.getName(m.simpleName) == '_pnLenFromValue');
-      final result = classMirror.invoke(methodMirror.simpleName, [0x100]).reflectee as int;
+          .firstWhere(
+              (m) => MirrorSystem.getName(m.simpleName) == '_pnLenFromValue');
+      final result =
+          classMirror.invoke(methodMirror.simpleName, [0x100]).reflectee as int;
       expect(result, equals(2));
     });
 
@@ -145,8 +153,10 @@ void main() {
       final classMirror = reflectClass(PacketBuilder);
       final methodMirror = classMirror.declarations.values
           .whereType<MethodMirror>()
-          .firstWhere((m) => MirrorSystem.getName(m.simpleName) == '_pnLenFromValue');
-      final result = classMirror.invoke(methodMirror.simpleName, [0x10000]).reflectee as int;
+          .firstWhere(
+              (m) => MirrorSystem.getName(m.simpleName) == '_pnLenFromValue');
+      final result = classMirror
+          .invoke(methodMirror.simpleName, [0x10000]).reflectee as int;
       expect(result, equals(3));
     });
 
@@ -154,8 +164,11 @@ void main() {
       final classMirror = reflectClass(PacketBuilder);
       final ctorMirror = classMirror.declarations.values
           .whereType<MethodMirror>()
-          .firstWhere((m) => m.isConstructor && MirrorSystem.getName(m.simpleName).contains('_'));
-      final instance = classMirror.newInstance(ctorMirror.constructorName, []).reflectee;
+          .firstWhere((m) =>
+              m.isConstructor &&
+              MirrorSystem.getName(m.simpleName).contains('_'));
+      final instance =
+          classMirror.newInstance(ctorMirror.constructorName, []).reflectee;
       expect(instance, isA<PacketBuilder>());
     });
   });

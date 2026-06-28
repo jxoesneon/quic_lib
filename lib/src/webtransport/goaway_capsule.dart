@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/wire/varint.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 
 /// A WebTransport GOAWAY capsule (draft-ietf-webtrans-http3).
 ///

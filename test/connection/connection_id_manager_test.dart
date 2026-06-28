@@ -1,4 +1,4 @@
-import 'package:dart_quic/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/connection/connection_id_manager.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -49,7 +49,8 @@ void main() {
       for (var i = 0; i < ConnectionIdManager.maxActiveIds; i++) {
         manager.issueNewId();
       }
-      expect(manager.activeIds.length, equals(ConnectionIdManager.maxActiveIds));
+      expect(
+          manager.activeIds.length, equals(ConnectionIdManager.maxActiveIds));
 
       // The next issueNewId should throw.
       expect(
@@ -62,7 +63,9 @@ void main() {
       final issued = <String>{};
       for (var i = 0; i < ConnectionIdManager.maxActiveIds; i++) {
         final record = manager.issueNewId();
-        final key = record.connectionId.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+        final key = record.connectionId
+            .map((b) => b.toRadixString(16).padLeft(2, '0'))
+            .join();
         expect(issued.contains(key), isFalse, reason: 'Duplicate CID detected');
         issued.add(key);
       }

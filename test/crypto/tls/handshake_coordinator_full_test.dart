@@ -1,14 +1,13 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/initial_secrets.dart';
-import 'package:dart_quic/src/crypto/key_manager.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_coordinator.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_key_exchange.dart'
-    as hke;
-import 'package:dart_quic/src/crypto/tls/tls_message_builder.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/initial_secrets.dart';
+import 'package:quic_lib/src/crypto/key_manager.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_coordinator.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_key_exchange.dart' as hke;
+import 'package:quic_lib/src/crypto/tls/tls_message_builder.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 import 'package:test/test.dart';
 
 import '../../helpers/mock_crypto_backend.dart';
@@ -25,7 +24,8 @@ class _TestCryptoBackend extends MockCryptoBackend {
       Future.value(List<int>.filled(length, 0));
 
   @override
-  Future<List<int>> hmac(HashAlgorithm hash, SecretKey key, List<int> data) async {
+  Future<List<int>> hmac(
+      HashAlgorithm hash, SecretKey key, List<int> data) async {
     return List<int>.filled(32, 0xAB);
   }
 }
@@ -75,14 +75,16 @@ void main() {
       // Can't directly verify _masterSecret, but installApplicationKeys should work.
     });
 
-    test('installApplicationKeys throws when master secret not derived', () async {
+    test('installApplicationKeys throws when master secret not derived',
+        () async {
       expect(
         () => coordinator.installApplicationKeys(),
         throwsA(isA<StateError>()),
       );
     });
 
-    test('installHandshakeKeys throws when traffic secrets not available', () async {
+    test('installHandshakeKeys throws when traffic secrets not available',
+        () async {
       expect(
         () => coordinator.installHandshakeKeys(),
         throwsA(isA<StateError>()),

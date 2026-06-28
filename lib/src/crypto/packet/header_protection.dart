@@ -204,5 +204,4 @@ class HeaderProtection {
   }
 
   static int _varIntLength(int firstByte) => 1 << (firstByte >> 6);
-
 }

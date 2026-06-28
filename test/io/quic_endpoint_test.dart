@@ -2,16 +2,16 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/io/quic_endpoint.dart';
-import 'package:dart_quic/src/connection/quic_connection.dart';
-import 'package:dart_quic/src/connection/connection_state_machine.dart';
-import 'package:dart_quic/src/connection/connection_id_manager.dart';
-import 'package:dart_quic/src/streams/stream_id.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/recovery/rtt_estimator.dart';
-import 'package:dart_quic/src/recovery/loss_detector.dart';
-import 'package:dart_quic/src/recovery/pto_scheduler.dart';
-import 'package:dart_quic/src/recovery/congestion_controller.dart';
+import 'package:quic_lib/src/io/quic_endpoint.dart';
+import 'package:quic_lib/src/connection/quic_connection.dart';
+import 'package:quic_lib/src/connection/connection_state_machine.dart';
+import 'package:quic_lib/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/streams/stream_id.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/recovery/rtt_estimator.dart';
+import 'package:quic_lib/src/recovery/loss_detector.dart';
+import 'package:quic_lib/src/recovery/pto_scheduler.dart';
+import 'package:quic_lib/src/recovery/congestion_controller.dart';
 import 'package:test/test.dart';
 
 Uint8List _buildInitialPacket(List<int> dcid) {
@@ -96,12 +96,16 @@ void main() {
       await expectLater(endpoint.connections.toList(), completion(isEmpty));
     });
 
-    test('connect creates a connection and adds to activeConnections', () async {
+    test('connect creates a connection and adds to activeConnections',
+        () async {
       final endpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
       final conn = await endpoint.connect(InternetAddress.loopbackIPv4, 1234);
       expect(conn, isNotNull);
       expect(endpoint.activeConnections, contains(conn));
-      expect(endpoint.isolateSupervisor.contains(conn.connectionId?.toString() ?? 'unknown'), isTrue);
+      expect(
+          endpoint.isolateSupervisor
+              .contains(conn.connectionId?.toString() ?? 'unknown'),
+          isTrue);
       endpoint.close();
     });
 
@@ -115,7 +119,8 @@ void main() {
       final dcid = List<int>.filled(8, 0xAB);
       final initialPacket = _buildInitialPacket(dcid);
 
-      final rawSocket = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final rawSocket =
+          await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
       rawSocket.send(initialPacket, server.localAddress, server.localPort);
 
       await Future.delayed(Duration(milliseconds: 200));
@@ -146,9 +151,12 @@ void main() {
     });
 
     test('send transmits packet via UDP', () async {
-      final endpoint1 = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
-      final endpoint2 = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
-      final conn = await endpoint1.connect(endpoint2.localAddress, endpoint2.localPort);
+      final endpoint1 =
+          await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
+      final endpoint2 =
+          await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
+      final conn =
+          await endpoint1.connect(endpoint2.localAddress, endpoint2.localPort);
 
       expect(
         () => endpoint1.send(conn, Uint8List.fromList([1, 2, 3])),
@@ -162,14 +170,16 @@ void main() {
     test('send does nothing for unknown connection', () async {
       final endpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
       final conn = _createConnection();
-      expect(() => endpoint.send(conn, Uint8List.fromList([1])), returnsNormally);
+      expect(
+          () => endpoint.send(conn, Uint8List.fromList([1])), returnsNormally);
       endpoint.close();
     });
 
     test('getRemoteAddress and getRemotePort', () async {
       final endpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
       final conn = await endpoint.connect(InternetAddress.loopbackIPv4, 1234);
-      expect(endpoint.getRemoteAddress(conn)?.address, equals(InternetAddress.loopbackIPv4.address));
+      expect(endpoint.getRemoteAddress(conn)?.address,
+          equals(InternetAddress.loopbackIPv4.address));
       expect(endpoint.getRemotePort(conn), equals(1234));
       endpoint.close();
     });
@@ -186,7 +196,8 @@ void main() {
       final endpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
       final conn = await endpoint.connect(InternetAddress.loopbackIPv4, 1234);
       expect(endpoint.getRemotePort(conn), equals(1234));
-      await endpoint.migrateConnection(conn, InternetAddress.loopbackIPv4, 5678);
+      await endpoint.migrateConnection(
+          conn, InternetAddress.loopbackIPv4, 5678);
       expect(endpoint.getRemotePort(conn), equals(5678));
       endpoint.close();
     });
@@ -194,21 +205,31 @@ void main() {
     test('isRemoteAddressChanged returns true when changed', () async {
       final endpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
       final conn = await endpoint.connect(InternetAddress.loopbackIPv4, 1234);
-      expect(endpoint.isRemoteAddressChanged(conn, InternetAddress.loopbackIPv4, 5678), isTrue);
+      expect(
+          endpoint.isRemoteAddressChanged(
+              conn, InternetAddress.loopbackIPv4, 5678),
+          isTrue);
       endpoint.close();
     });
 
     test('isRemoteAddressChanged returns false when same', () async {
       final endpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
       final conn = await endpoint.connect(InternetAddress.loopbackIPv4, 1234);
-      expect(endpoint.isRemoteAddressChanged(conn, InternetAddress.loopbackIPv4, 1234), isFalse);
+      expect(
+          endpoint.isRemoteAddressChanged(
+              conn, InternetAddress.loopbackIPv4, 1234),
+          isFalse);
       endpoint.close();
     });
 
-    test('isRemoteAddressChanged returns true for unknown connection', () async {
+    test('isRemoteAddressChanged returns true for unknown connection',
+        () async {
       final endpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
       final conn = _createConnection();
-      expect(endpoint.isRemoteAddressChanged(conn, InternetAddress.loopbackIPv4, 1234), isTrue);
+      expect(
+          endpoint.isRemoteAddressChanged(
+              conn, InternetAddress.loopbackIPv4, 1234),
+          isTrue);
       endpoint.close();
     });
 
@@ -270,7 +291,8 @@ void main() {
       // Trigger server to accept a connection by sending an Initial packet
       final dcid = List<int>.filled(8, 0xAB);
       final initialPacket = _buildInitialPacket(dcid);
-      final rawSocket = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final rawSocket =
+          await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
       rawSocket.send(initialPacket, server.localAddress, server.localPort);
 
       await Future.delayed(Duration(milliseconds: 200));
@@ -286,13 +308,15 @@ void main() {
       server.close();
     });
 
-    test('incoming non-Initial datagram without matching connection is dropped', () async {
+    test('incoming non-Initial datagram without matching connection is dropped',
+        () async {
       final endpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
 
       final dcid = List<int>.filled(8, 0xFF);
       final packet = _buildShortHeaderPacket(dcid);
 
-      final rawSocket = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final rawSocket =
+          await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
       rawSocket.send(packet, endpoint.localAddress, endpoint.localPort);
 
       await Future.delayed(Duration(milliseconds: 100));
@@ -302,13 +326,16 @@ void main() {
       endpoint.close();
     });
 
-    test('incoming non-Initial long header without matching connection is dropped', () async {
+    test(
+        'incoming non-Initial long header without matching connection is dropped',
+        () async {
       final endpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
 
       final dcid = List<int>.filled(8, 0xFF);
       final packet = _buildNonInitialLongHeaderPacket(dcid);
 
-      final rawSocket = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final rawSocket =
+          await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
       rawSocket.send(packet, endpoint.localAddress, endpoint.localPort);
 
       await Future.delayed(Duration(milliseconds: 100));
@@ -321,7 +348,8 @@ void main() {
     test('incoming empty datagram is dropped', () async {
       final endpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
 
-      final rawSocket = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final rawSocket =
+          await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
       rawSocket.send(Uint8List(0), endpoint.localAddress, endpoint.localPort);
 
       await Future.delayed(Duration(milliseconds: 100));
@@ -331,12 +359,16 @@ void main() {
       endpoint.close();
     });
 
-    test('incoming datagram with short header and insufficient length is dropped', () async {
+    test(
+        'incoming datagram with short header and insufficient length is dropped',
+        () async {
       final endpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
 
       // Short header packet with only 1 byte - no DCID/payload
-      final rawSocket = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
-      rawSocket.send(Uint8List.fromList([0x40]), endpoint.localAddress, endpoint.localPort);
+      final rawSocket =
+          await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
+      rawSocket.send(Uint8List.fromList([0x40]), endpoint.localAddress,
+          endpoint.localPort);
 
       await Future.delayed(Duration(milliseconds: 100));
       expect(endpoint.activeConnections, isEmpty);
@@ -349,8 +381,10 @@ void main() {
       final endpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
 
       // Long header with only 5 bytes - not enough for DCID length + DCID
-      final rawSocket = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
-      rawSocket.send(Uint8List.fromList([0x80, 0x00, 0x00, 0x00, 0x01]), endpoint.localAddress, endpoint.localPort);
+      final rawSocket =
+          await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
+      rawSocket.send(Uint8List.fromList([0x80, 0x00, 0x00, 0x00, 0x01]),
+          endpoint.localAddress, endpoint.localPort);
 
       await Future.delayed(Duration(milliseconds: 100));
       expect(endpoint.activeConnections, isEmpty);

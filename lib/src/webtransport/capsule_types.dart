@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/utils/collections.dart';
-import 'package:dart_quic/src/wire/varint.dart';
+import 'package:quic_lib/src/utils/collections.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 
 /// Capsule types for WebTransport over HTTP/3 (RFC 9220).
 enum CapsuleType {
@@ -48,7 +48,8 @@ class Capsule {
       typeBytes.length + lengthBytes.length,
       lengthBytes,
     );
-    result.setRange(typeBytes.length + lengthBytes.length, result.length, payload);
+    result.setRange(
+        typeBytes.length + lengthBytes.length, result.length, payload);
     return result;
   }
 
@@ -72,7 +73,8 @@ class Capsule {
       buffer,
       offset: baseOffset + typeByteLength,
     );
-    final lengthByteLength = VarInt.decodeLength(bytes[offset + typeByteLength]);
+    final lengthByteLength =
+        VarInt.decodeLength(bytes[offset + typeByteLength]);
 
     final headerLength = typeByteLength + lengthByteLength;
     final totalLength = headerLength + lengthValue;
@@ -116,5 +118,3 @@ class Capsule {
   String toString() =>
       'Capsule(type: ${type.name}, payload: ${payload.length} bytes)';
 }
-
-

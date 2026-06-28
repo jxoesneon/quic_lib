@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/webtransport/capsule_types.dart';
-import 'package:dart_quic/src/webtransport/stream_capsule.dart';
-import 'package:dart_quic/src/webtransport/webtransport_session.dart';
-import 'package:dart_quic/src/wire/varint.dart';
+import 'package:quic_lib/src/webtransport/capsule_types.dart';
+import 'package:quic_lib/src/webtransport/stream_capsule.dart';
+import 'package:quic_lib/src/webtransport/webtransport_session.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -44,30 +44,38 @@ void main() {
     });
 
     test('hashCode is consistent', () {
-      final a = StreamCapsule(streamId: 42, type: CapsuleType.registerBidirectionalStream);
-      final b = StreamCapsule(streamId: 42, type: CapsuleType.registerBidirectionalStream);
+      final a = StreamCapsule(
+          streamId: 42, type: CapsuleType.registerBidirectionalStream);
+      final b = StreamCapsule(
+          streamId: 42, type: CapsuleType.registerBidirectionalStream);
       expect(a.hashCode, equals(b.hashCode));
     });
 
     test('equals returns false for non-StreamCapsule', () {
-      final capsule = StreamCapsule(streamId: 42, type: CapsuleType.registerBidirectionalStream);
+      final capsule = StreamCapsule(
+          streamId: 42, type: CapsuleType.registerBidirectionalStream);
       expect(capsule == 'not a capsule', isFalse);
     });
 
     test('equals returns false for different streamId', () {
-      final a = StreamCapsule(streamId: 1, type: CapsuleType.registerBidirectionalStream);
-      final b = StreamCapsule(streamId: 2, type: CapsuleType.registerBidirectionalStream);
+      final a = StreamCapsule(
+          streamId: 1, type: CapsuleType.registerBidirectionalStream);
+      final b = StreamCapsule(
+          streamId: 2, type: CapsuleType.registerBidirectionalStream);
       expect(a == b, isFalse);
     });
 
     test('equals returns false for different type', () {
-      final a = StreamCapsule(streamId: 42, type: CapsuleType.registerBidirectionalStream);
-      final b = StreamCapsule(streamId: 42, type: CapsuleType.registerUnidirectionalStream);
+      final a = StreamCapsule(
+          streamId: 42, type: CapsuleType.registerBidirectionalStream);
+      final b = StreamCapsule(
+          streamId: 42, type: CapsuleType.registerUnidirectionalStream);
       expect(a == b, isFalse);
     });
 
     test('equals returns true for identical instance', () {
-      final capsule = StreamCapsule(streamId: 42, type: CapsuleType.registerBidirectionalStream);
+      final capsule = StreamCapsule(
+          streamId: 42, type: CapsuleType.registerBidirectionalStream);
       expect(capsule == capsule, isTrue);
     });
 
@@ -86,7 +94,8 @@ void main() {
     test('serialize/parse with multi-byte type', () {
       final original = StreamCapsule(
         streamId: 42,
-        type: CapsuleType.closeWebTransportSession, // value 0x1a4 = 420 (2-byte varint)
+        type: CapsuleType
+            .closeWebTransportSession, // value 0x1a4 = 420 (2-byte varint)
       );
       final bytes = original.serialize();
       // Type (420 = 2 bytes) + streamId (42 = 1 byte) = 3 bytes total.
@@ -99,7 +108,8 @@ void main() {
   group('StreamCapsuleRegistry', () {
     test('register and get', () {
       final registry = StreamCapsuleRegistry();
-      final capsule = Capsule(type: CapsuleType.registerBidirectionalStream, payload: Uint8List(0));
+      final capsule = Capsule(
+          type: CapsuleType.registerBidirectionalStream, payload: Uint8List(0));
       registry.register(8, capsule);
       expect(registry.get(8), isNotNull);
       expect(registry.get(8)!.streamId, equals(8));
@@ -112,7 +122,9 @@ void main() {
 
     test('isRegistered returns correct boolean', () {
       final registry = StreamCapsuleRegistry();
-      final capsule = Capsule(type: CapsuleType.registerUnidirectionalStream, payload: Uint8List(0));
+      final capsule = Capsule(
+          type: CapsuleType.registerUnidirectionalStream,
+          payload: Uint8List(0));
       registry.register(12, capsule);
       expect(registry.isRegistered(12), isTrue);
       expect(registry.isRegistered(99), isFalse);

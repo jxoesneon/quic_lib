@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/streams/flow_controller.dart';
-import 'package:dart_quic/src/streams/quic_stream.dart';
-import 'package:dart_quic/src/streams/stream_manager.dart';
-import 'package:dart_quic/src/streams/stream_scheduler.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/streams/flow_controller.dart';
+import 'package:quic_lib/src/streams/quic_stream.dart';
+import 'package:quic_lib/src/streams/stream_manager.dart';
+import 'package:quic_lib/src/streams/stream_scheduler.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 import 'package:test/test.dart';
 
 class _TestScheduler implements StreamScheduler {

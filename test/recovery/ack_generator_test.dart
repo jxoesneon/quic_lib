@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/recovery/ack_generator.dart';
+import 'package:quic_lib/src/recovery/ack_generator.dart';
 
 void main() {
   group('AckGenerator', () {

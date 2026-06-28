@@ -1,4 +1,4 @@
-import 'package:dart_quic/src/crypto/cipher_suites.dart';
+import 'package:quic_lib/src/crypto/cipher_suites.dart';
 import 'package:test/test.dart';
 
 void main() {

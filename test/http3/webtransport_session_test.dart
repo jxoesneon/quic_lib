@@ -4,6 +4,7 @@ import 'package:quic_lib/src/http3/capsule_protocol.dart';
 import 'package:quic_lib/src/http3/frame_types.dart';
 import 'package:quic_lib/src/http3/http3_connection.dart';
 import 'package:quic_lib/src/http3/http3_response.dart';
+import 'package:quic_lib/src/http3/settings_frame.dart';
 import 'package:quic_lib/src/http3/webtransport_session.dart';
 import 'package:test/test.dart';
 
@@ -91,6 +92,12 @@ void main() {
       );
 
       final session = await future;
+
+      // Enable HTTP Datagrams via peer SETTINGS.
+      conn.onSettingsReceived(
+        Http3SettingsFrame.from(h3Datagram: 1),
+      );
+
       final data = Uint8List.fromList([1, 2, 3]);
       session.sendDatagram(data);
 

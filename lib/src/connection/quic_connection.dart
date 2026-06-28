@@ -255,6 +255,11 @@ class QuicConnection {
   /// Whether ECN has been validated for this connection (RFC 9000 Section 13.4.2).
   bool get isEcnValidated => _ecnValidated;
 
+  /// Note: ECN codepoint marking at the IP layer (ECT(0)=2, ECT(1)=3) is not
+  /// implemented because Dart's [RawDatagramSocket] does not expose platform-
+  /// specific socket options such as `IP_TOS` (Linux) or `IP_TOS`/`Traffic
+  /// Class` (Windows). ECN validation via [AckEcnFrame] is fully supported.
+
   /// The first active connection ID, or null if none have been issued.
   List<int>? get connectionId {
     final ids = _cidManager.activeIds;

@@ -11,6 +11,7 @@ import 'headers_frame.dart';
 import 'http3_request.dart';
 import 'http3_response.dart';
 import 'http3_stream.dart';
+import 'max_push_id_frame.dart';
 import 'origin_frame.dart';
 import 'priority_update_frame.dart';
 import 'push_promise_frame.dart';
@@ -101,6 +102,7 @@ class Http3Connection {
   final Map<int, HeadersFrame> _pendingHeaders = {};
   final Map<int, List<DataFrame>> _pendingData = {};
   final Map<int, Http3PushPromiseFrame> _pushPromises = {};
+  int _maxPushId = -1;
   final List<Uint8List> _pendingQuicPackets = [];
   final List<String> _alternativeOrigins = [];
   final List<PriorityUpdateFrame> _pendingPriorityUpdates = [];
@@ -154,6 +156,10 @@ class Http3Connection {
   /// True if the peer has enabled HTTP Datagrams (RFC 9297).
   bool get isH3DatagramEnabled =>
       (_peerSettings.settings[Http3SettingsId.h3Datagram.value] ?? 0) != 0;
+
+  /// The maximum Push ID advertised by the peer via MAX_PUSH_ID frames.
+  /// Returns -1 if no MAX_PUSH_ID has been received.
+  int get maxPushId => _maxPushId;
 
   /// Pending SETTINGS frame to be sent on the control stream.
   Http3SettingsFrame? get pendingSettings => _pendingSettings;
@@ -386,7 +392,14 @@ class Http3Connection {
   ///
   /// Falls back to a DATAGRAM capsule if the underlying transport does not
   /// support QUIC datagrams.
+  ///
+  /// Throws [StateError] if HTTP Datagrams are not enabled by the peer.
   void sendDatagram(int sessionId, Uint8List data) {
+    if (!isH3DatagramEnabled) {
+      throw StateError(
+        'HTTP Datagrams not enabled: peer did not send SETTINGS_H3_DATAGRAM',
+      );
+    }
     final quic = _quicConnection as dynamic;
     try {
       quic.sendDatagram(data);
@@ -456,6 +469,12 @@ class Http3Connection {
           Uint8List.fromList(frame.payload),
         );
         _pushPromises.remove(cancelFrame.pushId);
+        break;
+      case Http3FrameType.maxPushId:
+        final maxPushIdFrame = Http3MaxPushIdFrame.parsePayload(
+          Uint8List.fromList(frame.payload),
+        );
+        _maxPushId = maxPushIdFrame.pushId;
         break;
       case Http3FrameType.origin:
         final originFrame = OriginFrame.parsePayload(

@@ -106,7 +106,7 @@ class Libp2pQuicTransport {
 
     final (address, port) = _parseMultiaddr(multiaddr);
     if (address == null || port == null) {
-      throw FormatException('Multiaddr must contain IP and port: $multiaddr');
+      throw FormatException('Multiaddr must contain IP and port');
     }
 
     _endpoint = await QuicEndpoint.bind(address, port);
@@ -144,7 +144,7 @@ class Libp2pQuicTransport {
 
     final (address, port) = _parseMultiaddr(multiaddr);
     if (address == null || port == null) {
-      throw FormatException('Multiaddr must contain IP and port: $multiaddr');
+      throw FormatException('Multiaddr must contain IP and port');
     }
 
     _endpoint ??= await QuicEndpoint.bind(InternetAddress.anyIPv4, 0);

@@ -130,7 +130,7 @@ class PeerId {
       final char = stripped[i];
       final idx = map[char];
       if (idx == null) {
-        throw ArgumentError('Invalid Base58 character: $char');
+        throw ArgumentError('Invalid Base58 character in peer ID');
       }
       value = value * BigInt.from(58) + BigInt.from(idx);
     }
@@ -207,7 +207,7 @@ class PeerId {
       final char = stripped[i];
       final idx = map[char];
       if (idx == null) {
-        throw ArgumentError('Invalid Base36 character: $char');
+        throw ArgumentError('Invalid Base36 character in peer ID');
       }
       value = value * BigInt.from(36) + BigInt.from(idx);
     }

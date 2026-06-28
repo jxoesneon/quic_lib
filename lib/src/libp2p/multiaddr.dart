@@ -80,7 +80,7 @@ class Multiaddr {
 
       final name = _protocolsByCode[code];
       if (name == null) {
-        throw FormatException('unknown protocol code: $code');
+        throw FormatException('unknown protocol code in multiaddr');
       }
       final info = _protocolsByName[name]!;
 
@@ -89,7 +89,7 @@ class Multiaddr {
         if (info.size != null) {
           final size = info.size!;
           if (offset + size > bytes.length) {
-            throw FormatException('truncated value for protocol $name');
+            throw FormatException('truncated fixed-size value in multiaddr');
           }
           final valueBytes = bytes.sublist(offset, offset + size);
           offset += size;
@@ -98,7 +98,8 @@ class Multiaddr {
           final (length, lengthBytes) = _decodeUvarint(bytes, offset);
           offset += lengthBytes;
           if (offset + length > bytes.length) {
-            throw FormatException('truncated value for protocol $name');
+            throw FormatException(
+                'truncated variable-length value in multiaddr');
           }
           final valueBytes = bytes.sublist(offset, offset + length);
           offset += length;
@@ -269,7 +270,7 @@ void _validateValue(String protocol, String value) {
     case 'udp':
       final port = int.tryParse(value);
       if (port == null || port < 0 || port > 65535) {
-        throw FormatException('invalid port: $value');
+        throw FormatException('invalid port in multiaddr');
       }
       return;
     case 'dns':
@@ -277,7 +278,7 @@ void _validateValue(String protocol, String value) {
     case 'dns6':
     case 'p2p':
       if (value.isEmpty) {
-        throw FormatException('protocol $protocol value must not be empty');
+        throw FormatException('protocol value must not be empty');
       }
       return;
   }
@@ -301,7 +302,7 @@ Uint8List _valueToBytes(String protocol, String value) {
     case 'p2p':
       return Uint8List.fromList(utf8.encode(value));
     default:
-      throw FormatException('protocol $protocol does not support values');
+      throw FormatException('protocol does not support values');
   }
 }
 
@@ -321,7 +322,7 @@ String _bytesToValue(String protocol, Uint8List bytes) {
     case 'p2p':
       return utf8.decode(bytes);
     default:
-      throw FormatException('protocol $protocol does not support values');
+      throw FormatException('protocol does not support values');
   }
 }
 

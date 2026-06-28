@@ -5,6 +5,7 @@ import 'package:dart_quic/src/crypto/key_manager.dart';
 import 'package:dart_quic/src/crypto/tls/crypto_message_parser.dart';
 import 'package:dart_quic/src/crypto/tls/handshake_key_exchange.dart';
 import 'package:dart_quic/src/crypto/tls/tls_handshake_types.dart';
+import 'package:dart_quic/src/crypto/tls/transcript_hash.dart';
 import 'package:dart_quic/src/recovery/packet_number_space.dart';
 import 'package:dart_quic/src/wire/frame.dart';
 
@@ -33,6 +34,7 @@ class HandshakeCoordinator {
   final HandshakeRole role;
   final KeyManager keyManager;
   final HandshakeKeyExchange _keyExchange;
+  final TranscriptHash _transcriptHash;
 
   ({SecretKey clientSecret, SecretKey serverSecret})? _trafficSecrets;
 
@@ -41,13 +43,17 @@ class HandshakeCoordinator {
     required this.backend,
     required this.role,
     required this.keyManager,
-  }) : _keyExchange = HandshakeKeyExchange(backend, role);
+  })  : _keyExchange = HandshakeKeyExchange(backend, role),
+        _transcriptHash = TranscriptHash(backend);
 
   /// Generates ephemeral X25519 keys for this endpoint.
   Future<void> generateKeys() => _keyExchange.generateEphemeralKeys();
 
   /// True if ephemeral keys have been generated.
   bool get hasGeneratedKeys => _keyExchange.publicKey != null;
+
+  /// The running transcript hash of all handshake messages processed so far.
+  TranscriptHash get transcriptHash => _transcriptHash;
 
   /// Processes an incoming ClientHello [frame], extracts the peer's X25519
   /// public key from the key_share extension, computes the shared secret,
@@ -59,6 +65,9 @@ class HandshakeCoordinator {
   /// so that downstream tests can proceed without a fully valid ClientHello.
   Future<SecretKey> processClientHello(CryptoFrame clientHello) async {
     final peerPublicKey = _extractX25519PublicKey(clientHello.data);
+
+    // Add ClientHello to the running transcript hash.
+    await _transcriptHash.addMessage(clientHello.data);
 
     final sharedSecret = await _keyExchange.computeSharedSecret(peerPublicKey);
 

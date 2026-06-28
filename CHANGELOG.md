@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] — 2026-06-27
+
+### Added
+- **TLS transcript hash tracking** — `TranscriptHash` maintains a running SHA-256 hash of all handshake messages; `HandshakeCoordinator` adds ClientHello to transcript before shared secret computation
+- **HTTP/3 GOAWAY frame sending** — `Http3Connection.close()` creates and records an `Http3GoawayFrame`; `lastAcceptedStreamId` tracks highest stream ID from HEADERS/DATA frames; `hasSentGoaway`/`sentGoawayFrames` getters
+- **QUIC v2 long header format** — `V2LongHeader` implements RFC 9369 v2 packet header format with distinct first-byte encoding; full serialize/parse round-trip support for all four packet types
+- **WebTransport GOAWAY capsule** — `CapsuleType.goaway(0x1d)`; `GoawayCapsule` with optional `streamId`; `WebTransportSession.receivedGoaway`/`sendGoaway()`
+- **Production connection migration scaffold** — `QuicEndpoint.rebindToAddress()` validates new path and updates stored remote address after PATH_CHALLENGE/RESPONSE
+- **X.509 certificate parser scaffold** — `X509Certificate` with TBSCertificate, signature, issuer, subject, validity dates, public key info; `parseX509()` validates DER SEQUENCE tag; `verifyX509Signature()` scaffold; wired into `CertificateChain` and `CertificateVerifier`
+- Integration tests: `test/crypto/tls/transcript_hash_test.dart` (5 tests), `test/http3/goaway_sending_test.dart` (6 tests), `test/wire/v2_header_test.dart` (13 tests), `test/webtransport/goaway_capsule_test.dart` (3 tests), `test/io/rebind_test.dart` (1 test), `test/crypto/tls/x509_parser_test.dart` (4 tests), `test/integration/post_v100_test.dart` (11 tests)
+
+---
+
 ## [1.0.0] — 2026-06-27
 
 ### Added

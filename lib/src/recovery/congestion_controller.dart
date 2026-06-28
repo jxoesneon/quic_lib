@@ -1,7 +1,10 @@
+import 'package:quic_lib/src/connection/congestion_control/congestion_controller.dart'
+    as cc;
+
 /// NewReno congestion controller per RFC 9002 Section 7.
 ///
 /// Implements slow start, congestion avoidance, and recovery.
-class CongestionController {
+class CongestionController implements cc.CongestionController {
   /// Initial congestion window in bytes (RFC 9002: 2 * max_datagram_size, default 1200).
   static const int initialWindow = 2400;
 
@@ -16,6 +19,7 @@ class CongestionController {
   int _congestionRecoveryStartTime = -1; // -1 means not in recovery.
 
   /// Current congestion window in bytes.
+  @override
   int get congestionWindow => _congestionWindow;
 
   /// Slow start threshold. -1 means no threshold (always in slow start).
@@ -28,25 +32,28 @@ class CongestionController {
   bool get inRecovery => _congestionRecoveryStartTime >= 0;
 
   /// Bytes in flight.
+  @override
   int get bytesInFlight => _bytesInFlight;
 
   /// Register a packet as sent (adds to bytes_in_flight).
   ///
   /// Callers MUST only account in-flight packets (those containing ack-eliciting
   /// frames). Per RFC 9000 Errata 8240, CONNECTION_CLOSE frames do not count.
-  void onPacketSent(int bytes) {
+  @override
+  void onPacketSent(int packetNumber, int size) {
     // SECURITY: Reject negative byte counts.
-    if (bytes < 0) bytes = 0;
-    _bytesInFlight += bytes;
+    if (size < 0) size = 0;
+    _bytesInFlight += size;
   }
 
   /// Process an ACK.
-  void onAckReceived(int ackedBytes) {
+  @override
+  void onAckReceived(int largestAcked, int newlyAckedBytes, DateTime now) {
     // SECURITY: Reject negative ackedBytes to prevent integer underflow.
-    if (ackedBytes < 0) ackedBytes = 0;
+    if (newlyAckedBytes < 0) newlyAckedBytes = 0;
 
     // Remove acknowledged bytes from bytes in flight.
-    _bytesInFlight -= ackedBytes;
+    _bytesInFlight -= newlyAckedBytes;
     if (_bytesInFlight < 0) {
       _bytesInFlight = 0;
     }
@@ -60,14 +67,14 @@ class CongestionController {
     const maxCwnd = 0x3FFFFFFFFFFFFFFF;
     if (inSlowStart) {
       // Slow start: cwnd += acked_bytes.
-      if (_congestionWindow > maxCwnd - ackedBytes) {
+      if (_congestionWindow > maxCwnd - newlyAckedBytes) {
         _congestionWindow = maxCwnd;
       } else {
-        _congestionWindow += ackedBytes;
+        _congestionWindow += newlyAckedBytes;
       }
     } else {
       // Congestion avoidance: cwnd += max_datagram_size * acked_bytes / cwnd.
-      final growth = (_maxDatagramSize * ackedBytes) ~/ _congestionWindow;
+      final growth = (_maxDatagramSize * newlyAckedBytes) ~/ _congestionWindow;
       if (_congestionWindow > maxCwnd - growth) {
         _congestionWindow = maxCwnd;
       } else {
@@ -77,14 +84,19 @@ class CongestionController {
   }
 
   /// Enter recovery (on loss detection).
-  void onCongestionEvent(int timeUs) {
+  @override
+  void onPacketLost(int packetNumber, int lostBytes, DateTime now) {
     if (inRecovery) {
       // Already in recovery; do not reduce cwnd again until exit.
       return;
     }
-    _congestionRecoveryStartTime = timeUs;
+    _congestionRecoveryStartTime = now.millisecondsSinceEpoch;
     _ssthresh = _congestionWindow ~/ 2;
     _congestionWindow = _ssthresh > minimumWindow ? _ssthresh : minimumWindow;
+    _bytesInFlight -= lostBytes;
+    if (_bytesInFlight < 0) {
+      _bytesInFlight = 0;
+    }
   }
 
   /// Exit recovery (RFC 9002 §7.3.2).
@@ -92,12 +104,26 @@ class CongestionController {
     _congestionRecoveryStartTime = -1;
   }
 
+  /// Record an RTT sample.
+  @override
+  void onRttSample(Duration rtt) {
+    // NewReno does not directly use RTT samples for cwnd.
+  }
+
+  /// React to ECN Congestion Experienced (CE) marks.
+  @override
+  void onECNCEMarked(int count) {
+    // Not implemented for NewReno; treat as no-op.
+  }
+
   /// Can we send [bytes]?
+  @override
   bool canSend(int bytes) {
     return _bytesInFlight + bytes <= _congestionWindow;
   }
 
   /// Reset to initial state.
+  @override
   void reset() {
     _congestionWindow = initialWindow;
     _ssthresh = -1;

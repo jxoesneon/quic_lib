@@ -7,6 +7,7 @@ import 'package:quic_lib/src/connection/packet_receiver.dart';
 import 'package:quic_lib/src/connection/packet_sender.dart';
 import 'package:quic_lib/src/connection/version_information.dart';
 import 'package:quic_lib/src/crypto/key_manager.dart';
+import 'package:quic_lib/src/crypto/tls/client_hello.dart';
 import 'package:quic_lib/src/crypto/tls/crypto_frame_assembler.dart';
 import 'package:quic_lib/src/crypto/tls/crypto_frame_handler.dart';
 import 'package:quic_lib/src/crypto/tls/handshake_state_machine.dart';
@@ -19,7 +20,9 @@ import 'package:quic_lib/src/recovery/packet_number_space.dart';
 import 'package:quic_lib/src/recovery/rtt_estimator.dart';
 import 'package:quic_lib/src/recovery/loss_detector.dart';
 import 'package:quic_lib/src/recovery/pto_scheduler.dart';
-import 'package:quic_lib/src/recovery/congestion_controller.dart';
+import 'package:quic_lib/src/connection/congestion_control/congestion_controller.dart';
+import 'package:quic_lib/src/connection/congestion_control/cubic.dart';
+import 'package:quic_lib/src/recovery/congestion_controller.dart' as recovery;
 import 'package:quic_lib/src/recovery/recovery_manager.dart';
 import 'package:quic_lib/src/recovery/pacing_calculator.dart';
 import 'package:quic_lib/src/recovery/sent_packet_tracker.dart';
@@ -28,6 +31,7 @@ import 'package:quic_lib/src/utils/hex.dart';
 import 'package:quic_lib/src/wire/frame.dart';
 import 'package:quic_lib/src/wire/varint.dart';
 import 'migration_helper.dart';
+import 'package:quic_lib/src/io/platform_address.dart';
 import 'package:quic_lib/src/wire/coalesced_packet.dart';
 import 'package:quic_lib/src/crypto/packet/protected_packet_codec.dart';
 
@@ -118,6 +122,32 @@ class QuicConnection {
   // RFC 9368 compatible version negotiation.
   VersionInformation? versionInformation;
 
+  // RFC 9000 Section 13.4 ECN counters.
+  int ect0Counter = 0;
+  int ect1Counter = 0;
+  int ceCounter = 0;
+
+  /// Whether ECN capability is advertised in transport parameters.
+  bool ecnEnabled = true;
+
+  /// Whether the peer is allowed to migrate (RFC 9000 Section 9).
+  bool allowMigration = true;
+
+  /// Preferred address for connection migration (RFC 9000 Section 9.6).
+  InternetAddress? preferredAddress;
+
+  /// Port for the preferred address.
+  int preferredAddressPort = 0;
+
+  // PSK / 0-RTT session resumption (RFC 8446 + RFC 9001).
+  Uint8List? pskTicket;
+  int? pskTicketAgeAdd;
+  bool attempt0Rtt = false;
+
+  /// Maximum amount of early data the server is willing to accept (bytes).
+  /// Defaults to `0xffff` as a conservative limit.
+  int maxEarlyData = 0xffff;
+
   // Frame-dispatch subsystems (nullable until handshake pipeline is fully wired).
   final CryptoFrameAssembler? _cryptoAssembler;
   final HandshakeStateMachine? _handshakeMachine;
@@ -144,7 +174,7 @@ class QuicConnection {
     required RttEstimator rttEstimator,
     required LossDetector lossDetector,
     required PtoScheduler ptoScheduler,
-    required CongestionController congestionController,
+    CongestionController? congestionController,
     required StreamIdAllocator streamIdAllocator,
     CryptoFrameAssembler? cryptoAssembler,
     HandshakeStateMachine? handshakeMachine,
@@ -152,13 +182,21 @@ class QuicConnection {
     StreamScheduler? streamScheduler,
     this.versionInformation,
     this.greaseQuicBit = true,
+    this.ecnEnabled = true,
+    this.allowMigration = true,
+    this.preferredAddress,
+    this.preferredAddressPort = 0,
+    bool useCubic = false,
   })  : _stateMachine = stateMachine,
         _cidManager = cidManager,
         _pnSpaceManager = pnSpaceManager,
         _rttEstimator = rttEstimator,
         _lossDetector = lossDetector,
         _ptoScheduler = ptoScheduler,
-        _congestionController = congestionController,
+        _congestionController = congestionController ??
+            (useCubic
+                ? CubicCongestionController()
+                : recovery.CongestionController()),
         _streamIdAllocator = streamIdAllocator,
         _cryptoAssembler = cryptoAssembler,
         _handshakeMachine = handshakeMachine,
@@ -223,12 +261,28 @@ class QuicConnection {
     return DatagramFrame(data: data, hasLength: true);
   }
 
+  /// TLS extensions that should be included in the ClientHello for this
+  /// connection. Returns an `early_data` extension when [attempt0Rtt] is
+  /// enabled and a PSK ticket is available.
+  List<TlsExtension> buildClientHelloExtensions() {
+    final result = <TlsExtension>[];
+    if (attempt0Rtt && pskTicket != null) {
+      result.add(TlsExtension(type: 0x002a, data: const []));
+    }
+    return result;
+  }
+
   /// Serialize this connection's transport parameters into the wire format
   /// used inside the `quic_transport_parameters` TLS extension.
   ///
   /// Each parameter is encoded as: id (varint) + length (varint) + value.
   Uint8List buildTransportParameters() {
     final builder = BytesBuilder();
+    // ecn (0x01, RFC 9000 Section 13.4)
+    if (ecnEnabled) {
+      builder.add(VarInt.encode(QuicTransportParameterId.ecn.value));
+      builder.add(VarInt.encode(0));
+    }
     // max_datagram_frame_size (0x20)
     final maxDgBytes = VarInt.encode(maxDatagramFrameSize);
     builder.add(VarInt.encode(0x20));
@@ -242,11 +296,31 @@ class QuicConnection {
       builder.add(VarInt.encode(infoBytes.length));
       builder.add(infoBytes);
     }
+    // disable_active_migration (0x0c, RFC 9000 Section 9)
+    if (!allowMigration) {
+      builder.add(VarInt.encode(QuicTransportParameterId.disableActiveMigration.value));
+      builder.add(VarInt.encode(0));
+    }
+    // preferred_address (0x0d, RFC 9000 Section 9.6)
+    final pa = preferredAddress;
+    if (pa != null) {
+      final addrBytes = pa.rawAddress;
+      final portBytes = [(preferredAddressPort >> 8) & 0xFF, preferredAddressPort & 0xFF];
+      final paBytes = Uint8List.fromList([...addrBytes, ...portBytes]);
+      builder.add(VarInt.encode(QuicTransportParameterId.preferredAddress.value));
+      builder.add(VarInt.encode(paBytes.length));
+      builder.add(paBytes);
+    }
     // grease_quic_bit (0x2ab2, RFC 9287)
     if (greaseQuicBit) {
       builder.add(VarInt.encode(QuicTransportParameterId.greaseQuicBit.value));
       builder.add(VarInt.encode(0));
     }
+    // early_data (0x42, RFC 9001)
+    final earlyDataBytes = VarInt.encode(maxEarlyData);
+    builder.add(VarInt.encode(QuicTransportParameterId.earlyData.value));
+    builder.add(VarInt.encode(earlyDataBytes.length));
+    builder.add(earlyDataBytes);
     return Uint8List.fromList(builder.toBytes());
   }
 
@@ -484,9 +558,27 @@ class QuicConnection {
     onBytesReceived(datagram.length);
     final packets = PacketReceiver.processDatagram(datagram);
     for (final packet in packets) {
+      final hasAck = packet.frames.any((f) => f is AckFrame);
+      if (hasAck) {
+        _updateEcnCounters(packet.header.ecnBits);
+      }
       _dispatchFrames(packet.space, packet.frames);
     }
     return packets.length;
+  }
+
+  void _updateEcnCounters(int ecnBits) {
+    switch (ecnBits) {
+      case 2:
+        ect0Counter++;
+        break;
+      case 1:
+        ect1Counter++;
+        break;
+      case 3:
+        ceCounter++;
+        break;
+    }
   }
 
   void _dispatchFrames(PacketNumberSpace? space, List<Frame> frames) {
@@ -703,6 +795,10 @@ class QuicConnection {
     for (final rawPacket in rawPackets) {
       final result = await _processEncryptedPacket(rawPacket);
       if (result != null) {
+        final hasAck = result.frames.any((f) => f is AckFrame);
+        if (hasAck && (rawPacket[0] & 0x80) == 0) {
+          _updateEcnCounters(rawPacket[0] & 0x03);
+        }
         _dispatchFrames(result.space, result.frames);
         processed++;
       }

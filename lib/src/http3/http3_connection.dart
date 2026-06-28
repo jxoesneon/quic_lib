@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'cancel_push_frame.dart';
+import 'capsule_protocol.dart';
 import 'data_frame.dart';
 import 'extended_connect_request.dart';
 import 'frame_types.dart';
@@ -13,6 +14,7 @@ import 'origin_frame.dart';
 import 'priority_update_frame.dart';
 import 'push_promise_frame.dart';
 import 'settings_frame.dart';
+import 'webtransport_session.dart';
 import 'package:quic_lib/src/recovery/packet_number_space.dart';
 import 'package:quic_lib/src/streams/stream_scheduler.dart';
 import 'package:quic_lib/src/wire/frame.dart';
@@ -100,6 +102,7 @@ class Http3Connection {
   final List<Uint8List> _pendingQuicPackets = [];
   final List<String> _alternativeOrigins = [];
   final List<PriorityUpdateFrame> _pendingPriorityUpdates = [];
+  final Map<int, WebTransportSession> _webTransportSessions = {};
 
   /// Creates an [Http3Connection] over [quicConnection].
   ///
@@ -170,6 +173,10 @@ class Http3Connection {
   /// Pending PRIORITY_UPDATE frames staged for transmission.
   List<PriorityUpdateFrame> get pendingPriorityUpdates =>
       List.unmodifiable(_pendingPriorityUpdates);
+
+  /// Active WebTransport sessions keyed by stream ID.
+  Map<int, WebTransportSession> get webTransportSessions =>
+      Map.unmodifiable(_webTransportSessions);
 
   /// Optional stream scheduler for priority-aware stream selection.
   StreamScheduler? streamScheduler;
@@ -327,6 +334,81 @@ class Http3Connection {
     return Http3Response.decodeHeaders(encoded);
   }
 
+  /// Open a new bidirectional stream and return a wrapper for sending data.
+  Future<Http3QuicStream> openStream() async {
+    final quic = _quicConnection as dynamic;
+    final streamId = quic.openBidirectionalStream() as int;
+    return Http3QuicStream(streamId, this);
+  }
+
+  /// Create a WebTransport session by sending an Extended CONNECT request.
+  ///
+  /// Awaits response headers; throws if the status is not 2xx.
+  Future<WebTransportSession> createWebTransportSession(
+    WebTransportConnectRequest request,
+  ) async {
+    final extendedRequest = ExtendedConnectRequest(
+      protocol: 'webtransport',
+      scheme: 'https',
+      authority: request.authority,
+      path: request.path,
+      headers: {
+        if (request.origin != null) 'origin': request.origin!,
+      },
+    );
+    final streamId = await sendExtendedConnect(extendedRequest);
+
+    // Poll for response headers with a short timeout.
+    for (var attempt = 0; attempt < 50; attempt++) {
+      final response = getResponse(streamId);
+      if (response != null) {
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          throw StateError(
+            'WebTransport session establishment failed: '
+            '${response.statusCode}',
+          );
+        }
+        final session = WebTransportSession(this, streamId);
+        _webTransportSessions[streamId] = session;
+        return session;
+      }
+      await Future<void>.delayed(Duration(milliseconds: 1));
+    }
+
+    throw StateError('Timed out waiting for WebTransport session response');
+  }
+
+  /// Send an unreliable datagram for [sessionId] using the QUIC connection.
+  ///
+  /// Falls back to a DATAGRAM capsule if the underlying transport does not
+  /// support QUIC datagrams.
+  void sendDatagram(int sessionId, Uint8List data) {
+    final quic = _quicConnection as dynamic;
+    try {
+      quic.sendDatagram(data);
+    } catch (_) {
+      // Fallback: send as DATAGRAM capsule on the session stream.
+      sendCapsule(sessionId, DatagramCapsule(data));
+    }
+  }
+
+  /// Send a [capsule] for [sessionId] as DATA frames on the control stream.
+  void sendCapsule(int sessionId, Capsule capsule) {
+    final bytes = capsule.serialize();
+    _sendData(sessionId, bytes);
+  }
+
+  /// Process an incoming [capsule] belonging to [sessionId].
+  void onCapsuleReceived(int sessionId, Capsule capsule) {
+    final session = _webTransportSessions[sessionId];
+    if (session != null) {
+      session.onCapsule(capsule);
+    }
+    if (capsule is CloseWebTransportSessionCapsule) {
+      _webTransportSessions.remove(sessionId);
+    }
+  }
+
   /// Register a push promise manually.
   void registerPushPromise(int pushId, Http3PushPromiseFrame frame) {
     _pushPromises[pushId] = frame;
@@ -444,5 +526,18 @@ class Http3Connection {
       // store the raw frame bytes for later transmission.
       _pendingQuicPackets.add(bytes);
     }
+  }
+}
+
+/// Lightweight wrapper around a QUIC stream ID for sending data.
+class Http3QuicStream {
+  final int streamId;
+  final Http3Connection _connection;
+
+  Http3QuicStream(this.streamId, this._connection);
+
+  /// Send [data] as a DATA frame on this stream.
+  void send(Uint8List data) {
+    _connection._sendData(streamId, data);
   }
 }

@@ -29,11 +29,26 @@ class ClientHello {
   /// appended to the serialized extension list.
   final List<String> alpnProtocols;
 
+  /// Server Name Indication (SNI) hostname.
+  ///
+  /// When non-null an SNI extension (type `0x0000`) is automatically
+  /// appended to the serialized extension list.
+  final String? serverName;
+
+  /// Supported named groups for key exchange.
+  ///
+  /// Defaults to x25519 (`0x001d`) and secp256r1 (`0x0017`).
+  /// When non-empty a `supported_groups` extension (type `0x000a`) is
+  /// automatically appended to the serialized extension list.
+  final List<int> supportedGroups;
+
   ClientHello({
     required this.random,
     required this.cipherSuites,
     required this.extensions,
     this.alpnProtocols = const [],
+    this.serverName,
+    this.supportedGroups = const [0x001d, 0x0017],
     this.legacyVersion = 0x0303,
     this.legacySessionId = const [],
     this.legacyCompressionMethods = const [0x00],
@@ -59,19 +74,64 @@ class ClientHello {
     return Uint8List.fromList(builder.toBytes());
   }
 
+  /// Builds the SNI extension data for a ClientHello.
+  ///
+  /// Format: `uint16 list_length + (uint8 name_type=0 + uint16 name_length + name_bytes)`
+  static Uint8List _buildSniData(String hostName) {
+    final builder = BytesBuilder();
+    final nameBytes = hostName.codeUnits;
+    final entryLength = 1 + 2 + nameBytes.length;
+    builder.addByte((entryLength >> 8) & 0xFF);
+    builder.addByte(entryLength & 0xFF);
+    builder.addByte(0); // name_type = host_name
+    builder.addByte((nameBytes.length >> 8) & 0xFF);
+    builder.addByte(nameBytes.length & 0xFF);
+    builder.add(nameBytes);
+    return Uint8List.fromList(builder.toBytes());
+  }
+
+  /// Builds the supported_groups extension data for a ClientHello.
+  ///
+  /// Format: `uint16 list_length + (uint16 group_id)...`
+  static Uint8List _buildSupportedGroupsData(List<int> groups) {
+    final builder = BytesBuilder();
+    final listLength = groups.length * 2;
+    builder.addByte((listLength >> 8) & 0xFF);
+    builder.addByte(listLength & 0xFF);
+    for (final g in groups) {
+      builder.addByte((g >> 8) & 0xFF);
+      builder.addByte(g & 0xFF);
+    }
+    return Uint8List.fromList(builder.toBytes());
+  }
+
   /// Serializes the ClientHello to bytes in network (big-endian) order.
   Uint8List serialize() {
     final sessionIdLength = legacySessionId.length;
     final cipherSuitesLength = cipherSuites.length * 2;
     final compressionMethodsLength = legacyCompressionMethods.length;
 
-    // Merge manually-provided extensions with auto-generated ALPN.
+    // Merge manually-provided extensions with auto-generated ones.
     final merged = List<TlsExtension>.from(extensions);
     final hasAlpn = merged.any((e) => e.type == 0x0010);
     if (alpnProtocols.isNotEmpty && !hasAlpn) {
       merged.add(TlsExtension(
         type: 0x0010,
         data: _buildAlpnData(alpnProtocols),
+      ));
+    }
+    final hasSni = merged.any((e) => e.type == 0x0000);
+    if (serverName != null && serverName!.isNotEmpty && !hasSni) {
+      merged.add(TlsExtension(
+        type: 0x0000,
+        data: _buildSniData(serverName!),
+      ));
+    }
+    final hasSupportedGroups = merged.any((e) => e.type == 0x000a);
+    if (supportedGroups.isNotEmpty && !hasSupportedGroups) {
+      merged.add(TlsExtension(
+        type: 0x000a,
+        data: _buildSupportedGroupsData(supportedGroups),
       ));
     }
 

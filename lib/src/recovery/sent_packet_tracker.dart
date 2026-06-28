@@ -112,6 +112,13 @@ class SentPacketTracker {
     return spaceMap.values.where((info) => info.inFlight).toList();
   }
 
+  /// Look up a specific packet's info in a space.
+  SentPacketInfo? getPacketInfo(int space, int packetNumber) {
+    final spaceMap = _spaces[space];
+    if (spaceMap == null) return null;
+    return spaceMap[packetNumber];
+  }
+
   /// Get the largest acked packet in a space.
   int getLargestAcked(int space) => _largestAcked[space] ?? -1;
 

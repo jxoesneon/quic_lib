@@ -413,8 +413,8 @@ void main() {
     test('cwnd is capped to prevent integer overflow', () {
       final cc = CongestionController();
       for (var i = 0; i < 100; i++) {
-        cc.onPacketSent(10000);
-        cc.onAckReceived(10000);
+        cc.onPacketSent(i, 10000);
+        cc.onAckReceived(i, 10000, DateTime.now());
       }
       expect(cc.congestionWindow > CongestionController.initialWindow, isTrue);
       // Max cap prevents 64-bit overflow.
@@ -423,7 +423,7 @@ void main() {
 
     test('onPacketSent clamps negative bytes to zero', () {
       final cc = CongestionController();
-      cc.onPacketSent(-1000);
+      cc.onPacketSent(0, -1000);
       // SECURITY FIX: negative bytes are clamped to 0.
       expect(cc.bytesInFlight, equals(0));
     });

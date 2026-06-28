@@ -18,7 +18,7 @@ void main() {
 
     test('CloseWebTransportSessionCapsule round-trip', () {
       final data = Uint8List.fromList([0x00, 0x00, 0x00, 0x42]);
-      final capsule = CloseWebTransportSessionCapsule(data);
+      final capsule = CloseWebTransportSessionCapsule(data: data);
       final bytes = capsule.serialize();
       final (parsed, consumed) = Capsule.parse(bytes);
 

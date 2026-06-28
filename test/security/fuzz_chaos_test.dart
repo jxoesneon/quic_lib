@@ -463,8 +463,8 @@ void _congestionControllerFuzzGroup() {
   group('CongestionController fuzz', () {
     test('extreme ACK values do not crash or produce negative in-flight', () {
       final cc = CongestionController();
-      cc.onPacketSent(1000);
-      cc.onAckReceived(0x7FFFFFFFFFFFFFFF);
+      cc.onPacketSent(0, 1000);
+      cc.onAckReceived(0, 0x7FFFFFFFFFFFFFFF, DateTime.now());
       expect(cc.bytesInFlight, equals(0));
       expect(cc.congestionWindow,
           greaterThanOrEqualTo(CongestionController.minimumWindow));
@@ -473,8 +473,8 @@ void _congestionControllerFuzzGroup() {
     test('repeated ACKs in slow start grow cwnd', () {
       final cc = CongestionController();
       for (var i = 0; i < 1000; i++) {
-        cc.onPacketSent(1200);
-        cc.onAckReceived(1200);
+        cc.onPacketSent(i, 1200);
+        cc.onAckReceived(i, 1200, DateTime.now());
       }
       expect(
           cc.congestionWindow, greaterThan(CongestionController.initialWindow));
@@ -482,16 +482,16 @@ void _congestionControllerFuzzGroup() {
 
     test('congestion event reduces cwnd but not below minimum', () {
       final cc = CongestionController();
-      cc.onPacketSent(10000);
-      cc.onAckReceived(10000);
-      cc.onCongestionEvent(0);
+      cc.onPacketSent(0, 10000);
+      cc.onAckReceived(0, 10000, DateTime.now());
+      cc.onPacketLost(1, 0, DateTime.now());
       expect(cc.congestionWindow,
           greaterThanOrEqualTo(CongestionController.minimumWindow));
     });
 
     test('canSend is consistent with state', () {
       final cc = CongestionController();
-      cc.onPacketSent(5000);
+      cc.onPacketSent(0, 5000);
       final can = cc.canSend(100);
       expect(can, isFalse);
       cc.reset();

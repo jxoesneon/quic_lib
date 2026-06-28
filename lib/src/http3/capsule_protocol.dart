@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:quic_lib/src/utils/collections.dart';
@@ -82,8 +83,8 @@ abstract class Capsule {
     switch (type) {
       case 0x00:
         return DatagramCapsule(data);
-      case 0x1a4:
-        return CloseWebTransportSessionCapsule(data);
+      case 0x6843:
+        return CloseWebTransportSessionCapsule(data: data);
       case 0x78ae:
         return DrainWebTransportSessionCapsule(data);
       case 0x41:
@@ -116,10 +117,51 @@ class DatagramCapsule extends Capsule {
   DatagramCapsule(Uint8List data) : super(type: 0x00, data: data);
 }
 
-/// A CLOSE_WEBTRANSPORT_SESSION capsule (type 0x1a4).
+/// A CLOSE_WEBTRANSPORT_SESSION capsule (type 0x6843).
 class CloseWebTransportSessionCapsule extends Capsule {
-  CloseWebTransportSessionCapsule(Uint8List data)
-      : super(type: 0x1a4, data: data);
+  final int errorCode;
+  final String? errorMessage;
+
+  CloseWebTransportSessionCapsule({
+    Uint8List? data,
+    int errorCode = 0,
+    String? errorMessage,
+  })  : errorCode = (data != null) ? _decodeErrorCode(data) : errorCode,
+        errorMessage = (data != null) ? _decodeErrorMessage(data) : errorMessage,
+        super(
+          type: 0x6843,
+          data: data ?? _buildData(errorCode, errorMessage),
+        );
+
+  static Uint8List _buildData(int errorCode, String? errorMessage) {
+    final builder = BytesBuilder();
+    final byteData = ByteData(4);
+    byteData.setUint32(0, errorCode, Endian.big);
+    builder.add(byteData.buffer.asUint8List());
+    if (errorMessage != null && errorMessage.isNotEmpty) {
+      final msgBytes = Uint8List.fromList(utf8.encode(errorMessage));
+      builder.add(VarInt.encode(msgBytes.length));
+      builder.add(msgBytes);
+    }
+    return builder.toBytes();
+  }
+
+  static int _decodeErrorCode(Uint8List data) {
+    if (data.length >= 4) {
+      return ByteData.sublistView(data).getUint32(0, Endian.big);
+    }
+    return 0;
+  }
+
+  static String? _decodeErrorMessage(Uint8List data) {
+    if (data.length > 4) {
+      final length = VarInt.decode(data.buffer, offset: data.offsetInBytes + 4);
+      final lengthBytes = VarInt.decodeLength(data[4]);
+      final msgBytes = data.sublist(4 + lengthBytes, 4 + lengthBytes + length);
+      return utf8.decode(msgBytes);
+    }
+    return null;
+  }
 }
 
 /// A DRAIN_WEBTRANSPORT_SESSION capsule (type 0x78ae).

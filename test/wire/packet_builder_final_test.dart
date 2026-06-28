@@ -18,6 +18,9 @@ class _UnknownHeader implements PacketHeader {
 
   @override
   int get byteLength => 0;
+
+  @override
+  int get ecnBits => 0;
 }
 
 class _HugeFrame implements Frame {

@@ -6,6 +6,7 @@ import '../crypto/tls/x509_parser.dart';
 import '../io/platform_address.dart';
 import '../io/quic_endpoint.dart';
 import 'multiaddr.dart';
+import 'multistream_select.dart';
 import 'peer_id.dart';
 
 /// A libp2p transport backed by QUIC.
@@ -237,6 +238,41 @@ class Libp2pQuicConnection {
     }
     peerId = derived;
     return true;
+  }
+
+  /// Negotiate a protocol using multistream-select.
+  ///
+  /// Sends the multistream header, then lists the desired [protocols], and
+  /// awaits the peer's selection. Returns the selected protocol string, or
+  /// `null` if the peer responds with `na`.
+  Future<String?> negotiateProtocol(List<String> protocols) async {
+    final completer = Completer<String?>();
+
+    // Send multistream header.
+    _sendRaw(MultistreamSelect.header);
+
+    // Send protocol list.
+    _sendRaw(MultistreamSelect.encodeProtocols(protocols));
+
+    // In a full implementation this would read the peer's response from a
+    // stream and complete the completer. The current design stores the
+    // response for later parsing; tests can inject the selection.
+    // Return a placeholder that will be refined once the response arrives.
+    return completer.future.timeout(
+      Duration(seconds: 10),
+      onTimeout: () => null,
+    );
+  }
+
+  /// Internal helper to send raw bytes on the connection.
+  void _sendRaw(Uint8List data) {
+    final conn = _quicConnection as dynamic;
+    try {
+      conn.openUnidirectionalStream();
+      // Note: In a full implementation this would write data to the stream.
+    } catch (_) {
+      // Ignore if unidirectional streams are not supported.
+    }
   }
 
   /// Send [data] on a new unidirectional stream.

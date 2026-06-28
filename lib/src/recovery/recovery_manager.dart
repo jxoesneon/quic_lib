@@ -1,4 +1,4 @@
-import 'congestion_controller.dart';
+import 'package:quic_lib/src/connection/congestion_control/congestion_controller.dart';
 import 'loss_detector.dart';
 import 'pto_scheduler.dart';
 import 'rtt_estimator.dart';
@@ -60,10 +60,14 @@ class RecoveryManager {
       _rttEstimator.smoothedRtt,
     );
 
+    final now = DateTime.now();
+
     // 2. Update congestion controller: remove acked bytes, then apply loss.
-    _congestionController.onAckReceived(effectiveAckedBytes);
-    for (final _ in lost) {
-      _congestionController.onCongestionEvent(ackReceiveTimeUs);
+    _congestionController.onAckReceived(largestAcked, effectiveAckedBytes, now);
+    for (final pn in lost) {
+      final info = _sentPacketTracker.getPacketInfo(space, pn);
+      final lostBytes = info?.sizeInBytes ?? 0;
+      _congestionController.onPacketLost(pn, lostBytes, now);
     }
 
     // 3. Reset PTO since we got an ACK.
@@ -84,7 +88,7 @@ class RecoveryManager {
         ackEliciting: ackEliciting);
     // Errata 8240: Only in-flight packets count toward bytes-in-flight.
     if (inFlight) {
-      _congestionController.onPacketSent(sizeInBytes);
+      _congestionController.onPacketSent(packetNumber, sizeInBytes);
     }
     _sentPacketTracker.track(SentPacketInfo(
       packetNumber: packetNumber,

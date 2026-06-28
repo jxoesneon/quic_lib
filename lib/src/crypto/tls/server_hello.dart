@@ -26,10 +26,17 @@ class ServerHello {
   /// List of extensions.
   final List<TlsExtension> extensions;
 
+  /// Selected named group from the client's `supported_groups` extension.
+  ///
+  /// When non-null a `supported_groups` extension (type `0x000a`) is
+  /// automatically included in the serialized ServerHello.
+  final int? selectedGroup;
+
   ServerHello({
     required this.random,
     required this.cipherSuite,
     required this.extensions,
+    this.selectedGroup,
     this.legacyVersion = 0x0303,
     this.legacySessionIdEcho = const [],
     this.legacyCompressionMethod = 0x00,
@@ -39,8 +46,21 @@ class ServerHello {
   Uint8List serialize() {
     final sessionIdLength = legacySessionIdEcho.length;
 
+    // Merge manually-provided extensions with auto-generated supported_groups.
+    final merged = List<TlsExtension>.from(extensions);
+    final hasSupportedGroups = merged.any((e) => e.type == 0x000a);
+    if (selectedGroup != null && !hasSupportedGroups) {
+      merged.add(TlsExtension(
+        type: 0x000a,
+        data: Uint8List.fromList([
+          (selectedGroup! >> 8) & 0xFF,
+          selectedGroup! & 0xFF,
+        ]),
+      ));
+    }
+
     var extensionsLength = 0;
-    for (final ext in extensions) {
+    for (final ext in merged) {
       extensionsLength += 4 + ext.data.length; // type (2) + length (2) + data
     }
 
@@ -89,7 +109,7 @@ class ServerHello {
     offset += 2;
 
     // extensions
-    for (final ext in extensions) {
+    for (final ext in merged) {
       buffer.setUint16(offset, ext.type, Endian.big);
       offset += 2;
       buffer.setUint16(offset, ext.data.length, Endian.big);

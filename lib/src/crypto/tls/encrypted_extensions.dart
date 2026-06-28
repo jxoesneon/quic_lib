@@ -65,6 +65,56 @@ class EncryptedExtensions {
     return null;
   }
 
+  /// The supported groups advertised by the server, if present.
+  ///
+  /// Parses the `supported_groups` extension (type `0x000a`) from the
+  /// server's EncryptedExtensions. Returns an empty list if the extension
+  /// is absent or malformed.
+  List<int> get supportedGroups {
+    for (final ext in extensions) {
+      if (ext.type == 0x000a && ext.data.length >= 2) {
+        final listLen = (ext.data[0] << 8) | ext.data[1];
+        if (2 + listLen > ext.data.length) return const [];
+        final groups = <int>[];
+        var offset = 2;
+        final end = 2 + listLen;
+        while (offset + 2 <= end) {
+          groups.add((ext.data[offset] << 8) | ext.data[offset + 1]);
+          offset += 2;
+        }
+        return groups;
+      }
+    }
+    return const [];
+  }
+
+  /// The server name indicated by the server in response to the client's
+  /// SNI, if present.
+  ///
+  /// Parses the SNI extension (type `0x0000`) from the server's
+  /// EncryptedExtensions. Returns `null` if the extension is absent or
+  /// malformed.
+  String? get selectedServerName {
+    for (final ext in extensions) {
+      if (ext.type == 0x0000 && ext.data.length >= 2) {
+        final listLen = (ext.data[0] << 8) | ext.data[1];
+        if (2 + listLen > ext.data.length) return null;
+        var offset = 2;
+        final end = 2 + listLen;
+        // Each entry: uint8 name_type + uint16 name_length + name
+        if (offset + 3 > end) return null;
+        final nameType = ext.data[offset];
+        if (nameType != 0) return null; // only host_name supported
+        offset += 1;
+        final nameLen = (ext.data[offset] << 8) | ext.data[offset + 1];
+        offset += 2;
+        if (offset + nameLen > end) return null;
+        return String.fromCharCodes(ext.data.sublist(offset, offset + nameLen));
+      }
+    }
+    return null;
+  }
+
   /// Parse from bytes.
   static EncryptedExtensions parse(Uint8List bytes) {
     if (bytes.length < 2) {

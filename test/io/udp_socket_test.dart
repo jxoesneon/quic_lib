@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/io/udp_socket.dart';
+import 'package:quic_lib/src/io/udp_socket.dart';
 import 'package:test/test.dart';
 
 void main() {

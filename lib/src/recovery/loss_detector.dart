@@ -19,20 +19,23 @@ class LossDetector {
   final Map<int, int> _sentTimes = {};
 
   /// Register a sent packet.
-  void onPacketSent(int packetNumber, int sentTimeUs, {bool ackEliciting = true}) {
+  void onPacketSent(int packetNumber, int sentTimeUs,
+      {bool ackEliciting = true}) {
     // SECURITY: Reject negative packet numbers.
     if (packetNumber < 0) return;
     if (ackEliciting) {
       // SECURITY: Reject if tracking capacity exceeded.
       if (_sentTimes.length >= maxTrackedPackets) {
-        throw StateError('LossDetector: max tracked packets ($maxTrackedPackets) exceeded');
+        throw StateError(
+            'LossDetector: max tracked packets ($maxTrackedPackets) exceeded');
       }
       _sentTimes[packetNumber] = sentTimeUs;
     }
   }
 
   /// Process an ACK frame and return lost packet numbers.
-  List<int> onAckReceived(int largestAcked, int ackReceiveTimeUs, int smoothedRttUs) {
+  List<int> onAckReceived(
+      int largestAcked, int ackReceiveTimeUs, int smoothedRttUs) {
     // SECURITY: Reject negative largestAcked.
     if (largestAcked < 0) largestAcked = -1;
     _largestAcked = largestAcked;
@@ -64,7 +67,8 @@ class LossDetector {
   }
 
   /// Check if a packet is lost based on time threshold.
-  bool isPacketLostByTime(int packetNumber, int sentTimeUs, int ackReceiveTimeUs, int smoothedRttUs) {
+  bool isPacketLostByTime(int packetNumber, int sentTimeUs,
+      int ackReceiveTimeUs, int smoothedRttUs) {
     final thresholdUs = (timeThreshold * smoothedRttUs).toInt() + kGranularity;
     return sentTimeUs < ackReceiveTimeUs - thresholdUs;
   }

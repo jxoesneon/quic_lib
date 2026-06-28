@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:dart_quic/src/webtransport/capsule_types.dart';
+import 'package:quic_lib/src/webtransport/capsule_types.dart';
 
 import '../helpers/hex.dart';
 

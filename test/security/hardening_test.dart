@@ -1,32 +1,32 @@
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:dart_quic/src/connection/connection_state_machine.dart';
-import 'package:dart_quic/src/connection/connection_id_manager.dart';
-import 'package:dart_quic/src/connection/connection_registry.dart';
-import 'package:dart_quic/src/connection/migration_helper.dart';
-import 'package:dart_quic/src/connection/quic_connection.dart';
-import 'package:dart_quic/src/streams/stream_id.dart';
-import 'package:dart_quic/src/streams/send_state_machine.dart';
-import 'package:dart_quic/src/streams/receive_state_machine.dart';
-import 'package:dart_quic/src/streams/flow_controller.dart';
-import 'package:dart_quic/src/streams/reassembly_buffer.dart';
-import 'package:dart_quic/src/recovery/rtt_estimator.dart';
-import 'package:dart_quic/src/recovery/loss_detector.dart';
-import 'package:dart_quic/src/recovery/pto_scheduler.dart';
-import 'package:dart_quic/src/recovery/congestion_controller.dart';
-import 'package:dart_quic/src/recovery/sent_packet_tracker.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/security/anti_amplification_limit.dart';
-import 'package:dart_quic/src/wire/frame.dart';
-import 'package:dart_quic/src/wire/coalesced_packet.dart';
-import 'package:dart_quic/src/connection/packet_receiver.dart';
-import 'package:dart_quic/src/crypto/tls/crypto_frame_deliverer.dart';
-import 'package:dart_quic/src/crypto/packet/retry_integrity_tag.dart';
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
-import 'package:dart_quic/src/http3/data_frame.dart';
-import 'package:dart_quic/src/http3/headers_frame.dart';
-import 'package:dart_quic/src/http3/settings_frame.dart';
+import 'package:quic_lib/src/connection/connection_state_machine.dart';
+import 'package:quic_lib/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/connection/connection_registry.dart';
+import 'package:quic_lib/src/connection/migration_helper.dart';
+import 'package:quic_lib/src/connection/quic_connection.dart';
+import 'package:quic_lib/src/streams/stream_id.dart';
+import 'package:quic_lib/src/streams/send_state_machine.dart';
+import 'package:quic_lib/src/streams/receive_state_machine.dart';
+import 'package:quic_lib/src/streams/flow_controller.dart';
+import 'package:quic_lib/src/streams/reassembly_buffer.dart';
+import 'package:quic_lib/src/recovery/rtt_estimator.dart';
+import 'package:quic_lib/src/recovery/loss_detector.dart';
+import 'package:quic_lib/src/recovery/pto_scheduler.dart';
+import 'package:quic_lib/src/recovery/congestion_controller.dart';
+import 'package:quic_lib/src/recovery/sent_packet_tracker.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/security/anti_amplification_limit.dart';
+import 'package:quic_lib/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/coalesced_packet.dart';
+import 'package:quic_lib/src/connection/packet_receiver.dart';
+import 'package:quic_lib/src/crypto/tls/crypto_frame_deliverer.dart';
+import 'package:quic_lib/src/crypto/packet/retry_integrity_tag.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/http3/data_frame.dart';
+import 'package:quic_lib/src/http3/headers_frame.dart';
+import 'package:quic_lib/src/http3/settings_frame.dart';
 
 /// Blue Team DoS Hardening Tests
 ///
@@ -77,9 +77,12 @@ void main() {
       sm.transitionTo(ConnectionState.handshaking);
       sm.transitionTo(ConnectionState.established);
       sm.transitionTo(ConnectionState.closed);
-      expect(() => sm.transitionTo(ConnectionState.idle), throwsA(isA<StateError>()));
-      expect(() => sm.transitionTo(ConnectionState.handshaking), throwsA(isA<StateError>()));
-      expect(() => sm.transitionTo(ConnectionState.established), throwsA(isA<StateError>()));
+      expect(() => sm.transitionTo(ConnectionState.idle),
+          throwsA(isA<StateError>()));
+      expect(() => sm.transitionTo(ConnectionState.handshaking),
+          throwsA(isA<StateError>()));
+      expect(() => sm.transitionTo(ConnectionState.established),
+          throwsA(isA<StateError>()));
     });
 
     test('rate limiting is enforced on state transitions', () {
@@ -103,7 +106,8 @@ void main() {
       for (var i = 0; i < ConnectionIdManager.maxActiveIds; i++) {
         manager.issueNewId();
       }
-      expect(manager.activeIds.length, equals(ConnectionIdManager.maxActiveIds));
+      expect(
+          manager.activeIds.length, equals(ConnectionIdManager.maxActiveIds));
       expect(() => manager.issueNewId(), throwsA(isA<StateError>()));
     });
 
@@ -134,7 +138,9 @@ void main() {
       final ids = <String>{};
       for (var i = 0; i < ConnectionIdManager.maxActiveIds; i++) {
         final record = manager.issueNewId();
-        final hex = record.connectionId.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+        final hex = record.connectionId
+            .map((b) => b.toRadixString(16).padLeft(2, '0'))
+            .join();
         expect(ids, isNot(contains(hex)));
         ids.add(hex);
       }
@@ -145,7 +151,8 @@ void main() {
     test('registry rejects registrations beyond max limit', () {
       final registry = ConnectionRegistry();
       for (var i = 0; i < ConnectionRegistry.maxConnections; i++) {
-        registry.register([i & 0xFF, (i >> 8) & 0xFF, 0, 0, 0, 0, 0, 0], Object());
+        registry
+            .register([i & 0xFF, (i >> 8) & 0xFF, 0, 0, 0, 0, 0, 0], Object());
       }
       expect(registry.length, equals(ConnectionRegistry.maxConnections));
       expect(
@@ -188,7 +195,8 @@ void main() {
         timeoutUs: 1,
       );
       // Only maxPendingChallenges could have been stored.
-      expect(expired.length, lessThanOrEqualTo(MigrationHelper.maxPendingChallenges));
+      expect(expired.length,
+          lessThanOrEqualTo(MigrationHelper.maxPendingChallenges));
     });
 
     test('path validation requires correct challenge response', () {
@@ -258,7 +266,8 @@ void main() {
       sm.onDataReceived(fin: true, finalSize: 100);
       expect(sm.finalSize, equals(100));
       // Receiving data with a different final size should be rejected
-      expect(() => sm.onDataReceived(fin: true, finalSize: 200), throwsA(isA<StateError>()));
+      expect(() => sm.onDataReceived(fin: true, finalSize: 200),
+          throwsA(isA<StateError>()));
     });
 
     test('onDataReceived rejects data exceeding final size', () {
@@ -375,7 +384,8 @@ void main() {
       );
     });
 
-    test('ACK with huge largestAcked does not validate against sent packets', () {
+    test('ACK with huge largestAcked does not validate against sent packets',
+        () {
       final ld = LossDetector();
       ld.onPacketSent(0, 0);
       ld.onPacketSent(1, 1000);
@@ -436,7 +446,8 @@ void main() {
       expect(unacked.length, equals(SentPacketTracker.maxPacketsPerSpace));
     });
 
-    test('simplified ACK parsing falsely acks all packets below largestAcked', () {
+    test('simplified ACK parsing falsely acks all packets below largestAcked',
+        () {
       final tracker = SentPacketTracker();
       for (var i = 0; i < 10; i++) {
         tracker.track(SentPacketInfo(
@@ -508,7 +519,8 @@ void main() {
       expect(pnManager.onReceived(PacketNumberSpace.application, 65), isTrue);
       expect(pnManager.onReceived(PacketNumberSpace.application, 0), isFalse);
 
-      expect(pnManager.largestReceived(PacketNumberSpace.application), equals(65));
+      expect(
+          pnManager.largestReceived(PacketNumberSpace.application), equals(65));
     });
 
     test('monotonic packet number allocation works correctly', () {
@@ -520,7 +532,8 @@ void main() {
   });
 
   group('QuicConnection integration hardening', () {
-    test('stream allocation has no per-connection limit beyond maxStreamId', () {
+    test('stream allocation has no per-connection limit beyond maxStreamId',
+        () {
       final conn = QuicConnection(
         stateMachine: ConnectionStateMachine(),
         cidManager: ConnectionIdManager(),

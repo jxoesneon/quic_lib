@@ -1,4 +1,4 @@
-import 'package:dart_quic/src/connection/connection_registry.dart';
+import 'package:quic_lib/src/connection/connection_registry.dart';
 import 'package:test/test.dart';
 
 void main() {

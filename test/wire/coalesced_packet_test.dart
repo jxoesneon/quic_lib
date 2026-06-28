@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 import 'package:test/test.dart';
-import 'package:dart_quic/src/wire/coalesced_packet.dart';
-import 'package:dart_quic/src/wire/packet_builder.dart';
-import 'package:dart_quic/src/wire/packet_header.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/coalesced_packet.dart';
+import 'package:quic_lib/src/wire/packet_builder.dart';
+import 'package:quic_lib/src/wire/packet_header.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 
 void main() {
   group('CoalescedPacket.split', () {
@@ -17,7 +17,9 @@ void main() {
           packetNumber: 0,
           token: const [],
         ),
-        [CryptoFrame(offset: 0, data: [0x01])],
+        [
+          CryptoFrame(offset: 0, data: [0x01])
+        ],
       );
       final handshake = PacketBuilder.build(
         LongHeader(
@@ -27,7 +29,9 @@ void main() {
           sourceConnectionId: [0x02],
           packetNumber: 0,
         ),
-        [CryptoFrame(offset: 0, data: [0x02])],
+        [
+          CryptoFrame(offset: 0, data: [0x02])
+        ],
       );
 
       final datagram = Uint8List(initial.length + handshake.length);
@@ -50,7 +54,9 @@ void main() {
           packetNumber: 0,
           token: const [],
         ),
-        [CryptoFrame(offset: 0, data: [0x01])],
+        [
+          CryptoFrame(offset: 0, data: [0x01])
+        ],
       );
 
       final packets = CoalescedPacket.split(initial);
@@ -84,7 +90,9 @@ void main() {
           packetNumber: 0,
           token: const [],
         ),
-        [CryptoFrame(offset: 0, data: [0x01])],
+        [
+          CryptoFrame(offset: 0, data: [0x01])
+        ],
       );
       final handshake = PacketBuilder.build(
         LongHeader(
@@ -94,7 +102,9 @@ void main() {
           sourceConnectionId: [0x02],
           packetNumber: 0,
         ),
-        [CryptoFrame(offset: 0, data: [0x02])],
+        [
+          CryptoFrame(offset: 0, data: [0x02])
+        ],
       );
 
       final datagram = Uint8List(initial.length + handshake.length);
@@ -114,7 +124,9 @@ void main() {
           packetNumber: 0,
           token: const [],
         ),
-        [CryptoFrame(offset: 0, data: [0x01])],
+        [
+          CryptoFrame(offset: 0, data: [0x01])
+        ],
       );
 
       expect(CoalescedPacket.isCoalesced(initial), isFalse);

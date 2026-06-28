@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/logging/quic_logger.dart';
-import 'package:dart_quic/src/webtransport/capsule_types.dart';
-import 'package:dart_quic/src/wire/varint.dart';
+import 'package:quic_lib/src/logging/quic_logger.dart';
+import 'package:quic_lib/src/webtransport/capsule_types.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 
 /// Manages the state of a single WebTransport session over HTTP/3.
 ///
@@ -30,7 +30,8 @@ class WebTransportSession {
   final List<Uint8List> _receivedDatagrams = [];
 
   /// Datagrams received via [CapsuleType.datagram] capsules.
-  List<Uint8List> get receivedDatagrams => List.unmodifiable(_receivedDatagrams);
+  List<Uint8List> get receivedDatagrams =>
+      List.unmodifiable(_receivedDatagrams);
 
   /// Process an incoming capsule received on the session's control stream.
   void onCapsuleReceived(Capsule capsule) {

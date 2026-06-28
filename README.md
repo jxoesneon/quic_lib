@@ -36,16 +36,19 @@ A comprehensive, pure-Dart QUIC protocol stack specification and architecture.
 
 ## Platform support
 
-| Platform | Support |
-|----------|---------|
-| Android  | ✅ |
-| iOS      | ✅ |
-| Linux    | ✅ |
-| macOS    | ✅ |
-| Windows  | ✅ |
-| Web      | ✅ |
+| Platform | Support | Notes |
+|----------|---------|-------|
+| Android  | ✅ Full | Native UDP, isolates |
+| iOS      | ✅ Full | Native UDP, isolates |
+| Linux    | ✅ Full | Native UDP, isolates |
+| macOS    | ✅ Full | Native UDP, isolates |
+| Windows  | ✅ Full | Native UDP, isolates |
+| Web      | 🚧 Compile-only | Code compiles via conditional imports; UDP is unavailable in browsers (use WebTransport/WebRTC instead) |
+| WASM     | 🚧 Compile-only | Same limitations as Web |
 
 Requires Dart SDK `^3.0.0`.
+
+**Web/WASM caveat:** The QUIC protocol requires raw UDP sockets, which browsers do not expose. The package code is now structured with conditional imports so it compiles for web/WASM targets, but `QuicEndpoint.bind()` and `UdpSocket.bind()` will throw `UnsupportedError` at runtime on web. For browser networking, use the WebTransport or HTTP/3 layers with a browser-native transport, or use WebRTC data channels.
 
 ## Installation
 

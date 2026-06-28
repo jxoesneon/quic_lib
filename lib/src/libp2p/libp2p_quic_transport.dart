@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 
+import '../io/platform_address.dart';
 import '../io/quic_endpoint.dart';
 import 'multiaddr.dart';
 

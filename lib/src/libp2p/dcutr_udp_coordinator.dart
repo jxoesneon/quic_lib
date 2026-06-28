@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 
+import '../io/platform_address.dart';
 import '../io/udp_socket.dart';
 import 'dcutr.dart';
 import 'dcutr_state_machine.dart';

@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 
+import 'platform_address.dart';
 import 'udp_socket.dart';
 import 'connection_isolate.dart';
 import 'isolate_supervisor.dart';

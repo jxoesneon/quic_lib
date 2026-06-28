@@ -1,6 +1,16 @@
 import 'tls_handshake_types.dart';
 import 'package:quic_lib/src/security/rate_limiter.dart';
 
+/// Discrete states of the TLS 1.3 handshake state machine (RFC 8446).
+///
+/// Each value represents a specific point in the client or server handshake
+/// flow. The state machine advances in response to sending or receiving TLS
+/// handshake messages such as [TlsHandshakeType.clientHello] and
+/// [TlsHandshakeType.serverHello].
+///
+/// See also:
+/// - [HandshakeStateMachine] — manages transitions between these states.
+/// - [HandshakeRole] — distinguishes client and server endpoints.
 enum HandshakeState {
   /// No handshake in progress.
   idle,
@@ -57,6 +67,27 @@ enum HandshakeRole {
   server,
 }
 
+/// Manages the TLS 1.3 handshake lifecycle for a single QUIC connection (RFC 8446).
+///
+/// [HandshakeStateMachine] tracks which handshake messages have been sent and
+/// received, enforcing valid state transitions and preventing illegal message
+/// sequences. It is used by both client and server endpoints; the exact path
+/// is determined by [HandshakeRole].
+///
+/// The machine is rate-limited to prevent CPU exhaustion from malicious peers
+/// that might flood handshake messages.
+///
+/// ## Example
+/// ```dart
+/// final machine = HandshakeStateMachine(HandshakeRole.client);
+/// machine.start();
+/// machine.onMessage(TlsHandshakeType.clientHello, sent: true);
+/// ```
+///
+/// See also:
+/// - [HandshakeState] — the individual states this machine transitions through.
+/// - [TlsHandshakeType] — the message types that drive state changes.
+/// - RFC 8446 Section 4 — handshake protocol overview.
 class HandshakeStateMachine {
   // SECURITY: Rate limit transitions to prevent CPU exhaustion.
   static const int _maxTransitionsPerSecond = 100;
@@ -68,6 +99,9 @@ class HandshakeStateMachine {
   final HandshakeRole _role;
   HandshakeState _state = HandshakeState.idle;
 
+  /// Creates a [HandshakeStateMachine] for the given [HandshakeRole].
+  ///
+  /// The initial state is [HandshakeState.idle].
   HandshakeStateMachine(this._role);
 
   HandshakeState get state => _state;
@@ -75,7 +109,7 @@ class HandshakeStateMachine {
   bool get hasFailed => _state == HandshakeState.handshakeFailed;
   bool get inProgress => !isComplete && !hasFailed;
 
-  /// Transitions from [idle] to [clientStart] (client) or [serverStart] (server).
+  /// Transitions from [HandshakeState.idle] to [HandshakeState.clientStart] (client) or [HandshakeState.serverStart] (server).
   void start() {
     if (_state != HandshakeState.idle) {
       throw StateError('Cannot start from $_state');
@@ -85,7 +119,7 @@ class HandshakeStateMachine {
         : HandshakeState.serverStart;
   }
 
-  /// Server-only: transition from [serverStart] to [serverWaitClientHello].
+  /// Server-only: transition from [HandshakeState.serverStart] to [HandshakeState.serverWaitClientHello].
   void accept() {
     if (_state != HandshakeState.serverStart) {
       throw StateError('Cannot accept from $_state');

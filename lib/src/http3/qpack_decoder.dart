@@ -18,7 +18,7 @@ class QpackFieldLine {
 /// QPACK field line decoder per RFC 9204 Section 4.3.
 ///
 /// Supports static table lookups. Dynamic table support can be added
-/// by providing a [dynamicTable] callback.
+/// by providing a dynamicTable callback.
 class QpackDecoder {
   QpackDecoder._();
 

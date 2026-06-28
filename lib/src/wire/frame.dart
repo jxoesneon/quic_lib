@@ -70,20 +70,63 @@ class AckFrame implements Frame {
   }
 }
 
+/// A single range of contiguous packet numbers acknowledged in an ACK frame.
+///
+/// ACK frames in QUIC (RFC 9000 Section 19.3) encode acknowledgment information
+/// compactly using a largest-acknowledged number plus a list of [AckRange]s.
+/// Each range describes a gap from the previous range and a length of
+/// contiguously acknowledged packets.
+///
+/// The first range in an [AckFrame] has a `gap` of zero and its `length`
+/// counts backward from [AckFrame.largestAcknowledged].
+///
+/// See also:
+/// - [AckFrame] — the frame that aggregates these ranges.
+/// - [AckEcnFrame] — ECN-aware variant that also includes ACK ranges.
+/// - RFC 9000 Section 19.3.1 — ACK range encoding.
 class AckRange {
+  /// The gap from the end of the previous ACK range to the start of this one.
   final int gap;
+
+  /// The number of contiguously acknowledged packets in this range.
   final int length;
+
+  /// Creates an [AckRange] with the given [gap] and [length].
+  ///
+  /// For the first range in an ACK frame, [gap] should be `0`.
   AckRange({this.gap = 0, required this.length});
 }
 
 // ---------------------------------------------------------------------------
 // 0x03 ACK with ECN
 // ---------------------------------------------------------------------------
+/// An ACK frame with ECN (Explicit Congestion Notification) counts (RFC 9000 Section 19.3.2).
+///
+/// [AckEcnFrame] extends [AckFrame] by adding three ECN counters: [ect0Count],
+/// [ect1Count], and [ceCount]. These values allow the sender to detect ECN-capable
+/// path support and react to congestion experienced (CE) marks.
+///
+/// This frame type (0x03) is used instead of a plain ACK (0x02) when the peer
+/// has negotiated ECN support and the received packets carried ECN-capable codepoints.
+///
+/// See also:
+/// - [AckFrame] — the base ACK frame without ECN counts.
+/// - [AckRange] — the packet-number ranges carried by this frame.
+/// - RFC 9000 Section 19.3.2 — ACK frame with ECN counts.
 class AckEcnFrame extends AckFrame {
+  /// Count of IP packets received with the ECT(0) codepoint.
   final int ect0Count;
+
+  /// Count of IP packets received with the ECT(1) codepoint.
   final int ect1Count;
+
+  /// Count of IP packets received with the CE codepoint.
   final int ceCount;
 
+  /// Creates an [AckEcnFrame] that acknowledges packets and reports ECN counts.
+  ///
+  /// All parameters are inherited from [AckFrame] except the ECN-specific
+  /// [ect0Count], [ect1Count], and [ceCount].
   AckEcnFrame({
     required super.largestAcknowledged,
     super.ackDelay,
@@ -528,6 +571,24 @@ class HandshakeDoneFrame implements Frame {
 // ---------------------------------------------------------------------------
 // Frame Codec
 // ---------------------------------------------------------------------------
+/// Codec for serializing and parsing QUIC frames (RFC 9000 Section 12 and 19).
+///
+/// [FrameCodec] provides static helpers to convert between [Frame] objects and
+/// their wire-format byte representation. It is used by the packet builder when
+/// constructing outgoing packets and by the packet receiver when decoding
+/// incoming frames.
+///
+/// ## Example
+/// ```dart
+/// final ping = PingFrame();
+/// final bytes = FrameCodec.serialize(ping);
+/// final (frame, offset) = FrameCodec.parse(bytes);
+/// ```
+///
+/// See also:
+/// - [Frame] — the abstract base class for all QUIC frames.
+/// - [PacketProtector] — encrypts packets containing serialized frames.
+/// - RFC 9000 Section 19 — frame types and formats.
 class FrameCodec {
   /// Serialize a frame to bytes.
   static Uint8List serialize(Frame frame) => frame.serialize();
@@ -798,3 +859,5 @@ class FrameCodec {
     return frame.serialize().length;
   }
 }
+
+// MARKER

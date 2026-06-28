@@ -7,6 +7,21 @@ import 'dart:typed_data';
 ///   01 → 2 bytes (14 usable bits, max 16383)
 ///   10 → 4 bytes (30 usable bits, max 1073741823)
 ///   11 → 8 bytes (62 usable bits, max 4611686018427387903)
+///
+/// Callers use [encode] to serialize integers and [decode] to recover them
+/// from incoming packet buffers. [decodeLength] is useful for parsing when
+/// the value itself is not yet needed.
+///
+/// ## Example
+/// ```dart
+/// final encoded = VarInt.encode(42);      // 1 byte
+/// final value   = VarInt.decode(encoded.buffer); // 42
+/// ```
+///
+/// See also:
+/// - [VarInt.encode] — minimal encoding
+/// - [VarInt.decode] — deserialization
+/// - RFC 9000 Section 16
 class VarInt {
   VarInt._();
 
@@ -14,6 +29,9 @@ class VarInt {
   static int get maxValue => 4611686018427387903; // 0x3FFFFFFFFFFFFFFF
 
   /// Encodes a non-negative integer into its minimal QUIC varint form.
+  ///
+  /// Chooses the smallest byte width (1, 2, 4, or 8) that can represent
+  /// [value] based on the two most-significant-bit length flag.
   ///
   /// Throws [ArgumentError] if [value] is negative or exceeds [maxValue].
   static Uint8List encode(int value) {
@@ -95,6 +113,9 @@ class VarInt {
 
   /// Returns the total byte length (1, 2, 4, or 8) based on the 2MSB of
   /// [firstByte].
+  ///
+  /// This is useful when scanning a buffer without fully decoding every
+  /// varint, for example to skip over length-prefixed fields.
   static int decodeLength(int firstByte) {
     final lengthFlag = firstByte >> 6;
     return 1 << lengthFlag; // 1, 2, 4, or 8

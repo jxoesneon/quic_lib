@@ -7,15 +7,51 @@ import 'multiaddr.dart';
 
 /// A libp2p transport backed by QUIC.
 ///
-/// Wraps a [QuicEndpoint] and provides libp2p-style dial/listen APIs.
-/// Per the libp2p QUIC spec, this transport handles the Noise handshake
-/// (or TLS 1.3 with libp2p extension) over QUIC.
+/// [Libp2pQuicTransport] wraps a [QuicEndpoint] and exposes libp2p-style
+/// [listen] and [dial] APIs. It parses [Multiaddr] values to extract IP
+/// addresses and UDP ports, binds the endpoint, and bridges raw
+/// [QuicConnection] objects into [Libp2pQuicConnection] wrappers.
+///
+/// Per the libp2p QUIC specification, the security handshake (Noise or
+/// TLS 1.3 with libp2p extension) runs inside the QUIC crypto frame stream.
+/// This transport layer handles addressing and connection establishment;
+/// the actual security handshake is performed by the libp2p security
+/// upgrade layer above it.
+///
+/// ## Example
+/// ```dart
+/// final transport = Libp2pQuicTransport();
+///
+/// // Listen on a multiaddr.
+/// final incoming = await transport.listen(
+///   Multiaddr.parse('/ip4/127.0.0.1/udp/0/quic-v1'),
+/// );
+/// incoming.listen((conn) {
+///   print('Accepted connection: ${conn.quicConnection}');
+///   conn.close();
+/// });
+///
+/// // Dial a remote peer.
+/// final conn = await transport.dial(
+///   Multiaddr.parse('/ip4/192.168.1.10/udp/4001/quic-v1'),
+/// );
+/// conn.send(Uint8List.fromList([1, 2, 3]));
+/// await transport.close();
+/// ```
+///
+/// See also:
+/// - [Libp2pQuicConnection] — wrapper around an established QUIC connection.
+/// - [QuicEndpoint] — the underlying QUIC endpoint.
+/// - [Multiaddr] — libp2p addressing format.
+/// - libp2p QUIC spec — https://github.com/libp2p/specs/tree/master/quic
 class Libp2pQuicTransport {
   QuicEndpoint? _endpoint;
   final _listeners = <Multiaddr, StreamController<Libp2pQuicConnection>>{};
   bool _closed = false;
 
   /// Whether the transport has been closed.
+  ///
+  /// Once true, [listen] and [dial] will throw [StateError].
   bool get isClosed => _closed;
 
   /// Extract an [InternetAddress] and port from [multiaddr].
@@ -44,9 +80,14 @@ class Libp2pQuicTransport {
 
   /// Listen on the given [multiaddr].
   ///
-  /// Returns a stream of incoming connections.
-  /// The multiaddr must contain a valid IP and port (e.g.
-  /// `/ip4/0.0.0.0/udp/0/quic-v1`).
+  /// Binds a [QuicEndpoint] to the IP and port encoded in [multiaddr] and
+  /// returns a broadcast stream of incoming [Libp2pQuicConnection]s.
+  ///
+  /// The multiaddr must contain a valid IP and port, for example:
+  /// `/ip4/0.0.0.0/udp/0/quic-v1`.
+  ///
+  /// Throws [StateError] if the transport is already closed.
+  /// Throws [FormatException] if [multiaddr] lacks an IP or port component.
   Future<Stream<Libp2pQuicConnection>> listen(Multiaddr multiaddr) async {
     if (_closed) {
       throw StateError('Transport is closed');
@@ -79,7 +120,12 @@ class Libp2pQuicTransport {
 
   /// Dial a remote peer at [multiaddr].
   ///
-  /// Returns a [Libp2pQuicConnection] once the QUIC handshake completes.
+  /// Parses the IP and port from [multiaddr], binds an ephemeral local
+  /// endpoint if none exists, and initiates a QUIC handshake. Returns a
+  /// [Libp2pQuicConnection] wrapping the resulting [QuicConnection].
+  ///
+  /// Throws [StateError] if the transport is already closed.
+  /// Throws [FormatException] if [multiaddr] lacks an IP or port component.
   Future<Libp2pQuicConnection> dial(Multiaddr multiaddr) async {
     if (_closed) {
       throw StateError('Transport is closed');
@@ -96,6 +142,10 @@ class Libp2pQuicTransport {
   }
 
   /// Close the transport and all active listeners.
+  ///
+  /// Closes every listener stream controller, clears the listener registry,
+  /// closes the underlying [QuicEndpoint], and marks the transport as closed.
+  /// After this call the transport can no longer be used.
   Future<void> close() async {
     _closed = true;
     for (final controller in _listeners.values) {
@@ -108,15 +158,42 @@ class Libp2pQuicTransport {
 }
 
 /// A libp2p-friendly wrapper around a QUIC connection.
+///
+/// [Libp2pQuicConnection] encapsulates a raw [QuicConnection] and exposes
+/// simple [send] and [close] methods compatible with libp2p transport
+/// interfaces. The underlying connection object is accessible via
+/// [quicConnection] for callers that need to interact with QUIC-specific
+/// APIs (stream allocation, encryption details, etc.).
+///
+/// ## Example
+/// ```dart
+/// final transport = Libp2pQuicTransport();
+/// final conn = await transport.dial(multiaddr);
+/// conn.send(Uint8List.fromList([0x01, 0x02]));
+/// print('Underlying QUIC conn: ${conn.quicConnection}');
+/// conn.close();
+/// ```
 class Libp2pQuicConnection {
   final Object _quicConnection;
 
+  /// Creates a libp2p wrapper around [quicConnection].
+  ///
+  /// [quicConnection] is expected to be a [QuicConnection] or an object
+  /// that implements `openUnidirectionalStream()` and `close()`.
   Libp2pQuicConnection(this._quicConnection);
 
   /// The underlying QUIC connection object.
+  ///
+  /// In typical usage this is a [QuicConnection]. Cast to access
+  /// QUIC-specific methods such as `openBidirectionalStream()`.
   Object get quicConnection => _quicConnection;
 
-  /// Send data on a new stream via the underlying QUIC connection.
+  /// Send [data] on a new unidirectional stream.
+  ///
+  /// Opens a client-initiated unidirectional stream via the underlying
+  /// connection. In a full implementation the data would be written to the
+  /// stream and packetized; the current design stores it in the stream
+  /// manager for later transmission.
   void send(Uint8List data) {
     final conn = _quicConnection as dynamic;
     try {
@@ -131,7 +208,10 @@ class Libp2pQuicConnection {
     }
   }
 
-  /// Close the connection.
+  /// Close the underlying QUIC connection.
+  ///
+  /// Delegates to the wrapped connection's `close()` method. If the
+  /// underlying object does not support close, the error is silently ignored.
   void close() {
     final conn = _quicConnection as dynamic;
     try {

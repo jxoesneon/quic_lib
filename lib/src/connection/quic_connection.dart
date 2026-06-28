@@ -48,7 +48,43 @@ class _QuicMigrationHelper extends MigrationHelper {
       _challengeByHex.remove(bytesToHex(data));
 }
 
-/// Orchestrates all subsystems of a QUIC connection.
+/// Orchestrates all subsystems of a single QUIC connection.
+///
+/// A [QuicConnection] represents one QUIC association between a client and a
+/// server. It manages the connection state machine, connection IDs, packet
+/// number spaces, loss detection, congestion control, flow control, and stream
+/// allocation. It is the central hub that incoming frames are dispatched to and
+/// from which outgoing packets are built.
+///
+/// Connections are created by a [QuicEndpoint] (via [QuicEndpoint.connect] for
+/// outbound or automatically for inbound) and progress through the handshake
+/// until [isEstablished] becomes true. Once established, streams can be opened
+/// with [openBidirectionalStream] or [openUnidirectionalStream], and data can
+/// be read from or written to those streams via the [streamManager].
+///
+/// ## Example
+/// ```dart
+/// final endpoint = await QuicEndpoint.bind(InternetAddress.anyIPv4, 0);
+/// final conn = await endpoint.connect(remoteAddress, remotePort);
+///
+/// // Wait for handshake completion.
+/// while (!conn.isEstablished) {
+///   await Future.delayed(Duration(milliseconds: 10));
+/// }
+///
+/// // Open a client-initiated bidirectional stream.
+/// final streamId = conn.openBidirectionalStream();
+/// print('Opened stream $streamId');
+///
+/// // Gracefully close the connection when done.
+/// conn.close();
+/// ```
+///
+/// See also:
+/// - [QuicEndpoint] — creates and manages connections.
+/// - [StreamManager] — routes STREAM frames to individual streams.
+/// - [RecoveryManager] — coordinates loss detection and congestion control.
+/// - RFC 9000 Section 5 — Connection State Machine.
 class QuicConnection {
   final ConnectionStateMachine _stateMachine;
   final ConnectionIdManager _cidManager;
@@ -78,6 +114,16 @@ class QuicConnection {
   final FlowController _connectionFlowController =
       FlowController(initialLimit: 65536);
 
+  /// Creates a [QuicConnection] with the given subsystems.
+  ///
+  /// All recovery and stream subsystems are required. The crypto and handshake
+  /// subsystems are optional until the TLS pipeline is wired; if both
+  /// [cryptoAssembler] and [handshakeMachine] are provided, a
+  /// [CryptoFrameHandler] is created to dispatch CRYPTO frames.
+  ///
+  /// The connection starts in the [ConnectionState.idle] or
+  /// [ConnectionState.handshaking] state depending on how it was created
+  /// (inbound vs outbound).
   QuicConnection({
     required ConnectionStateMachine stateMachine,
     required ConnectionIdManager cidManager,
@@ -123,8 +169,13 @@ class QuicConnection {
     }
   }
 
+  /// The current state of this connection (e.g. idle, handshaking, established).
   ConnectionState get state => _stateMachine.state;
+
+  /// Whether the handshake has completed and the connection is ready for streams.
   bool get isEstablished => _stateMachine.isEstablished;
+
+  /// Whether the connection is fully closed and can no longer send or receive.
   bool get isClosed => _stateMachine.isClosed;
 
   /// The first active connection ID, or null if none have been issued.
@@ -158,13 +209,33 @@ class QuicConnection {
   /// Whether the connection should pace outgoing packets.
   bool get shouldPacePackets => _pacingCalculator.shouldPace;
 
-  /// Open a new client-initiated bidirectional stream.
+  /// Allocates a new client-initiated bidirectional stream ID.
+  ///
+  /// The returned stream ID is unique within this connection and can be used
+  /// to create a [QuicStream] via the [streamManager]. Bidirectional streams
+  /// allow both endpoints to send and receive data.
+  ///
+  /// Throws [StateError] if the connection is closed or the stream limit has
+  /// been reached.
   int openBidirectionalStream() => _streamIdAllocator.allocateClientBidi();
 
-  /// Open a new client-initiated unidirectional stream.
+  /// Allocates a new client-initiated unidirectional stream ID.
+  ///
+  /// The returned stream ID is unique within this connection. Unidirectional
+  /// streams allow only the initiator to send data; the peer can only receive.
+  ///
+  /// Throws [StateError] if the connection is closed or the stream limit has
+  /// been reached.
   int openUnidirectionalStream() => _streamIdAllocator.allocateClientUni();
 
-  /// Close the connection gracefully.
+  /// Initiates a graceful close of this connection.
+  ///
+  /// Transitions the connection to the closing state, which triggers the
+  /// emission of a CONNECTION_CLOSE frame and begins the draining period.
+  /// The connection will eventually move to [ConnectionState.closed] once
+  /// the peer acknowledges the close or the draining timer expires.
+  ///
+  /// For an immediate abort, use [abort].
   void close() {
     if (!_stateMachine.isClosing && !_stateMachine.isClosed) {
       _stateMachine.transitionTo(ConnectionState.closing, reason: 'User close');

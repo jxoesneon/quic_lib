@@ -2,6 +2,7 @@ name: quic_lib
 description: >-
   A pure-Dart QUIC, HTTP/3, WebTransport, and libp2p transport stack.
 version: 1.2.0
+homepage: https://github.com/jxoesneon/quic_lib
 repository: https://github.com/jxoesneon/quic_lib
 issue_tracker: https://github.com/jxoesneon/quic_lib/issues
 documentation: https://github.com/jxoesneon/quic_lib/tree/main/doc

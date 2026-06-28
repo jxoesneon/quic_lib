@@ -26,7 +26,7 @@ class DCUtRStateMachine {
   /// Whether the handshake has reached the connected state.
   bool get isConnected => _state == DCUtRState.connected;
 
-  /// Transition from [idle] to [connectSent] when the dialer sends a
+  /// Transition from [DCUtRState.idle] to [DCUtRState.connectSent] when the dialer sends a
   /// CONNECT message.
   void onConnectSent() {
     if (_state == DCUtRState.idle) {
@@ -34,10 +34,10 @@ class DCUtRStateMachine {
     }
   }
 
-  /// Transition toward [connected] when a SYNC is received.
+  /// Transition toward [DCUtRState.connected] when a SYNC is received.
   ///
-  /// - [connectSent] → [syncReceived]
-  /// - [syncReceived] → [connected]
+  /// - [DCUtRState.connectSent] → [DCUtRState.syncReceived]
+  /// - [DCUtRState.syncReceived] → [DCUtRState.connected]
   void onSyncReceived() {
     if (_state == DCUtRState.connectSent) {
       _state = DCUtRState.syncReceived;
@@ -46,7 +46,7 @@ class DCUtRStateMachine {
     }
   }
 
-  /// Transition from [idle] directly to [connected] when the listener
+  /// Transition from [DCUtRState.idle] directly to [DCUtRState.connected] when the listener
   /// receives a CONNECT message.
   void onConnectReceived() {
     if (_state == DCUtRState.idle) {
@@ -54,7 +54,7 @@ class DCUtRStateMachine {
     }
   }
 
-  /// Transition to [failed] from any state on timeout.
+  /// Transition to [DCUtRState.failed] from any state on timeout.
   void onTimeout() {
     _state = DCUtRState.failed;
   }

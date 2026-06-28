@@ -1,16 +1,38 @@
 import 'dart:typed_data';
+
 import 'frame.dart';
 import 'packet_header.dart';
 import 'packet_number.dart';
 
 /// Builds complete QUIC packets from headers and frames.
+///
+/// This utility combines a [PacketHeader] with a list of [Frame]s into a
+/// single serialized [Uint8List] ready for encryption and UDP transmission.
+/// It automatically computes the Length field for long headers and handles
+/// packet-number truncation for short headers.
+///
+/// ## Example
+/// ```dart
+/// final packet = await PacketBuilder.build(header, [
+///   CryptoFrame(offset: 0, data: handshakeData),
+/// ]);
+/// socket.send(packet);
+/// ```
+///
+/// See also:
+/// - [PacketHeader] — header types supported by this builder
+/// - [Frame] — frames that can be embedded in packets
+/// - [CoalescedPacket] — for splitting merged datagrams
 class PacketBuilder {
   PacketBuilder._();
 
   /// Build a complete QUIC packet from a header and list of frames.
   ///
-  /// For long headers, computes the Length field automatically.
-  /// For short headers, appends frames directly after the header.
+  /// For [LongHeader], computes the Length field automatically.
+  /// For [ShortHeader], appends frames directly after the header.
+  /// [VersionNegotiationPacket] is serialized as-is with no frames.
+  ///
+  /// Throws [UnsupportedError] if [header] is not a recognized type.
   static Future<Uint8List> build(
       PacketHeader header, List<Frame> frames) async {
     final frameBytes = _serializeFrames(frames);

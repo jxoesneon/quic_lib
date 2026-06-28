@@ -5,37 +5,98 @@ import '../crypto/packet/retry_integrity_tag.dart';
 import 'varint.dart';
 
 /// Base class for all QUIC packet headers.
+///
+/// QUIC defines two header forms: long (header form = 1) used during the
+/// handshake, and short (header form = 0) used for 1-RTT data. All
+/// concrete implementations ([LongHeader], [ShortHeader],
+/// [VersionNegotiationPacket]) expose the same basic properties and can be
+/// serialized to bytes via [serialize].
+///
+/// See also:
+/// - [LongHeader] — handshake-time long header
+/// - [ShortHeader] — 1-RTT short header
+/// - [PacketHeaderParser] — for parsing raw bytes into headers
+/// - RFC 9000 Section 17
 abstract class PacketHeader {
-  /// 1 for long header, 0 for short header.
+  /// The header form: 1 for long header, 0 for short header.
   int get headerForm;
 
   /// The destination connection ID.
+  ///
+  /// This CID is used by the receiver to route the packet to the correct
+  /// connection context.
   List<int> get destinationConnectionId;
 
   /// Serialize this header to bytes.
+  ///
+  /// For [LongHeader] Retry packets, this is an async operation because it
+  /// computes the integrity tag.
   Future<Uint8List> serialize();
 
   /// Total serialized byte length.
+  ///
+  /// This is the on-the-wire size before encryption and UDP overhead.
   int get byteLength;
 }
 
 /// QUIC long header used during handshake (Initial, 0-RTT, Handshake, Retry).
+///
+/// The long header carries the version, both connection IDs, and a Length
+/// field that prefixes the protected payload. Initial packets may also
+/// carry an address-validation token.
+///
+/// See also:
+/// - [ShortHeader] — used after the handshake
+/// - [VersionNegotiationPacket] — sent when versions mismatch
+/// - [RetryPacketBuilder] — builds Retry packets specifically
+/// - RFC 9000 Section 17.2
 class LongHeader implements PacketHeader {
+  /// Packet type constant for Initial packets.
   static const int typeInitial = 0x00;
+
+  /// Packet type constant for 0-RTT packets.
   static const int typeZeroRtt = 0x01;
+
+  /// Packet type constant for Handshake packets.
   static const int typeHandshake = 0x02;
+
+  /// Packet type constant for Retry packets.
   static const int typeRetry = 0x03;
 
+  /// The QUIC version (e.g., [QuicVersions.v1]).
   final int version;
+
+  /// The long packet type (0=Initial, 1=0-RTT, 2=Handshake, 3=Retry).
   final int packetType;
+
+  /// The destination connection ID.
   @override
   final List<int> destinationConnectionId;
+
+  /// The source connection ID.
   final List<int> sourceConnectionId;
+
+  /// The packet number (truncated on the wire).
   final int packetNumber;
+
+  /// The payload bytes (frames for non-Retry, retry token for Retry).
   final List<int> payload;
-  final List<int>? token; // Only for Initial
+
+  /// The address-validation token (Initial packets only, optional).
+  final List<int>? token;
+
+  /// Cryptographic backend required for Retry integrity tag computation.
   final CryptoBackend? backend;
 
+  /// Creates a long header.
+  ///
+  /// [packetType] must be one of [typeInitial], [typeZeroRtt],
+  /// [typeHandshake], or [typeRetry].
+  /// [destinationConnectionId] and [sourceConnectionId] must each be
+  /// 255 bytes or fewer.
+  /// [backend] is required when serializing Retry packets.
+  ///
+  /// Throws [ArgumentError] if packet type or CID lengths are invalid.
   LongHeader({
     required this.version,
     required this.packetType,
@@ -60,7 +121,10 @@ class LongHeader implements PacketHeader {
     }
   }
 
+  /// Whether this is an Initial packet.
   bool get isInitial => packetType == typeInitial;
+
+  /// Whether this is a Retry packet.
   bool get isRetry => packetType == typeRetry;
 
   @override
@@ -140,15 +204,41 @@ class LongHeader implements PacketHeader {
 }
 
 /// QUIC short header used for 1-RTT application data.
+///
+/// The short header omits the version and source connection ID, keeping only
+/// the destination connection ID and a truncated packet number. It also
+/// carries the spin bit (latency measurement) and key-phase bit (key update).
+///
+/// See also:
+/// - [LongHeader] — used during the handshake
+/// - [PacketBuilder] — assembles packets with short headers
+/// - RFC 9000 Section 17.3
 class ShortHeader implements PacketHeader {
+  /// The destination connection ID.
   @override
   final List<int> destinationConnectionId;
+
+  /// The packet number (truncated to [packetNumberLength] bytes on wire).
   final int packetNumber;
+
+  /// The spin bit used for latency measurement (RFC 9000 Section 17.3.1).
   final bool spinBit;
+
+  /// The key phase bit indicating which packet-protection keys are in use.
   final bool keyPhase;
-  final int packetNumberLength; // 1..4
+
+  /// The byte length of the truncated packet number on the wire (1..4).
+  final int packetNumberLength;
+
+  /// The payload bytes (frames) carried after the header.
   final List<int> payload;
 
+  /// Creates a short header.
+  ///
+  /// [destinationConnectionId] must be 255 bytes or fewer.
+  /// [packetNumberLength] must be between 1 and 4 inclusive.
+  ///
+  /// Throws [ArgumentError] if any constraint is violated.
   ShortHeader({
     required this.destinationConnectionId,
     this.packetNumber = 0,
@@ -189,12 +279,32 @@ class ShortHeader implements PacketHeader {
 }
 
 /// Version negotiation packet sent when a peer doesn't support the requested version.
+///
+/// When a server receives an Initial packet with an unknown version, it
+/// replies with a Version Negotiation packet containing a list of supported
+/// versions. This packet has version 0x00000000 and no packet number.
+///
+/// See also:
+/// - [LongHeader] — the header format from which this diverges
+/// - [QuicVersions] — supported version constants
+/// - RFC 9000 Section 17.2.1
 class VersionNegotiationPacket implements PacketHeader {
+  /// The destination connection ID (copied from the incoming Initial).
   @override
   final List<int> destinationConnectionId;
+
+  /// The source connection ID chosen by the server.
   final List<int> sourceConnectionId;
+
+  /// The list of versions this endpoint supports.
   final List<int> supportedVersions;
 
+  /// Creates a version negotiation packet.
+  ///
+  /// [destinationConnectionId] and [sourceConnectionId] must each be
+  /// 255 bytes or fewer.
+  ///
+  /// Throws [ArgumentError] if any CID exceeds the limit.
   VersionNegotiationPacket({
     required this.destinationConnectionId,
     required this.sourceConnectionId,
@@ -242,7 +352,34 @@ class VersionNegotiationPacket implements PacketHeader {
 }
 
 /// Parses QUIC packet headers from raw bytes.
+///
+/// [PacketHeaderParser.parse] inspects the first byte to determine whether
+/// the packet uses a long or short header, then dispatches to the appropriate
+/// parser. For short headers, the caller must supply the expected DCID length
+/// because it is not encoded in the packet itself.
+///
+/// ## Example
+/// ```dart
+/// final header = PacketHeaderParser.parse(
+///   datagram,
+///   destinationConnectionIdLength: 8,
+/// );
+/// ```
+///
+/// See also:
+/// - [PacketHeader] — base class for parsed headers
+/// - [LongHeader] — parsed long header type
+/// - [ShortHeader] — parsed short header type
 class PacketHeaderParser {
+  /// Parse a [PacketHeader] from raw [bytes].
+  ///
+  /// [destinationConnectionIdLength] is required for short-header packets
+  /// because the short header does not encode the DCID length.
+  ///
+  /// Returns a [LongHeader], [ShortHeader], or [VersionNegotiationPacket]
+  /// depending on the first byte and version field.
+  ///
+  /// Throws [ArgumentError] if the buffer is empty or too short.
   static PacketHeader parse(Uint8List bytes,
       {required int destinationConnectionIdLength}) {
     if (bytes.isEmpty) throw ArgumentError('Empty packet');
@@ -394,7 +531,6 @@ class PacketHeaderParser {
   }
 }
 
-/// Encode a packet number into the given byte length (1..4).
 Uint8List _encodePacketNumber(int packetNumber, int byteLength) {
   final result = Uint8List(byteLength);
   for (var i = byteLength - 1; i >= 0; i--) {
@@ -404,7 +540,6 @@ Uint8List _encodePacketNumber(int packetNumber, int byteLength) {
   return result;
 }
 
-/// Determine the minimum byte length needed to encode a packet number.
 int _pnLengthFromValue(int packetNumber) {
   if (packetNumber <= 0xFF) return 1;
   if (packetNumber <= 0xFFFF) return 2;

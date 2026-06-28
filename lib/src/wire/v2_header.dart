@@ -13,22 +13,61 @@ import 'varint.dart';
 ///
 /// In v2 the packet type is encoded in bits 3-2 of the first byte and the
 /// lower 2 bits of the version field are carried in bits 1-0.
+///
+/// This header is used for the same packet types as [LongHeader] but with
+/// the incompatible bit layout required by QUIC v2.
+///
+/// See also:
+/// - [LongHeader] — QUIC v1 long header
+/// - [QuicVersions.v2] — version constant
+/// - RFC 9369
 class V2LongHeader implements PacketHeader {
+  /// Packet type constant for Initial packets.
   static const int typeInitial = 0x00;
+
+  /// Packet type constant for 0-RTT packets.
   static const int typeZeroRtt = 0x01;
+
+  /// Packet type constant for Handshake packets.
   static const int typeHandshake = 0x02;
+
+  /// Packet type constant for Retry packets.
   static const int typeRetry = 0x03;
 
+  /// The QUIC version, typically [QuicVersions.v2].
   final int version;
+
+  /// The long packet type (0=Initial, 1=0-RTT, 2=Handshake, 3=Retry).
   final int packetType;
+
+  /// The destination connection ID.
   @override
   final List<int> destinationConnectionId;
+
+  /// The source connection ID.
   final List<int> sourceConnectionId;
+
+  /// The packet number (truncated on the wire).
   final int packetNumber;
+
+  /// The payload bytes (frames for non-Retry, retry token for Retry).
   final List<int> payload;
-  final List<int>? token; // Only for Initial
+
+  /// The address-validation token (Initial packets only).
+  final List<int>? token;
+
+  /// Cryptographic backend required for Retry integrity tag computation.
   final CryptoBackend? backend;
 
+  /// Creates a v2 long header.
+  ///
+  /// [packetType] must be one of [typeInitial], [typeZeroRtt],
+  /// [typeHandshake], or [typeRetry].
+  /// [destinationConnectionId] and [sourceConnectionId] must each be
+  /// 255 bytes or fewer.
+  /// [backend] is required when serializing Retry packets.
+  ///
+  /// Throws [ArgumentError] if packet type or CID lengths are invalid.
   V2LongHeader({
     this.version = QuicVersions.v2,
     required this.packetType,
@@ -53,7 +92,10 @@ class V2LongHeader implements PacketHeader {
     }
   }
 
+  /// Whether this is an Initial packet.
   bool get isInitial => packetType == typeInitial;
+
+  /// Whether this is a Retry packet.
   bool get isRetry => packetType == typeRetry;
 
   @override
@@ -143,6 +185,8 @@ class V2LongHeader implements PacketHeader {
   ///
   /// Parses the full v2 long header structure per RFC 9369.
   /// Header protection must be removed before calling this method.
+  ///
+  /// Throws [ArgumentError] if the bytes do not represent a valid v2 packet.
   static V2LongHeader parse(Uint8List bytes) {
     if (bytes.isEmpty) throw ArgumentError('Empty packet');
     final firstByte = bytes[0];
@@ -239,7 +283,6 @@ class V2LongHeader implements PacketHeader {
   }
 }
 
-/// Encode a packet number into the given byte length (1..4).
 Uint8List _encodePacketNumber(int packetNumber, int byteLength) {
   final result = Uint8List(byteLength);
   for (var i = byteLength - 1; i >= 0; i--) {
@@ -249,7 +292,6 @@ Uint8List _encodePacketNumber(int packetNumber, int byteLength) {
   return result;
 }
 
-/// Determine the minimum byte length needed to encode a packet number.
 int _pnLengthFromValue(int packetNumber) {
   if (packetNumber <= 0xFF) return 1;
   if (packetNumber <= 0xFFFF) return 2;

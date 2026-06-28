@@ -25,6 +25,13 @@ library;
 export 'src/io/quic_endpoint.dart' show QuicEndpoint;
 export 'src/connection/quic_connection.dart' show QuicConnection;
 export 'src/connection/connection_state_machine.dart' show ConnectionState;
+export 'src/connection/congestion_control/congestion_controller.dart'
+    show CongestionController;
+export 'src/connection/congestion_control/cubic.dart'
+    show CubicCongestionController;
+export 'src/connection/congestion_control/bbr.dart'
+    show BbrCongestionController, BbrState;
+export 'src/connection/congestion_control/hystart.dart' show Hystart;
 export 'src/io/udp_socket.dart' show UdpSocket;
 export 'src/libp2p/multiaddr.dart' show Multiaddr;
 export 'src/streams/stream_scheduler.dart' show StreamScheduler;

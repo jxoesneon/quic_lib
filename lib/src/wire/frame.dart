@@ -45,7 +45,12 @@ enum FrameType {
   applicationClose(0x1d),
   handshakeDone(0x1e),
   datagram(0x30),
-  datagramWithLength(0x31);
+  datagramWithLength(0x31),
+  /// ACK_FREQUENCY frame (RFC 9298).
+  ///
+  /// Allows a receiver to request the sender to change its acknowledgement
+  /// frequency, reducing overhead on high-bandwidth or asymmetric paths.
+  ackFrequency(0xaf);
 
   final int value;
   const FrameType(this.value);
@@ -702,6 +707,62 @@ class DatagramFrame extends Frame {
 }
 
 // ---------------------------------------------------------------------------
+// 0xaf ACK_FREQUENCY (RFC 9298)
+// ---------------------------------------------------------------------------
+/// An ACK_FREQUENCY frame allows a receiver to request the sender to change
+/// its acknowledgement frequency.
+///
+/// Wire format:
+/// ```
+/// ACK_FREQUENCY Frame {
+///   Frame Type (i) = 0xaf,
+///   Sequence Number (i),
+///   Requested Ack Eliciting Threshold (i),
+///   Requested Max Ack Delay (i),
+///   Ignore Order (8),
+/// }
+/// ```
+class AckFrequencyFrame extends Frame {
+  final int sequenceNumber;
+  final int requestedAckElicitingThreshold;
+  final int requestedMaxAckDelay;
+  final bool ignoreOrder;
+
+  AckFrequencyFrame({
+    required this.sequenceNumber,
+    required this.requestedAckElicitingThreshold,
+    required this.requestedMaxAckDelay,
+    this.ignoreOrder = false,
+  });
+
+  @override
+  int get frameType => 0xaf;
+
+  @override
+  bool get isAckEliciting => true;
+
+  @override
+  Uint8List serialize() {
+    final builder = BytesBuilder();
+    builder.addByte(0xaf);
+    builder.add(VarInt.encode(sequenceNumber));
+    builder.add(VarInt.encode(requestedAckElicitingThreshold));
+    builder.add(VarInt.encode(requestedMaxAckDelay));
+    builder.addByte(ignoreOrder ? 1 : 0);
+    return builder.toBytes();
+  }
+
+  /// Wire-format byte length.
+  int getByteLength() {
+    return 1 +
+        VarInt.encode(sequenceNumber).length +
+        VarInt.encode(requestedAckElicitingThreshold).length +
+        VarInt.encode(requestedMaxAckDelay).length +
+        1;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Frame Codec
 // ---------------------------------------------------------------------------
 /// Codec for serializing and parsing QUIC frames (RFC 9000 Section 12 and 19).
@@ -990,6 +1051,20 @@ class FrameCodec {
         pos += varIntLength(pos);
         final data = _safeSublist(bytes, pos, lengthValue);
         return DatagramFrame(data: data, hasLength: true);
+      case 0xaf: // ACK_FREQUENCY (RFC 9298)
+        final seqNum = readVarInt(pos);
+        pos += varIntLength(pos);
+        final threshold = readVarInt(pos);
+        pos += varIntLength(pos);
+        final maxDelay = readVarInt(pos);
+        pos += varIntLength(pos);
+        final ignoreOrder = _safeSublist(bytes, pos, 1)[0] != 0;
+        return AckFrequencyFrame(
+          sequenceNumber: seqNum,
+          requestedAckElicitingThreshold: threshold,
+          requestedMaxAckDelay: maxDelay,
+          ignoreOrder: ignoreOrder,
+        );
       default:
         throw UnsupportedError(
             'Frame parsing not yet implemented for type 0x${type.toRadixString(16)}');

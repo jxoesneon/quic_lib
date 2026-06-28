@@ -32,14 +32,41 @@ jobs:
       - name: Install dependencies
         run: dart pub get
 
-      - name: Verify dart analyze
-        run: dart analyze
+      - name: Verify dart analyze (fatal on infos)
+        run: dart analyze --fatal-infos
 
       - name: Check formatting
         run: dart format --set-exit-if-changed .
 
       - name: Run tests
         run: dart test --concurrency=4
+
+      - name: Check for outdated major dependencies
+        run: |
+          dart pub outdated --no-dev-dependencies --up-to-date --no-dependency-overrides > outdated.txt || true
+          if grep -q "does not support the stable version" outdated.txt; then
+            echo "Found dependencies that do not support their latest stable version:"
+            grep "does not support the stable version" outdated.txt
+            exit 1
+          fi
+          echo "All dependencies support their latest stable versions."
+
+      - name: Verify example directory
+        run: |
+          if [ ! -d "example" ]; then
+            echo "Missing example/ directory. Pub.dev will deduct 10 points."
+            exit 1
+          fi
+          if [ ! -f "example/README.md" ]; then
+            echo "Missing example/README.md. Pub.dev example detection may fail."
+            exit 1
+          fi
+          dart_count=$(find example -name "*.dart" | wc -l)
+          if [ "$dart_count" -eq 0 ]; then
+            echo "No .dart files in example/. Pub.dev will deduct 10 points."
+            exit 1
+          fi
+          echo "example/ directory verified ($dart_count .dart files)."
 
       - name: Dry-run publish
         run: dart pub publish --dry-run

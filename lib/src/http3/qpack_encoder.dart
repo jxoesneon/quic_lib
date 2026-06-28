@@ -1,14 +1,58 @@
 import 'dart:typed_data';
+import 'qpack_dynamic_table.dart';
 import 'qpack_integer.dart';
 import 'qpack_string.dart';
 import 'qpack_static_table.dart';
 
 /// QPACK field line encoder per RFC 9204 Section 4.3.
-/// For now, only static table lookups are supported (no dynamic table).
+/// Supports both static and dynamic table lookups.
 class QpackEncoder {
-  QpackEncoder._();
+  QpackEncoder();
 
-  /// Encode a single field line.
+  /// Dynamic table for this encoder.
+  final QpackDynamicTable dynamicTable = QpackDynamicTable(capacity: 0);
+
+  /// Encode a single field line using both static and dynamic tables.
+  Uint8List encode(String name, String value) {
+    // Try dynamic table exact match first
+    final dynamicExact = dynamicTable.find(name, value);
+    if (dynamicExact != null) {
+      return _encodeIndexed(QpackStaticTable.length + dynamicExact);
+    }
+
+    // Try dynamic table name-only match
+    final dynamicName = dynamicTable.find(name);
+    if (dynamicName != null) {
+      return _encodeLiteralWithNameRef(QpackStaticTable.length + dynamicName, value);
+    }
+
+    // Try exact static table match
+    final exactIndex = findStaticIndex(name, value);
+    if (exactIndex != null) {
+      return _encodeIndexed(exactIndex);
+    }
+
+    // Try name-only static table match
+    final nameIndex = findStaticNameIndex(name);
+    if (nameIndex != null) {
+      return _encodeLiteralWithNameRef(nameIndex, value);
+    }
+
+    // Insert into dynamic table and emit literal without name reference
+    dynamicTable.insert(name, value);
+    return _encodeLiteralWithoutNameRef(name, value);
+  }
+
+  /// Encode multiple field lines.
+  Uint8List encodeLines(List<({String name, String value})> lines) {
+    final builder = BytesBuilder();
+    for (final line in lines) {
+      builder.add(encode(line.name, line.value));
+    }
+    return Uint8List.fromList(builder.toBytes());
+  }
+
+  /// Encode a single field line using only the static table.
   static Uint8List encodeFieldLine(String name, String value) {
     // Try exact match first (indexed representation)
     final exactIndex = findStaticIndex(name, value);
@@ -26,7 +70,7 @@ class QpackEncoder {
     return _encodeLiteralWithoutNameRef(name, value);
   }
 
-  /// Encode multiple field lines.
+  /// Encode multiple field lines using only the static table.
   static Uint8List encodeFieldLines(List<({String name, String value})> lines) {
     final builder = BytesBuilder();
     for (final line in lines) {

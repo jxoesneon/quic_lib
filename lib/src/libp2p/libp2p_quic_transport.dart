@@ -244,35 +244,118 @@ class Libp2pQuicConnection {
   ///
   /// Sends the multistream header, then lists the desired [protocols], and
   /// awaits the peer's selection. Returns the selected protocol string, or
-  /// `null` if the peer responds with `na`.
+  /// `null` if the peer responds with `na` for every protocol.
+  ///
+  /// Each message is sent with a varint length prefix per the
+  /// multistream-select spec. The method tries each protocol in order,
+  /// reading the peer's response after each one, until a match is found
+  /// or the list is exhausted.
   Future<String?> negotiateProtocol(List<String> protocols) async {
-    final completer = Completer<String?>();
+    if (protocols.isEmpty) return null;
 
-    // Send multistream header.
-    _sendRaw(MultistreamSelect.header);
+    // Send length-prefixed multistream header.
+    _sendRaw(MultistreamSelect.encodeLengthPrefixed(MultistreamSelect.header));
 
-    // Send protocol list.
-    _sendRaw(MultistreamSelect.encodeProtocols(protocols));
+    for (final protocol in protocols) {
+      // Send length-prefixed protocol selection.
+      _sendRaw(
+        MultistreamSelect.encodeLengthPrefixed(
+          MultistreamSelect.encodeProtocol(protocol),
+        ),
+      );
 
-    // In a full implementation this would read the peer's response from a
-    // stream and complete the completer. The current design stores the
-    // response for later parsing; tests can inject the selection.
-    // Return a placeholder that will be refined once the response arrives.
-    return completer.future.timeout(
-      Duration(seconds: 10),
-      onTimeout: () => null,
-    );
+      // Read the peer's length-prefixed response.
+      final responseBytes = await _readRaw();
+      if (responseBytes == null || responseBytes.isEmpty) {
+        return null;
+      }
+
+      final result = MultistreamSelect.parseLengthPrefixed(responseBytes);
+      if (result == null) {
+        return null;
+      }
+
+      final messages = MultistreamSelect.parseMessages(result.$1);
+      if (messages.isEmpty) {
+        return null;
+      }
+
+      final responseText = messages.last;
+      if (responseText == 'na') {
+        continue;
+      }
+      if (responseText == protocol || protocols.contains(responseText)) {
+        return responseText;
+      }
+    }
+
+    return null;
   }
 
   /// Internal helper to send raw bytes on the connection.
+  ///
+  /// Tries multiple dynamic approaches so that both real [QuicConnection]
+  /// objects and simple test fakes can be used:
+  ///   1. `conn.write(data)`
+  ///   2. Write to a stream obtained from `conn.openUnidirectionalStream()`
   void _sendRaw(Uint8List data) {
     final conn = _quicConnection as dynamic;
     try {
-      conn.openUnidirectionalStream();
-      // Note: In a full implementation this would write data to the stream.
+      // Prefer a direct write method (used by test fakes).
+      if (conn.write is Function) {
+        conn.write(data);
+        return;
+      }
+
+      // Fall back to stream-based writing.
+      final streamId = conn.openUnidirectionalStream() as int?;
+      if (streamId != null) {
+        final stream = conn.streamManager?.getStream(streamId);
+        if (stream != null) {
+          stream.write(data);
+          return;
+        }
+      }
     } catch (_) {
-      // Ignore if unidirectional streams are not supported.
+      // Ignore if the underlying connection doesn't support writing.
     }
+  }
+
+  /// Internal helper to read raw bytes from the connection.
+  ///
+  /// Tries multiple dynamic approaches so that both real [QuicConnection]
+  /// objects and simple test fakes can be used:
+  ///   1. `conn.read()` returning `Future<Uint8List?>`
+  ///   2. Read from a stream's `incomingData`
+  Future<Uint8List?> _readRaw() async {
+    final conn = _quicConnection as dynamic;
+    try {
+      // Prefer a direct read method (used by test fakes).
+      if (conn.read is Function) {
+        final result = await conn.read();
+        if (result is Uint8List) return result;
+        if (result is List<int>) return Uint8List.fromList(result);
+        return null;
+      }
+
+      // Fall back to reading from a stream manager.
+      final streamManager = conn.streamManager;
+      if (streamManager != null) {
+        final streams = streamManager.streams?.toList() as List<dynamic>?;
+        if (streams != null && streams.isNotEmpty) {
+          final stream = streams.last;
+          if (stream.incomingData is Stream<Uint8List>) {
+            final chunk = await (stream.incomingData as Stream<Uint8List>)
+                .first
+                .timeout(const Duration(seconds: 5), onTimeout: () => Uint8List(0));
+            return chunk.isNotEmpty ? chunk : null;
+          }
+        }
+      }
+    } catch (_) {
+      // Ignore if the underlying connection doesn't support reading.
+    }
+    return null;
   }
 
   /// Send [data] on a new unidirectional stream.

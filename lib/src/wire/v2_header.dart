@@ -181,9 +181,6 @@ class V2LongHeader implements PacketHeader {
     return len;
   }
 
-  @override
-  int get ecnBits => 0;
-
   /// Parse a [V2LongHeader] from serialized bytes.
   ///
   /// Parses the full v2 long header structure per RFC 9369.

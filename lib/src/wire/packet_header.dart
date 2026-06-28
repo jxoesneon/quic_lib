@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'dart:typed_data';
 
 import '../crypto/crypto_backend.dart';
@@ -39,11 +38,6 @@ abstract class PacketHeader {
   ///
   /// This is the on-the-wire size before encryption and UDP overhead.
   int get byteLength;
-
-  /// The ECN bits from the first byte of the packet (simulated for UDP).
-  ///
-  /// Returns 0 for long headers and version negotiation packets.
-  int get ecnBits;
 }
 
 /// QUIC long header used during handshake (Initial, 0-RTT, Handshake, Retry).
@@ -208,9 +202,6 @@ class LongHeader implements PacketHeader {
     }
     return len;
   }
-
-  @override
-  int get ecnBits => 0;
 }
 
 /// QUIC short header used for 1-RTT application data.
@@ -246,14 +237,6 @@ class ShortHeader implements PacketHeader {
   /// Whether to randomly set or clear the QUIC bit (RFC 9287).
   final bool greaseQuicBit;
 
-  /// Whether this short header should mark ECN-capable packets.
-  final bool ecnCapable;
-
-  /// The ECN bits (last 2 bits of the first byte): 0b00=Not-ECT, 0b10=ECT(0),
-  /// 0b01=ECT(1), 0b11=CE.
-  @override
-  int ecnBits = 0;
-
   /// Creates a short header.
   ///
   /// [destinationConnectionId] must be 255 bytes or fewer.
@@ -268,8 +251,6 @@ class ShortHeader implements PacketHeader {
     this.packetNumberLength = 1,
     this.payload = const [],
     this.greaseQuicBit = false,
-    this.ecnCapable = false,
-    this.ecnBits = 0,
   }) {
     if (packetNumberLength < 1 || packetNumberLength > 4) {
       throw ArgumentError('PN length must be 1..4');
@@ -293,13 +274,6 @@ class ShortHeader implements PacketHeader {
     if (spinBit) firstByte |= 0x20;
     firstByte |= (packetNumberLength - 1);
     if (keyPhase) firstByte |= 0x04;
-    if (ecnCapable) {
-      final random = Random.secure().nextBool();
-      ecnBits = random ? 2 : 1;
-      firstByte = (firstByte & ~0x03) | ecnBits;
-    } else {
-      ecnBits = 0;
-    }
     builder.addByte(firstByte);
     builder.add(destinationConnectionId);
     builder.add(_encodePacketNumber(packetNumber, packetNumberLength));
@@ -383,9 +357,6 @@ class VersionNegotiationPacket implements PacketHeader {
       1 +
       sourceConnectionId.length +
       supportedVersions.length * 4;
-
-  @override
-  int get ecnBits => 0;
 }
 
 /// Parses QUIC packet headers from raw bytes.
@@ -580,7 +551,6 @@ class PacketHeaderParser {
       keyPhase: (firstByte & 0x04) != 0,
       packetNumberLength: pnLen,
       payload: payload,
-      ecnBits: firstByte & 0x03,
     );
   }
 }

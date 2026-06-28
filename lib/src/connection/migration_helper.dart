@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:quic_lib/src/utils/hex.dart';
 import 'package:quic_lib/src/wire/frame.dart';
@@ -12,8 +13,8 @@ class MigrationHelper {
   static const int maxPendingChallenges = 8;
   static const int maxValidatedPaths = 16;
 
-  /// Active path challenges: challenge_data → sent_time_us.
-  final Map<List<int>, int> _pendingChallenges = {};
+  /// Active path challenges: hex(challenge_data) → sent_time_us.
+  final Map<String, int> _pendingChallenges = {};
 
   /// Validated paths: hex-encoded challenge_data stored after response.
   final Set<String> _validatedPaths = {};
@@ -31,8 +32,8 @@ class MigrationHelper {
       _evictOldestChallenge();
     }
     final random = Random.secure();
-    final data = List<int>.generate(8, (_) => random.nextInt(256));
-    _pendingChallenges[data] = currentTimeUs ?? _nowUs();
+    final data = Uint8List.fromList(List<int>.generate(8, (_) => random.nextInt(256)));
+    _pendingChallenges[bytesToHex(data)] = currentTimeUs ?? _nowUs();
     return PathChallengeFrame(data: data);
   }
 
@@ -42,16 +43,16 @@ class MigrationHelper {
   /// On match, the challenge is removed from pending and the path is
   /// marked as validated.
   bool onResponseReceived(PathResponseFrame frame) {
-    final data = frame.data;
-    if (!_pendingChallenges.containsKey(data)) {
+    final key = bytesToHex(frame.data);
+    if (!_pendingChallenges.containsKey(key)) {
       return false;
     }
-    _pendingChallenges.remove(data);
+    _pendingChallenges.remove(key);
     // SECURITY: Evict oldest validated path if at capacity.
     if (_validatedPaths.length >= maxValidatedPaths) {
       _validatedPaths.remove(_validatedPaths.first);
     }
-    _validatedPaths.add(bytesToHex(data));
+    _validatedPaths.add(key);
     return true;
   }
 
@@ -59,13 +60,13 @@ class MigrationHelper {
   ///
   /// Returns the challenge data for entries older than [timeoutUs].
   /// Expired entries are removed from pending.
-  List<List<int>> getExpiredChallenges(int currentTimeUs,
+  List<Uint8List> getExpiredChallenges(int currentTimeUs,
       {int timeoutUs = defaultTimeoutUs}) {
-    final expired = <List<int>>[];
-    _pendingChallenges.removeWhere((data, sentTime) {
+    final expired = <Uint8List>[];
+    _pendingChallenges.removeWhere((key, sentTime) {
       // SECURITY: Guard against clock backward jumps.
       if (currentTimeUs >= sentTime && currentTimeUs - sentTime > timeoutUs) {
-        expired.add(data);
+        expired.add(hexToBytes(key));
         return true;
       }
       return false;

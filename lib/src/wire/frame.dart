@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:typed_data';
 import 'varint.dart';
 
@@ -520,18 +521,36 @@ class RetireConnectionIdFrame extends Frame {
 // ---------------------------------------------------------------------------
 /// A PATH_CHALLENGE frame (RFC 9000 Section 19.17).
 class PathChallengeFrame extends Frame {
-  final List<int> data; // 8 bytes
+  final Uint8List data; // 8 bytes
 
-  PathChallengeFrame({required this.data}) {
-    if (data.length != 8) {
+  PathChallengeFrame({List<int>? data})
+      : data = data is Uint8List
+            ? data
+            : Uint8List.fromList(data ?? _generateRandomData()) {
+    if (this.data.length != 8) {
       throw ArgumentError('PATH_CHALLENGE data must be 8 bytes');
     }
   }
 
+  static Uint8List _generateRandomData() {
+    final random = Random.secure();
+    return Uint8List.fromList(List<int>.generate(8, (_) => random.nextInt(256)));
+  }
+
+  static PathChallengeFrame parse(Uint8List bytes) {
+    if (bytes.length < 9) {
+      throw ArgumentError('PATH_CHALLENGE frame requires at least 9 bytes');
+    }
+    return PathChallengeFrame(data: bytes.sublist(1, 9));
+  }
+
   @override
   int get frameType => 0x1a;
+
   @override
   Uint8List serialize() => Uint8List.fromList([0x1a, ...data]);
+
+  int get byteLength => 1 + 8;
 }
 
 // ---------------------------------------------------------------------------
@@ -539,18 +558,29 @@ class PathChallengeFrame extends Frame {
 // ---------------------------------------------------------------------------
 /// A PATH_RESPONSE frame (RFC 9000 Section 19.18).
 class PathResponseFrame extends Frame {
-  final List<int> data; // 8 bytes
+  final Uint8List data; // 8 bytes
 
-  PathResponseFrame({required this.data}) {
-    if (data.length != 8) {
+  PathResponseFrame({required List<int> data})
+      : data = data is Uint8List ? data : Uint8List.fromList(data) {
+    if (this.data.length != 8) {
       throw ArgumentError('PATH_RESPONSE data must be 8 bytes');
     }
   }
 
+  static PathResponseFrame parse(Uint8List bytes) {
+    if (bytes.length < 9) {
+      throw ArgumentError('PATH_RESPONSE frame requires at least 9 bytes');
+    }
+    return PathResponseFrame(data: bytes.sublist(1, 9));
+  }
+
   @override
   int get frameType => 0x1b;
+
   @override
   Uint8List serialize() => Uint8List.fromList([0x1b, ...data]);
+
+  int get byteLength => 1 + 8;
 }
 
 // ---------------------------------------------------------------------------

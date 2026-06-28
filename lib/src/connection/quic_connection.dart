@@ -108,6 +108,7 @@ class QuicConnection {
   PathChallengeFrame? _lastPendingChallenge;
   late final RecoveryManager _recoveryManager;
   int _validatedPathCount = 0;
+  final _pendingPathChallenges = <int, DateTime>{};
   Uint8List? _lastProbePacket;
   Completer<void>? _probeCompleter;
   StreamScheduler? _streamScheduler;
@@ -517,6 +518,53 @@ class QuicConnection {
   /// Number of paths that have been successfully validated.
   int get validatedPathCount => _validatedPathCount;
 
+  /// Send a PATH_CHALLENGE frame to validate a path.
+  ///
+  /// Generates a new challenge with 8 bytes of unpredictable data, stores
+  /// the challenge in [_pendingPathChallenges], and builds an Application-space
+  /// packet containing the challenge frame.
+  Future<Uint8List> sendPathChallenge(List<int> dcid) async {
+    final frame = PathChallengeFrame();
+    _pendingPathChallenges[Object.hashAll(frame.data)] = DateTime.now();
+    return buildPacket(
+      space: PacketNumberSpace.application,
+      frames: [frame],
+      dcid: dcid,
+    );
+  }
+
+  /// Handle a received PATH_RESPONSE frame.
+  ///
+  /// Validates that the response data matches a pending challenge sent via
+  /// [sendPathChallenge] or the migration helper. If matched, the path is
+  /// marked as validated.
+  ///
+  /// Returns `true` if the response matched a pending challenge.
+  bool onPathResponseReceived(PathResponseFrame frame) {
+    final hash = Object.hashAll(frame.data);
+    if (_pendingPathChallenges.containsKey(hash)) {
+      _pendingPathChallenges.remove(hash);
+      onPathValidated();
+      return true;
+    }
+    // Fallback to migration helper for probeNewPath compatibility.
+    final originalData =
+        (_migrationHelper as _QuicMigrationHelper).lookupChallenge(frame.data);
+    if (originalData != null) {
+      final response = PathResponseFrame(data: originalData);
+      if (_migrationHelper.onResponseReceived(response)) {
+        (_migrationHelper as _QuicMigrationHelper).removeChallenge(frame.data);
+        onAddressValidated();
+        onPathValidated();
+        if (_probeCompleter != null && !_probeCompleter!.isCompleted) {
+          _probeCompleter!.complete();
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Probe a new path by sending a PATH_CHALLENGE frame.
   ///
   /// Generates a challenge, builds an Application-space packet containing a
@@ -608,20 +656,7 @@ class QuicConnection {
           _lastPendingChallenge = challenge;
           break;
         case PathResponseFrame f:
-          final originalData = (_migrationHelper as _QuicMigrationHelper)
-              .lookupChallenge(f.data);
-          if (originalData != null) {
-            final response = PathResponseFrame(data: originalData);
-            if (_migrationHelper.onResponseReceived(response)) {
-              (_migrationHelper as _QuicMigrationHelper)
-                  .removeChallenge(f.data);
-              onAddressValidated();
-              onPathValidated();
-              if (_probeCompleter != null && !_probeCompleter!.isCompleted) {
-                _probeCompleter!.complete();
-              }
-            }
-          }
+          onPathResponseReceived(f);
           break;
         case MaxDataFrame f:
           _connectionFlowController.updateLimit(f.maxData);

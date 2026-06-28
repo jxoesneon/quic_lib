@@ -1,10 +1,10 @@
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/wire/varint.dart';
-import 'package:dart_quic/src/wire/frame.dart';
-import 'package:dart_quic/src/wire/coalesced_packet.dart';
-import 'package:dart_quic/src/libp2p/multiaddr.dart';
+import 'package:quic_lib/src/wire/varint.dart';
+import 'package:quic_lib/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/coalesced_packet.dart';
+import 'package:quic_lib/src/libp2p/multiaddr.dart';
 
 /// Structured fuzzing harness for dart_quic.
 ///

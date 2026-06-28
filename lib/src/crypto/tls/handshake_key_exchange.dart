@@ -1,6 +1,6 @@
-import 'package:dart_quic/src/crypto/cipher_suites.dart';
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/initial_secrets.dart';
+import 'package:quic_lib/src/crypto/cipher_suites.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/initial_secrets.dart';
 
 /// Role of the endpoint in the TLS handshake.
 enum HandshakeRole {
@@ -86,7 +86,8 @@ class HandshakeKeyExchange {
   ///
   /// Uses HKDF-Expand-Label with the TLS 1.3 labels. In a full implementation
   /// the context would be the transcript hash of all messages up to ServerHello.
-  Future<({SecretKey clientSecret, SecretKey serverSecret})> deriveTrafficSecrets(
+  Future<({SecretKey clientSecret, SecretKey serverSecret})>
+      deriveTrafficSecrets(
     SecretKey handshakeSecret,
   ) async {
     final hash = Sha256();

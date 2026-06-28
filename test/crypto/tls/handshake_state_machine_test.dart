@@ -1,6 +1,6 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_state_machine.dart';
-import 'package:dart_quic/src/crypto/tls/tls_handshake_types.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_state_machine.dart';
+import 'package:quic_lib/src/crypto/tls/tls_handshake_types.dart';
 
 void main() {
   group('HandshakeStateMachine client path', () {

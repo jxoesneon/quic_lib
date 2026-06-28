@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/security/anti_amplification_limit.dart';
+import 'package:quic_lib/src/security/anti_amplification_limit.dart';
 
 void main() {
   group('AntiAmplificationLimit', () {

@@ -1,18 +1,18 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/connection/connection_state_machine.dart';
-import 'package:dart_quic/src/connection/connection_id_manager.dart';
-import 'package:dart_quic/src/connection/quic_connection.dart';
-import 'package:dart_quic/src/crypto/tls/crypto_frame_assembler.dart';
-import 'package:dart_quic/src/crypto/tls/handshake_state_machine.dart';
-import 'package:dart_quic/src/recovery/congestion_controller.dart';
-import 'package:dart_quic/src/recovery/loss_detector.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/recovery/pto_scheduler.dart';
-import 'package:dart_quic/src/recovery/rtt_estimator.dart';
-import 'package:dart_quic/src/streams/stream_id.dart';
-import 'package:dart_quic/src/streams/quic_stream.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/connection/connection_state_machine.dart';
+import 'package:quic_lib/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/connection/quic_connection.dart';
+import 'package:quic_lib/src/crypto/tls/crypto_frame_assembler.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_state_machine.dart';
+import 'package:quic_lib/src/recovery/congestion_controller.dart';
+import 'package:quic_lib/src/recovery/loss_detector.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/recovery/pto_scheduler.dart';
+import 'package:quic_lib/src/recovery/rtt_estimator.dart';
+import 'package:quic_lib/src/streams/stream_id.dart';
+import 'package:quic_lib/src/streams/quic_stream.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 import 'package:test/test.dart';
 
 /// Integration tests for the QUIC packet pipeline (build → send → receive → dispatch).
@@ -40,11 +40,14 @@ void main() {
     });
 
     test('buildPacket creates and tracks a sent packet', () {
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
       final dcid = conn.cidManager.issueNewId().connectionId;
       final packet = conn.buildPacket(
         space: PacketNumberSpace.initial,
-        frames: [CryptoFrame(offset: 0, data: [0x01, 0x00, 0x00, 0x05])],
+        frames: [
+          CryptoFrame(offset: 0, data: [0x01, 0x00, 0x00, 0x05])
+        ],
         dcid: dcid,
       );
 
@@ -53,8 +56,10 @@ void main() {
     });
 
     test('processIncomingDatagram dispatches ACK frames to recovery', () {
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
-      conn.stateMachine.transitionTo(ConnectionState.established, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.established, reason: 'test');
       conn.onBytesReceived(100); // Seed anti-amplification budget
 
       // Build an ACK frame packet in Initial space (long header = explicit DCID len)
@@ -71,7 +76,8 @@ void main() {
     });
 
     test('processIncomingDatagram dispatches CRYPTO frames to assembler', () {
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
       conn.onBytesReceived(100);
 
       final dcid = conn.cidManager.issueNewId().connectionId;
@@ -88,14 +94,18 @@ void main() {
       expect(cryptoAssembler.nextOffset, equals(cryptoData.length));
     });
 
-    test('processIncomingDatagram dispatches STREAM frames to StreamManager', () {
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
-      conn.stateMachine.transitionTo(ConnectionState.established, reason: 'test');
+    test('processIncomingDatagram dispatches STREAM frames to StreamManager',
+        () {
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.established, reason: 'test');
       conn.onBytesReceived(100);
 
       // Use a fixed 8-byte DCID so short-header detection works.
       final dcid = List<int>.filled(8, 0xAB);
-      final streamData = Uint8List.fromList([0x48, 0x65, 0x6C, 0x6C, 0x6F]); // "Hello"
+      final streamData =
+          Uint8List.fromList([0x48, 0x65, 0x6C, 0x6C, 0x6F]); // "Hello"
       final packet = conn.buildPacket(
         space: PacketNumberSpace.application,
         frames: [
@@ -115,16 +125,24 @@ void main() {
       expect(stream is QuicReceiveStream, isTrue);
     });
 
-    test('processIncomingDatagram transitions to draining on CONNECTION_CLOSE', () {
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
-      conn.stateMachine.transitionTo(ConnectionState.established, reason: 'test');
+    test('processIncomingDatagram transitions to draining on CONNECTION_CLOSE',
+        () {
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
+      conn.stateMachine
+          .transitionTo(ConnectionState.established, reason: 'test');
       conn.onBytesReceived(100);
 
       // Use a fixed 8-byte DCID for reliable short-header parsing.
       final dcid = List<int>.filled(8, 0xAB);
       final packet = conn.buildPacket(
         space: PacketNumberSpace.application,
-        frames: [ConnectionCloseFrame(errorCode: 0x0100, offendingFrameType: 0x00, reasonPhrase: 'test close')],
+        frames: [
+          ConnectionCloseFrame(
+              errorCode: 0x0100,
+              offendingFrameType: 0x00,
+              reasonPhrase: 'test close')
+        ],
         dcid: dcid,
       );
 
@@ -133,20 +151,26 @@ void main() {
       expect(conn.state, equals(ConnectionState.draining));
     });
 
-    test('processIncomingDatagram coalesced packets are processed separately', () {
-      conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
+    test('processIncomingDatagram coalesced packets are processed separately',
+        () {
+      conn.stateMachine
+          .transitionTo(ConnectionState.handshaking, reason: 'test');
       conn.onBytesReceived(100);
 
       // Build two separate packets
       final dcid = conn.cidManager.issueNewId().connectionId;
       final packet1 = conn.buildPacket(
         space: PacketNumberSpace.initial,
-        frames: [CryptoFrame(offset: 0, data: [0x01])],
+        frames: [
+          CryptoFrame(offset: 0, data: [0x01])
+        ],
         dcid: dcid,
       );
       final packet2 = conn.buildPacket(
         space: PacketNumberSpace.initial,
-        frames: [CryptoFrame(offset: 1, data: [0x02])],
+        frames: [
+          CryptoFrame(offset: 1, data: [0x02])
+        ],
         dcid: dcid,
       );
 

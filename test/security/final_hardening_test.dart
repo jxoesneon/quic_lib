@@ -1,11 +1,11 @@
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:dart_quic/src/streams/flow_controller.dart';
-import 'package:dart_quic/src/connection/connection_id_manager.dart';
-import 'package:dart_quic/src/security/anti_amplification_limit.dart';
-import 'package:dart_quic/src/crypto/session_ticket_store.dart';
-import 'package:dart_quic/src/crypto/initial_secrets.dart';
+import 'package:quic_lib/src/streams/flow_controller.dart';
+import 'package:quic_lib/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/security/anti_amplification_limit.dart';
+import 'package:quic_lib/src/crypto/session_ticket_store.dart';
+import 'package:quic_lib/src/crypto/initial_secrets.dart';
 
 /// Final hardening tests for boundary conditions and limit enforcement.
 void main() {
@@ -54,7 +54,8 @@ void main() {
       for (var i = 0; i < ConnectionIdManager.maxActiveIds; i++) {
         manager.issueNewId();
       }
-      expect(manager.activeIds.length, equals(ConnectionIdManager.maxActiveIds));
+      expect(
+          manager.activeIds.length, equals(ConnectionIdManager.maxActiveIds));
       expect(() => manager.issueNewId(), throwsA(isA<StateError>()));
     });
 
@@ -67,11 +68,13 @@ void main() {
           statelessResetToken: List<int>.filled(16, i),
         );
       }
-      expect(() => manager.registerId(
-        connectionId: List<int>.filled(8, 99),
-        sequenceNumber: 99,
-        statelessResetToken: List<int>.filled(16, 99),
-      ), throwsA(isA<StateError>()));
+      expect(
+          () => manager.registerId(
+                connectionId: List<int>.filled(8, 99),
+                sequenceNumber: 99,
+                statelessResetToken: List<int>.filled(16, 99),
+              ),
+          throwsA(isA<StateError>()));
     });
 
     test('retiring frees capacity for issueNewId', () {
@@ -82,7 +85,8 @@ void main() {
         records.add(r);
       }
       manager.retireId(records.first.sequenceNumber);
-      expect(manager.activeIds.length, equals(ConnectionIdManager.maxActiveIds - 1));
+      expect(manager.activeIds.length,
+          equals(ConnectionIdManager.maxActiveIds - 1));
       // Should now succeed
       final fresh = manager.issueNewId();
       expect(fresh.sequenceNumber, greaterThan(records.last.sequenceNumber));
@@ -95,9 +99,12 @@ void main() {
         records.add(manager.issueNewId());
       }
       // retirePriorTo should free slots before attempting to issue
-      final fresh = manager.issueNewId(retirePriorTo: ConnectionIdManager.maxActiveIds);
-      expect(fresh.sequenceNumber, greaterThanOrEqualTo(ConnectionIdManager.maxActiveIds));
-      expect(manager.activeIds.length, lessThanOrEqualTo(ConnectionIdManager.maxActiveIds));
+      final fresh =
+          manager.issueNewId(retirePriorTo: ConnectionIdManager.maxActiveIds);
+      expect(fresh.sequenceNumber,
+          greaterThanOrEqualTo(ConnectionIdManager.maxActiveIds));
+      expect(manager.activeIds.length,
+          lessThanOrEqualTo(ConnectionIdManager.maxActiveIds));
     });
   });
 
@@ -161,11 +168,13 @@ void main() {
       for (var i = 0; i < SessionTicketStore.maxTickets; i++) {
         store.store('ticket-$i', SimpleSecretKey(Uint8List(32)), base);
       }
-      expect(store.validTicketIds.length, equals(SessionTicketStore.maxTickets));
+      expect(
+          store.validTicketIds.length, equals(SessionTicketStore.maxTickets));
 
       // One more store evicts 'ticket-0'
       store.store('ticket-new', SimpleSecretKey(Uint8List(32)), base);
-      expect(store.validTicketIds.length, equals(SessionTicketStore.maxTickets));
+      expect(
+          store.validTicketIds.length, equals(SessionTicketStore.maxTickets));
       expect(store.validTicketIds, isNot(contains('ticket-0')));
       expect(store.validTicketIds, contains('ticket-new'));
     });
@@ -177,7 +186,8 @@ void main() {
       for (var i = 0; i < SessionTicketStore.maxTickets; i++) {
         store.store('ticket-$i', SimpleSecretKey(Uint8List(32)), base);
       }
-      expect(store.validTicketIds.length, equals(SessionTicketStore.maxTickets));
+      expect(
+          store.validTicketIds.length, equals(SessionTicketStore.maxTickets));
 
       for (var i = 0; i < SessionTicketStore.maxTickets; i++) {
         store.remove('ticket-$i');
@@ -185,7 +195,8 @@ void main() {
       expect(store.validTicketIds, isEmpty);
     });
 
-    test('refreshing existing ticket at maxTickets does not grow beyond limit', () {
+    test('refreshing existing ticket at maxTickets does not grow beyond limit',
+        () {
       final store = SessionTicketStore();
       final base = DateTime.now().add(const Duration(hours: 1));
 
@@ -194,7 +205,8 @@ void main() {
       }
       // Refresh the oldest (ticket-0) — store size stays at max
       store.store('ticket-0', SimpleSecretKey(Uint8List(32)), base);
-      expect(store.validTicketIds.length, equals(SessionTicketStore.maxTickets));
+      expect(
+          store.validTicketIds.length, equals(SessionTicketStore.maxTickets));
     });
 
     test('expired tickets do not count toward maxTickets capacity', () {
@@ -209,7 +221,8 @@ void main() {
 
       // Replace one with expired — store size stays max but valid count drops
       store.store('ticket-expired', SimpleSecretKey(Uint8List(32)), past);
-      expect(store.validTicketIds.length, equals(SessionTicketStore.maxTickets - 1));
+      expect(store.validTicketIds.length,
+          equals(SessionTicketStore.maxTickets - 1));
     });
   });
 }

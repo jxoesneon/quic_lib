@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/streams/quic_stream.dart';
-import 'package:dart_quic/src/streams/send_state_machine.dart';
-import 'package:dart_quic/src/streams/receive_state_machine.dart';
+import 'package:quic_lib/src/streams/quic_stream.dart';
+import 'package:quic_lib/src/streams/send_state_machine.dart';
+import 'package:quic_lib/src/streams/receive_state_machine.dart';
 import 'package:test/test.dart';
 
 void main() {

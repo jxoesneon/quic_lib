@@ -18,14 +18,16 @@ class PacketNumberSpaceKeys {
     int packetNumber,
     Uint8List headerBytes,
     Uint8List payload,
-  ) => protector.encrypt(packetNumber, headerBytes, payload);
+  ) =>
+      protector.encrypt(packetNumber, headerBytes, payload);
 
   /// Decrypt the payload.
   Future<Uint8List> decrypt(
     int packetNumber,
     Uint8List headerBytes,
     Uint8List ciphertext,
-  ) => protector.decrypt(packetNumber, headerBytes, ciphertext);
+  ) =>
+      protector.decrypt(packetNumber, headerBytes, ciphertext);
 
   /// Apply header protection.
   Uint8List protectHeader(Uint8List header, Uint8List payload) =>

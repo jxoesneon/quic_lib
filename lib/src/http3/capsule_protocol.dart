@@ -4,6 +4,15 @@ import 'dart:typed_data';
 import 'package:quic_lib/src/utils/collections.dart';
 import 'package:quic_lib/src/wire/varint.dart';
 
+/// WebTransport flow control is handled at the QUIC stream level,
+/// not via capsules. Per draft-ietf-webtrans-http3, there are no
+/// flow-control capsules; stream registration and backpressure are
+/// managed through QUIC's native stream and flow-control mechanisms.
+///
+/// This file implements only the capsule types defined by the spec:
+/// DATAGRAM (0x00), CLOSE_WEBTRANSPORT_SESSION (0x6843),
+/// DRAIN_WEBTRANSPORT_SESSION (0x78ae), and GOAWAY (0x1d).
+
 /// Base class for the Capsule Protocol (RFC 9297).
 ///
 /// Each capsule on the wire is:
@@ -87,10 +96,6 @@ abstract class Capsule {
         return CloseWebTransportSessionCapsule(data: data);
       case 0x78ae:
         return DrainWebTransportSessionCapsule(data);
-      case 0x41:
-        return RegisterBidirectionalStreamCapsule(data);
-      case 0x42:
-        return RegisterUnidirectionalStreamCapsule(data);
       case 0x1d:
         return GoawayCapsule(data);
       default:
@@ -168,18 +173,6 @@ class CloseWebTransportSessionCapsule extends Capsule {
 class DrainWebTransportSessionCapsule extends Capsule {
   DrainWebTransportSessionCapsule(Uint8List data)
       : super(type: 0x78ae, data: data);
-}
-
-/// A REGISTER_BIDIRECTIONAL_STREAM capsule (type 0x41).
-class RegisterBidirectionalStreamCapsule extends Capsule {
-  RegisterBidirectionalStreamCapsule(Uint8List data)
-      : super(type: 0x41, data: data);
-}
-
-/// A REGISTER_UNIDIRECTIONAL_STREAM capsule (type 0x42).
-class RegisterUnidirectionalStreamCapsule extends Capsule {
-  RegisterUnidirectionalStreamCapsule(Uint8List data)
-      : super(type: 0x42, data: data);
 }
 
 /// A GOAWAY capsule (type 0x1d).

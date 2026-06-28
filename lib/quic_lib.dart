@@ -115,6 +115,7 @@ export 'src/wire/retry_packet_builder.dart' show RetryPacketBuilder;
 export 'src/wire/stateless_reset_generator.dart' show StatelessResetGenerator;
 export 'src/wire/v2_header.dart' show V2LongHeader;
 export 'src/wire/quic_versions.dart' show QuicVersions;
+export 'src/wire/quic_bit_greaser.dart' show QuicBitGreaser;
 
 // ---------------------------------------------------------------------------
 // Crypto exports
@@ -147,7 +148,14 @@ export 'src/crypto/zero_rtt_helper.dart' show ZeroRttHelper;
 // TLS exports
 // ---------------------------------------------------------------------------
 export 'src/crypto/tls/tls_handshake_types.dart'
-    show TlsHandshakeType, TlsContentType, TlsExtensionType, TlsConstants;
+    show
+        TlsHandshakeType,
+        TlsContentType,
+        TlsExtensionType,
+        QuicTransportParameterId,
+        TlsConstants;
+
+export 'src/crypto/tls/new_session_ticket.dart' show NewSessionTicket;
 
 export 'src/crypto/tls/client_hello.dart'
     show ClientHello, CipherSuite, TlsExtension;
@@ -172,6 +180,9 @@ export 'src/connection/connection_id_manager.dart'
 export 'src/connection/connection_registry.dart' show ConnectionRegistry;
 export 'src/connection/migration_helper.dart' show MigrationHelper;
 export 'src/connection/quic_connection.dart' show QuicConnection;
+export 'src/connection/version_information.dart' show VersionInformation;
+export 'src/connection/congestion_control/cubic.dart'
+    show CubicCongestionController;
 export 'src/connection/packet_receiver.dart' show PacketReceiver;
 export 'src/connection/packet_sender.dart' show PacketSender;
 export 'src/recovery/packet_number_space.dart'

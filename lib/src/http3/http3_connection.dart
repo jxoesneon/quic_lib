@@ -10,6 +10,7 @@ import 'goaway_frame.dart';
 import 'headers_frame.dart';
 import 'http3_request.dart';
 import 'http3_response.dart';
+import 'http3_stream.dart';
 import 'origin_frame.dart';
 import 'priority_update_frame.dart';
 import 'push_promise_frame.dart';
@@ -18,6 +19,7 @@ import 'webtransport_session.dart';
 import 'package:quic_lib/src/recovery/packet_number_space.dart';
 import 'package:quic_lib/src/streams/stream_scheduler.dart';
 import 'package:quic_lib/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 
 /// Represents a single HTTP/3 request/response stream mapped to a QUIC stream ID.
 class Http3Stream {
@@ -501,19 +503,35 @@ class Http3Connection {
   List<Uint8List> get pendingQuicPackets =>
       List.unmodifiable(_pendingQuicPackets);
 
-  /// Send a GOAWAY frame by building a QUIC packet containing the frame
-  /// as a STREAM frame on the HTTP/3 control stream.
-  Future<void> _sendGoawayFrame(Uint8List bytes) async {
+  /// Open a new unidirectional stream and prepend the [StreamType] identifier.
+  ///
+  /// Per RFC 9114 Section 6.2, the first bytes of a unidirectional stream carry
+  /// a varint-encoded stream type. This helper allocates a QUIC unidirectional
+  /// stream, builds an encrypted packet with the type-prefixed data, and
+  /// returns the stream ID.
+  Future<int> _openUnidirectionalStream(StreamType type, Uint8List data) async {
     final quic = _quicConnection as dynamic;
+    int streamId;
     try {
-      final controlStreamId = quic.openUnidirectionalStream() as int;
+      streamId = quic.openUnidirectionalStream() as int;
+    } catch (_) {
+      // If the underlying connection doesn't support stream allocation,
+      // just store the raw bytes for later transmission.
+      _pendingQuicPackets.add(data);
+      return -1;
+    }
+    final typeBytes = VarInt.encode(type.value);
+    final prefixed = Uint8List(typeBytes.length + data.length);
+    prefixed.setRange(0, typeBytes.length, typeBytes);
+    prefixed.setRange(typeBytes.length, prefixed.length, data);
+    try {
       final dcid = (quic.connectionId as List<int>?) ?? [];
       final packet = await quic.buildEncryptedPacket(
         space: PacketNumberSpace.application,
         frames: [
           StreamFrame(
-            streamId: controlStreamId,
-            data: bytes,
+            streamId: streamId,
+            data: prefixed,
             fin: false,
             offset: 0,
           ),
@@ -524,7 +542,38 @@ class Http3Connection {
     } catch (_) {
       // If the underlying connection doesn't support packet building,
       // store the raw frame bytes for later transmission.
-      _pendingQuicPackets.add(bytes);
+      _pendingQuicPackets.add(prefixed);
+    }
+    return streamId;
+  }
+
+  /// Send a GOAWAY frame by building a QUIC packet containing the frame
+  /// as a STREAM frame on the HTTP/3 control stream.
+  Future<void> _sendGoawayFrame(Uint8List bytes) async {
+    await _openUnidirectionalStream(StreamType.control, bytes);
+  }
+
+  /// Process received data on a unidirectional stream.
+  ///
+  /// Reads the first varint as the [StreamType] identifier, then parses the
+  /// remaining bytes as HTTP/3 frames and dispatches them via [onStreamFrame].
+  void onUnidirectionalStreamData(int streamId, Uint8List data) {
+    if (data.isEmpty) return;
+    final typeLength = VarInt.decodeLength(data[0]);
+    if (data.length < typeLength) return;
+    final typeValue = VarInt.decode(data.buffer);
+    final streamType = StreamType.fromValue(typeValue);
+    if (streamType == null) return;
+
+    var offset = typeLength;
+    while (offset < data.length) {
+      try {
+        final (frame, consumed) = Http3Frame.parse(data, offset: offset);
+        onStreamFrame(streamId, frame);
+        offset += consumed;
+      } catch (_) {
+        break;
+      }
     }
   }
 }

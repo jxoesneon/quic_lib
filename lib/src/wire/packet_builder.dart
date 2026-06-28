@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'frame.dart';
@@ -97,6 +98,10 @@ class PacketBuilder {
     if (header.spinBit) firstByte |= 0x20;
     firstByte |= (header.packetNumberLength - 1);
     if (header.keyPhase) firstByte |= 0x04;
+    if (header.ecnCapable) {
+      final ecnBits = Random.secure().nextBool() ? 2 : 1;
+      firstByte = (firstByte & ~0x03) | ecnBits;
+    }
     builder.addByte(firstByte);
     builder.add(header.destinationConnectionId);
     builder.add(

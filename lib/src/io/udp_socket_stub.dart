@@ -5,7 +5,8 @@ import 'platform_address.dart';
 
 class UdpSocket {
   static Future<UdpSocket> bind(InternetAddress address, int port) async {
-    throw UnsupportedError('UDP sockets are not supported on web/WASM platforms.');
+    throw UnsupportedError(
+        'UDP sockets are not supported on web/WASM platforms.');
   }
 
   Stream<({Uint8List data, InternetAddress address, int port})> get incoming =>

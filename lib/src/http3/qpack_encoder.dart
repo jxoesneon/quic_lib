@@ -138,4 +138,23 @@ class QpackEncoder {
   static int requiredInsertCount(int current, int dynamicIndex) {
     return current > dynamicIndex + 1 ? current : dynamicIndex + 1;
   }
+
+  // Post-base indexed representation: 0000 + 4-bit prefix (Section 4.5.3)
+  static Uint8List encodePostBaseIndexed(int postBaseIndex) {
+    final encoded = QpackInteger.encode(postBaseIndex, 4);
+    // First nibble must be 0000 — QpackInteger already writes the value into
+    // the lower bits, leaving the upper 4 bits as 0.
+    return encoded;
+  }
+
+  // Post-base literal with name reference: 0001 + 4-bit prefix + value
+  static Uint8List encodePostBaseLiteralNameRef(
+      int postBaseNameIndex, String value) {
+    final builder = BytesBuilder();
+    final indexBytes = QpackInteger.encode(postBaseNameIndex, 4);
+    indexBytes[0] |= 0x10; // Set first nibble to 0001
+    builder.add(indexBytes);
+    builder.add(QpackString.encode(value));
+    return Uint8List.fromList(builder.toBytes());
+  }
 }

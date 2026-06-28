@@ -158,10 +158,12 @@ class QuicConnection {
   }
 
   /// Allocate a packet number for the given space.
-  int allocatePacketNumber(PacketNumberSpace space) => _pnSpaceManager.allocate(space);
+  int allocatePacketNumber(PacketNumberSpace space) =>
+      _pnSpaceManager.allocate(space);
 
   /// Record an ACK for packet tracking and update recovery subsystems.
-  void onAckReceived(int spaceIndex, int largestAcked, List<({int gap, int length})> ranges) {
+  void onAckReceived(
+      int spaceIndex, int largestAcked, List<({int gap, int length})> ranges) {
     _recoveryManager.onAckReceived(
       spaceIndex,
       largestAcked,
@@ -170,11 +172,13 @@ class QuicConnection {
       ranges: ranges,
     );
     _pacingCalculator.updateRtt(_rttEstimator.smoothedRtt);
-    _pacingCalculator.updateCongestionWindow(_congestionController.congestionWindow);
+    _pacingCalculator
+        .updateCongestionWindow(_congestionController.congestionWindow);
   }
 
   /// Register a sent packet with the recovery manager.
-  void onPacketSent(int packetNumber, int sentTimeUs, {bool ackEliciting = true, int sizeInBytes = 0}) {
+  void onPacketSent(int packetNumber, int sentTimeUs,
+      {bool ackEliciting = true, int sizeInBytes = 0}) {
     _recoveryManager.onPacketSent(
       0, // space placeholder
       packetNumber,
@@ -185,10 +189,12 @@ class QuicConnection {
   }
 
   /// Check if a PTO timer has expired.
-  bool isPtoExpired(int currentTimeUs) => _recoveryManager.isPtoExpired(currentTimeUs);
+  bool isPtoExpired(int currentTimeUs) =>
+      _recoveryManager.isPtoExpired(currentTimeUs);
 
   /// Handle a PTO firing: update scheduler and return current PTO duration.
-  void onPtoFired(int currentTimeUs) => _recoveryManager.onPtoFired(currentTimeUs);
+  void onPtoFired(int currentTimeUs) =>
+      _recoveryManager.onPtoFired(currentTimeUs);
 
   /// The recovery manager coordinating loss detection, congestion control,
   /// PTO scheduling, and RTT estimation.
@@ -216,7 +222,8 @@ class QuicConnection {
   PathChallengeFrame? getPendingChallenge() => _lastPendingChallenge;
 
   /// Check if a path is validated.
-  bool isPathValidated(List<int> pathId) => _migrationHelper.isPathValidated(pathId);
+  bool isPathValidated(List<int> pathId) =>
+      _migrationHelper.isPathValidated(pathId);
 
   /// Called when a path is validated; increments a counter for stats.
   void onPathValidated() {
@@ -270,12 +277,13 @@ class QuicConnection {
           _lastPendingChallenge = challenge;
           break;
         case PathResponseFrame f:
-          final originalData =
-              (_migrationHelper as _QuicMigrationHelper).lookupChallenge(f.data);
+          final originalData = (_migrationHelper as _QuicMigrationHelper)
+              .lookupChallenge(f.data);
           if (originalData != null) {
             final response = PathResponseFrame(data: originalData);
             if (_migrationHelper.onResponseReceived(response)) {
-              (_migrationHelper as _QuicMigrationHelper).removeChallenge(f.data);
+              (_migrationHelper as _QuicMigrationHelper)
+                  .removeChallenge(f.data);
               onAddressValidated();
               onPathValidated();
             }
@@ -403,7 +411,8 @@ class QuicConnection {
     // 4. Reassemble: header + ciphertext.
     final encryptedPacket = Uint8List(headerBytes.length + ciphertext.length);
     encryptedPacket.setRange(0, headerBytes.length, headerBytes);
-    encryptedPacket.setRange(headerBytes.length, encryptedPacket.length, ciphertext);
+    encryptedPacket.setRange(
+        headerBytes.length, encryptedPacket.length, ciphertext);
 
     // 5. Apply header protection.
     final protectedPacket = keys.protectHeader(
@@ -529,7 +538,8 @@ class QuicConnection {
   void onAddressValidated() {
     validateAddress();
     if (_stateMachine.isHandshaking) {
-      _stateMachine.transitionTo(ConnectionState.established, reason: 'Address validated');
+      _stateMachine.transitionTo(ConnectionState.established,
+          reason: 'Address validated');
     }
   }
 
@@ -540,8 +550,7 @@ class QuicConnection {
   /// True if [bytes] can be sent without violating the anti-amplification
   /// limit or congestion window.
   bool canSend(int bytes) {
-    return _congestionController.canSend(bytes) &&
-        _antiAmpLimit.canSend(bytes);
+    return _congestionController.canSend(bytes) && _antiAmpLimit.canSend(bytes);
   }
 
   /// Record bytes received from the peer (for anti-amplification accounting).

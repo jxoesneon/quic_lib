@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/cipher_suites.dart';
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
-import 'package:dart_quic/src/crypto/tls/client_hello.dart';
+import 'package:quic_lib/src/crypto/cipher_suites.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/tls/client_hello.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -205,7 +205,8 @@ void main() {
       );
     });
 
-    test('aeadDecrypt with too-short ciphertext throws ArgumentError', () async {
+    test('aeadDecrypt with too-short ciphertext throws ArgumentError',
+        () async {
       final key = await backend.randomBytes(16);
       final nonce = await backend.randomBytes(12);
       await expectLater(
@@ -231,8 +232,7 @@ void main() {
       final kp = await backend.ecdsaP256GenerateKeyPair();
       final pub = await kp.publicKey;
       final badSig = Uint8List(64);
-      final verified =
-          await backend.ecdsaP256Verify(pub, [1, 2, 3], badSig);
+      final verified = await backend.ecdsaP256Verify(pub, [1, 2, 3], badSig);
       expect(verified, isFalse);
     });
 

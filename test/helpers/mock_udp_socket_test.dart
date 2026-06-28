@@ -63,7 +63,8 @@ void main() {
       socket.listen((d) => received.add(d));
       socket.close();
 
-      socket.inject(Datagram(Uint8List.fromList([0x00]), InternetAddress.loopbackIPv4, 1));
+      socket.inject(Datagram(
+          Uint8List.fromList([0x00]), InternetAddress.loopbackIPv4, 1));
       await Future.delayed(Duration(milliseconds: 10));
       expect(received, isEmpty);
     });

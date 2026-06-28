@@ -33,7 +33,8 @@ class StatelessResetGenerator {
 
     final result = Uint8List.fromList(builder.toBytes());
     if (result.length < minPacketSize) {
-      throw StateError('Generated packet ${result.length} bytes < min $minPacketSize');
+      throw StateError(
+          'Generated packet ${result.length} bytes < min $minPacketSize');
     }
     return result;
   }

@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/http3/frame_types.dart';
-import 'package:dart_quic/src/http3/push_promise_frame.dart';
+import 'package:quic_lib/src/http3/frame_types.dart';
+import 'package:quic_lib/src/http3/push_promise_frame.dart';
 import 'package:test/test.dart';
 
 void main() {

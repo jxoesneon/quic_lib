@@ -1,12 +1,13 @@
 import 'dart:typed_data';
 import 'package:test/test.dart';
-import 'package:dart_quic/src/wire/stateless_reset_generator.dart';
+import 'package:quic_lib/src/wire/stateless_reset_generator.dart';
 
 void main() {
   group('StatelessResetGenerator', () {
     test('generate produces packet >= minPacketSize', () {
       final token = List<int>.filled(16, 0xAA);
-      final packet = StatelessResetGenerator.generate(token: token, minPacketSize: 5);
+      final packet =
+          StatelessResetGenerator.generate(token: token, minPacketSize: 5);
       expect(packet.length, greaterThanOrEqualTo(5));
       expect(packet.length, greaterThanOrEqualTo(21)); // 5 padding + 16 token
     });

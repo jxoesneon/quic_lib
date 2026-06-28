@@ -1,30 +1,62 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/packet/nonce_generator.dart';
+import 'package:quic_lib/src/crypto/packet/nonce_generator.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('NonceGenerator', () {
     test('generate produces correct nonce for known IV + PN', () {
       final iv = Uint8List.fromList([
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
       ]);
       const packetNumber = 2;
 
       final nonce = NonceGenerator.generate(iv, packetNumber);
 
       // iv XOR 0x00...02 => 0x00...03
-      expect(nonce, equals(Uint8List.fromList([
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x03,
-      ])));
+      expect(
+          nonce,
+          equals(Uint8List.fromList([
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x03,
+          ])));
     });
 
     test('different packet numbers produce different nonces', () {
       final iv = Uint8List.fromList([
-        0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
-        0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C,
+        0x01,
+        0x02,
+        0x03,
+        0x04,
+        0x05,
+        0x06,
+        0x07,
+        0x08,
+        0x09,
+        0x0A,
+        0x0B,
+        0x0C,
       ]);
 
       final nonce1 = NonceGenerator.generate(iv, 0);

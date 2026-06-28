@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/streams/receive_state_machine.dart';
+import 'package:quic_lib/src/streams/receive_state_machine.dart';
 
 void main() {
   group('ReceiveStateMachine', () {
@@ -39,7 +39,8 @@ void main() {
     test('inconsistent final size throws', () {
       final sm = ReceiveStateMachine();
       sm.onDataReceived(fin: true, finalSize: 100);
-      expect(() => sm.onDataReceived(fin: true, finalSize: 200), throwsStateError);
+      expect(
+          () => sm.onDataReceived(fin: true, finalSize: 200), throwsStateError);
     });
 
     test('bytesReceived exceeding finalSize throws', () {

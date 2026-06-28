@@ -22,7 +22,8 @@ class QpackDynamicTable {
   ///
   /// Per RFC 9204 Section 3.2, the size of an entry is the sum of its name's
   /// length in octets, its value's length in octets, and 32.
-  int get size => _entries.fold(0, (s, e) => s + 32 + e.name.length + e.value.length);
+  int get size =>
+      _entries.fold(0, (s, e) => s + 32 + e.name.length + e.value.length);
 
   /// Number of entries in the dynamic table.
   int get length => _entries.length;

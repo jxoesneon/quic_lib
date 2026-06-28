@@ -55,7 +55,8 @@ class Http3Response {
   ///
   /// Handles indexed and literal-with-name-reference encodings that use the
   /// static table, plus literal-without-name-reference.
-  static List<({String name, String value})> _decodeFieldLines(Uint8List bytes) {
+  static List<({String name, String value})> _decodeFieldLines(
+      Uint8List bytes) {
     final lines = <({String name, String value})>[];
     var offset = 0;
 

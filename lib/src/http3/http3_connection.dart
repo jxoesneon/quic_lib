@@ -39,7 +39,8 @@ class Http3Connection {
     required Object quicConnection,
     Http3SettingsFrame? localSettings,
   })  : _quicConnection = quicConnection,
-        _localSettings = localSettings ?? Http3SettingsFrame.from(
+        _localSettings = localSettings ??
+            Http3SettingsFrame.from(
               maxFieldSectionSize: 16384,
               maxTableCapacity: 0,
               blockedStreams: 0,
@@ -80,9 +81,12 @@ class Http3Connection {
       return;
     }
     for (var offset = 0; offset < body.length; offset += chunkSize) {
-      final end = (offset + chunkSize < body.length) ? offset + chunkSize : body.length;
+      final end =
+          (offset + chunkSize < body.length) ? offset + chunkSize : body.length;
       final chunk = body.sublist(offset, end);
-      _pendingData.putIfAbsent(streamId, () => []).add(Http3DataFrame(data: chunk));
+      _pendingData
+          .putIfAbsent(streamId, () => [])
+          .add(Http3DataFrame(data: chunk));
     }
   }
 
@@ -95,7 +99,8 @@ class Http3Connection {
     final nonEmptyFrames = frames.where((f) => f.data.isNotEmpty).toList();
     if (nonEmptyFrames.isEmpty) return Uint8List(0);
 
-    final totalLength = nonEmptyFrames.fold<int>(0, (sum, f) => sum + f.data.length);
+    final totalLength =
+        nonEmptyFrames.fold<int>(0, (sum, f) => sum + f.data.length);
     final result = Uint8List(totalLength);
     var offset = 0;
     for (final frame in nonEmptyFrames) {

@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/http3/frame_types.dart';
-import 'package:dart_quic/src/wire/varint.dart';
+import 'package:quic_lib/src/http3/frame_types.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 
 /// HTTP/3 CANCEL_PUSH frame payload.
 ///

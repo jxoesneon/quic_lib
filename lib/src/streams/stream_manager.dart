@@ -33,8 +33,10 @@ class StreamManager {
     ) as QuicReceiveStream;
 
     if (isNew) {
-      _sendFlowControllers[frame.streamId] = FlowController(initialLimit: 65536);
-      _receiveFlowControllers[frame.streamId] = FlowController(initialLimit: 65536);
+      _sendFlowControllers[frame.streamId] =
+          FlowController(initialLimit: 65536);
+      _receiveFlowControllers[frame.streamId] =
+          FlowController(initialLimit: 65536);
     }
 
     final int offset = frame.offset ?? 0;
@@ -57,10 +59,12 @@ class StreamManager {
   QuicStream? getStream(int streamId) => _streams[streamId];
 
   /// Get the send flow controller for a stream.
-  FlowController? getSendFlowController(int streamId) => _sendFlowControllers[streamId];
+  FlowController? getSendFlowController(int streamId) =>
+      _sendFlowControllers[streamId];
 
   /// Get the receive flow controller for a stream.
-  FlowController? getReceiveFlowController(int streamId) => _receiveFlowControllers[streamId];
+  FlowController? getReceiveFlowController(int streamId) =>
+      _receiveFlowControllers[streamId];
 
   /// All active streams.
   Iterable<QuicStream> get streams => _streams.values;

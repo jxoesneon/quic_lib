@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/tls/client_hello.dart' show TlsExtension;
+import 'package:quic_lib/src/crypto/tls/client_hello.dart' show TlsExtension;
 
 /// TLS 1.3 CertificateEntry structure per RFC 8446 Section 4.4.2.
 ///
@@ -52,8 +52,7 @@ class CertificateMessage {
       entriesLength += 2 + extLength;
     }
 
-    final totalLength =
-        1 + // request_context_length
+    final totalLength = 1 + // request_context_length
         requestContext.length +
         3 + // certificates_length (uint24)
         entriesLength;
@@ -131,14 +130,12 @@ class CertificateMessage {
 
     while (offset < entriesEnd) {
       // cert_data_length (uint24)
-      final certDataLength = (bytes[offset] << 16) |
-          (bytes[offset + 1] << 8) |
-          bytes[offset + 2];
+      final certDataLength =
+          (bytes[offset] << 16) | (bytes[offset + 1] << 8) | bytes[offset + 2];
       offset += 3;
 
       // cert_data
-      final certData =
-          bytes.sublist(offset, offset + certDataLength).toList();
+      final certData = bytes.sublist(offset, offset + certDataLength).toList();
       offset += certDataLength;
 
       // extensions_length (uint16)
@@ -153,8 +150,7 @@ class CertificateMessage {
         offset += 2;
         final extDataLength = (bytes[offset] << 8) | bytes[offset + 1];
         offset += 2;
-        final extData =
-            bytes.sublist(offset, offset + extDataLength).toList();
+        final extData = bytes.sublist(offset, offset + extDataLength).toList();
         offset += extDataLength;
         extensions.add(TlsExtension(type: extType, data: extData));
       }

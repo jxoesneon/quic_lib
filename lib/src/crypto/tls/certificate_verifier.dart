@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
-import 'package:dart_quic/src/crypto/cipher_suites.dart';
-import 'package:dart_quic/src/crypto/crypto_backend.dart';
-import 'package:dart_quic/src/crypto/tls/certificate_chain.dart';
-import 'package:dart_quic/src/crypto/tls/certificate_message.dart';
+import 'package:quic_lib/src/crypto/cipher_suites.dart';
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/tls/certificate_chain.dart';
+import 'package:quic_lib/src/crypto/tls/certificate_message.dart';
 
 /// A scaffold for TLS certificate chain verification.
 ///

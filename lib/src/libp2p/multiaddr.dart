@@ -125,8 +125,7 @@ class Multiaddr {
   }
 
   /// Get the protocol path (e.g., ["ip4", "udp", "quic-v1"]).
-  List<String> get protocols =>
-      components.map((c) => c.protocol).toList();
+  List<String> get protocols => components.map((c) => c.protocol).toList();
 
   @override
   String toString() => toHumanReadable();

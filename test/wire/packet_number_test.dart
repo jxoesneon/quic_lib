@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/wire/packet_number.dart';
+import 'package:quic_lib/src/wire/packet_number.dart';
 
 void main() {
   group('PacketNumber.encode', () {
@@ -20,7 +20,8 @@ void main() {
     });
 
     test('encodes 0x12345678 in 4 bytes', () {
-      expect(PacketNumber.encode(0x12345678, 4), equals([0x12, 0x34, 0x56, 0x78]));
+      expect(
+          PacketNumber.encode(0x12345678, 4), equals([0x12, 0x34, 0x56, 0x78]));
     });
 
     test('invalid length throws', () {

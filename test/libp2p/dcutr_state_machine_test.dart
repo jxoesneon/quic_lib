@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/libp2p/dcutr_state_machine.dart';
+import 'package:quic_lib/src/libp2p/dcutr_state_machine.dart';
 
 void main() {
   group('DCUtRStateMachine', () {

@@ -1,20 +1,20 @@
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:dart_quic/src/connection/quic_connection.dart';
-import 'package:dart_quic/src/connection/connection_state_machine.dart';
-import 'package:dart_quic/src/connection/connection_id_manager.dart';
-import 'package:dart_quic/src/connection/packet_receiver.dart';
-import 'package:dart_quic/src/streams/stream_id.dart';
-import 'package:dart_quic/src/recovery/packet_number_space.dart';
-import 'package:dart_quic/src/recovery/rtt_estimator.dart';
-import 'package:dart_quic/src/recovery/loss_detector.dart';
-import 'package:dart_quic/src/recovery/pto_scheduler.dart';
-import 'package:dart_quic/src/recovery/congestion_controller.dart';
-import 'package:dart_quic/src/recovery/sent_packet_tracker.dart';
-import 'package:dart_quic/src/wire/packet_header.dart';
-import 'package:dart_quic/src/wire/packet_builder.dart';
-import 'package:dart_quic/src/wire/frame.dart';
+import 'package:quic_lib/src/connection/quic_connection.dart';
+import 'package:quic_lib/src/connection/connection_state_machine.dart';
+import 'package:quic_lib/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/connection/packet_receiver.dart';
+import 'package:quic_lib/src/streams/stream_id.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/recovery/rtt_estimator.dart';
+import 'package:quic_lib/src/recovery/loss_detector.dart';
+import 'package:quic_lib/src/recovery/pto_scheduler.dart';
+import 'package:quic_lib/src/recovery/congestion_controller.dart';
+import 'package:quic_lib/src/recovery/sent_packet_tracker.dart';
+import 'package:quic_lib/src/wire/packet_header.dart';
+import 'package:quic_lib/src/wire/packet_builder.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 
 QuicConnection _createConnection({ConnectionStateMachine? stateMachine}) {
   return QuicConnection(
@@ -193,10 +193,12 @@ void main() {
       final packet = PacketBuilder.build(header, [PingFrame()]);
       final result = PacketReceiver.processPacket(packet);
       expect(result, isNotNull);
-      expect(result!.header.destinationConnectionId, equals([0x01, 0x02, 0x03]));
+      expect(
+          result!.header.destinationConnectionId, equals([0x01, 0x02, 0x03]));
     });
 
-    test('_detectDcidLength with short header (indirect via processPacket)', () {
+    test('_detectDcidLength with short header (indirect via processPacket)',
+        () {
       final header = ShortHeader(
         destinationConnectionId: [1, 2, 3, 4, 5, 6, 7, 8],
         packetNumber: 0,
@@ -205,7 +207,8 @@ void main() {
       final packet = PacketBuilder.build(header, [PingFrame()]);
       final result = PacketReceiver.processPacket(packet);
       expect(result, isNotNull);
-      expect(result!.header.destinationConnectionId, equals([1, 2, 3, 4, 5, 6, 7, 8]));
+      expect(result!.header.destinationConnectionId,
+          equals([1, 2, 3, 4, 5, 6, 7, 8]));
     });
 
     test('_headerLength for LongHeader (indirect via processPacket)', () {

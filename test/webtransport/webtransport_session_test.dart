@@ -1,6 +1,6 @@
 import 'package:test/test.dart';
-import 'package:dart_quic/src/webtransport/webtransport_session.dart';
-import 'package:dart_quic/src/webtransport/capsule_types.dart';
+import 'package:quic_lib/src/webtransport/webtransport_session.dart';
+import 'package:quic_lib/src/webtransport/capsule_types.dart';
 
 void main() {
   group('WebTransportSession', () {

@@ -43,8 +43,7 @@ class ClientHello {
       extensionsLength += 4 + ext.data.length; // type (2) + length (2) + data
     }
 
-    final totalLength =
-        2 + // legacy_version
+    final totalLength = 2 + // legacy_version
         32 + // random
         1 + // legacy_session_id_length
         sessionIdLength +

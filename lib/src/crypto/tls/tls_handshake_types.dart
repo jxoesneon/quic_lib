@@ -10,7 +10,7 @@ enum TlsHandshakeType {
   finished(0x14),
   keyUpdate(0x18),
   messageHash(0xfe);
-  
+
   final int value;
   const TlsHandshakeType(this.value);
 }
@@ -20,7 +20,7 @@ enum TlsContentType {
   alert(0x15),
   handshake(0x16),
   applicationData(0x17);
-  
+
   final int value;
   const TlsContentType(this.value);
 }
@@ -49,7 +49,7 @@ enum TlsExtensionType {
   signatureAlgorithmsCert(0x0032),
   keyShare(0x0033),
   quicTransportParameters(0x0039); // RFC 9001
-  
+
   final int value;
   const TlsExtensionType(this.value);
 }
@@ -57,16 +57,16 @@ enum TlsExtensionType {
 class TlsConstants {
   /// TLS 1.3 version (0x0304).
   static const int tls13Version = 0x0304;
-  
+
   /// TLS 1.2 version (0x0303) for compatibility.
   static const int tls12Version = 0x0303;
-  
+
   /// Random size in bytes.
   static const int randomSize = 32;
-  
+
   /// Session ID size in bytes (legacy, always 0 for TLS 1.3).
   static const int sessionIdSize = 0;
-  
+
   /// Minimum TLS record size.
   static const int minRecordSize = 5;
 }

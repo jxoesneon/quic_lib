@@ -9,7 +9,7 @@ rfc_basis:
   - "RFC 8446 (TLS 1.3)"
   - "RFC 5869 (HKDF)"
 dependencies:
-  - "ROADMAP.md"
+  - "../../ROADMAP.md"
   - "TEST_VECTORS.md"
 ---
 
@@ -354,7 +354,7 @@ The server MUST NOT accept 0-RTT data that it cannot guarantee is not a replay. 
 
 ## Used By
 
-- [ROADMAP.md](ROADMAP.md) — Lists QUIC_CRYPTO_SPEC as a formal specification deliverable.
+- [ROADMAP.md](../../ROADMAP.md) — Lists QUIC_CRYPTO_SPEC as a formal specification deliverable.
 - [TEST_VECTORS.md](TEST_VECTORS.md) — Test vectors derive from QUIC crypto specification.
 ## 6. Testing Strategy
 

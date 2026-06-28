@@ -45,6 +45,8 @@ export 'src/wire/packet_builder.dart' show PacketBuilder;
 export 'src/wire/coalesced_packet.dart' show CoalescedPacket;
 export 'src/wire/retry_packet_builder.dart' show RetryPacketBuilder;
 export 'src/wire/stateless_reset_generator.dart' show StatelessResetGenerator;
+export 'src/wire/v2_header.dart' show V2LongHeader;
+export 'src/wire/quic_versions.dart' show QuicVersions;
 
 // ---------------------------------------------------------------------------
 // Crypto exports
@@ -118,11 +120,15 @@ export 'src/recovery/packet_number_space.dart' show
 
 export 'src/io/udp_socket.dart' show UdpSocket;
 export 'src/io/quic_endpoint.dart' show QuicEndpoint;
+export 'src/io/connection_isolate.dart' show ConnectionIsolate;
+export 'src/io/isolate_supervisor.dart' show IsolateSupervisor;
 
 // ---------------------------------------------------------------------------
 // Stream exports
 // ---------------------------------------------------------------------------
 export 'src/streams/stream_id.dart' show StreamId, StreamIdAllocator;
+export 'src/streams/stream_scheduler.dart' show StreamScheduler;
+export 'src/streams/round_robin_scheduler.dart' show RoundRobinScheduler;
 export 'src/streams/send_state_machine.dart' show
     SendStateMachine,
     SendStreamState;
@@ -155,6 +161,8 @@ export 'src/recovery/ack_generator.dart' show AckGenerator;
 export 'src/http3/qpack_integer.dart' show QpackInteger;
 export 'src/http3/qpack_string.dart' show QpackString;
 export 'src/http3/qpack_static_table.dart' show QpackStaticTable, QpackStaticTableEntry;
+export 'src/http3/qpack_decoder.dart' show QpackDecoder, QpackFieldLine;
+export 'src/http3/qpack_encoder.dart' show QpackEncoder;
 
 export 'src/http3/frame_types.dart' show Http3FrameType, Http3Frame;
 export 'src/http3/settings_frame.dart' show Http3SettingsFrame, Http3SettingsId;
@@ -173,9 +181,11 @@ export 'src/webtransport/stream_types.dart' show
     WebTransportStreamType;
 
 export 'src/webtransport/webtransport_session.dart' show WebTransportSession;
+export 'src/webtransport/webtransport_session_manager.dart' show WebTransportSessionManager;
 
 // ---------------------------------------------------------------------------
 // libp2p exports
 // ---------------------------------------------------------------------------
 export 'src/libp2p/multiaddr.dart' show Multiaddr, MultiaddrComponent;
 export 'src/libp2p/peer_id.dart' show PeerId;
+export 'src/libp2p/libp2p_quic_transport.dart' show Libp2pQuicTransport, Libp2pQuicConnection;

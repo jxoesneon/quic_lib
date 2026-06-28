@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:dart_quic/src/utils/collections.dart';
 import 'package:dart_quic/src/wire/varint.dart';
 
 /// HTTP/3 frame types per RFC 9114 Section 7.2.
@@ -107,16 +108,10 @@ class Http3Frame {
       other is Http3Frame &&
           runtimeType == other.runtimeType &&
           type == other.type &&
-          _listsEqual(payload, other.payload);
+          listEquals(payload, other.payload);
 
   @override
   int get hashCode => Object.hash(type, Object.hashAll(payload));
 
-  static bool _listsEqual(List<int> a, List<int> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
+
 }

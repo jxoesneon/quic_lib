@@ -27,11 +27,12 @@ class PeerId {
     return encodeBase36();
   }
 
-  /// Encodes this PeerId's raw bytes using standard Base58 (no multibase prefix).
+  /// Encodes this PeerId's raw bytes using standard Base58 (Bitcoin alphabet).
   ///
-  /// This is a scaffold implementation using the standard Bitcoin/Base58
-  /// alphabet; it does not include the libp2p multibase prefix.
-  String encodeBase58() {
+  /// [multibase] when true prefixes the result with the multibase 'z' code
+  /// per the libp2p multibase spec.
+  String encodeBase58({bool multibase = false}) {
+    final prefix = multibase ? 'z' : '';
     const alphabet =
         '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
     final data = List<int>.from(bytes);
@@ -55,14 +56,15 @@ class PeerId {
     }
 
     final encoded = sb.toString().split('').reversed.join();
-    return '${'1' * zeroCount}$encoded';
+    return '$prefix${'1' * zeroCount}$encoded';
   }
 
-  /// Decodes a standard Base58-encoded string (no multibase prefix) into a [PeerId].
+  /// Decodes a Base58-encoded string into a [PeerId].
   ///
-  /// This is a scaffold implementation using the standard Bitcoin/Base58
-  /// alphabet; it does not handle the libp2p multibase prefix.
+  /// If the string starts with the multibase 'z' prefix it is stripped
+  /// before decoding.
   static PeerId decodeBase58(String input) {
+    final stripped = input.startsWith('z') ? input.substring(1) : input;
     const alphabet =
         '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
     final map = <String, int>{};
@@ -70,18 +72,18 @@ class PeerId {
       map[alphabet[i]] = i;
     }
 
-    if (input.isEmpty) {
+    if (stripped.isEmpty) {
       return PeerId.fromBytes(<int>[]);
     }
 
     var zeroCount = 0;
-    while (zeroCount < input.length && input[zeroCount] == '1') {
+    while (zeroCount < stripped.length && stripped[zeroCount] == '1') {
       zeroCount++;
     }
 
     var value = BigInt.zero;
-    for (var i = zeroCount; i < input.length; i++) {
-      final char = input[i];
+    for (var i = zeroCount; i < stripped.length; i++) {
+      final char = stripped[i];
       final idx = map[char];
       if (idx == null) {
         throw ArgumentError('Invalid Base58 character: $char');
@@ -99,11 +101,12 @@ class PeerId {
     return PeerId.fromBytes(List<int>.filled(zeroCount, 0) + reversed);
   }
 
-  /// Encodes this PeerId's raw bytes using standard Base36 (lowercase, no multibase prefix).
+  /// Encodes this PeerId's raw bytes using standard Base36 (lowercase).
   ///
-  /// This is a scaffold implementation using the standard Base36 alphabet;
-  /// it does not include the libp2p multibase prefix.
-  String encodeBase36() {
+  /// [multibase] when true prefixes the result with the multibase 'k' code
+  /// per the libp2p multibase spec.
+  String encodeBase36({bool multibase = false}) {
+    final prefix = multibase ? 'k' : '';
     const alphabet = '0123456789abcdefghijklmnopqrstuvwxyz';
     final data = List<int>.from(bytes);
     if (data.isEmpty) return '';
@@ -126,32 +129,33 @@ class PeerId {
     }
 
     final encoded = sb.toString().split('').reversed.join();
-    return '${'0' * zeroCount}$encoded';
+    return '$prefix${'0' * zeroCount}$encoded';
   }
 
-  /// Decodes a standard Base36-encoded string (lowercase, no multibase prefix) into a [PeerId].
+  /// Decodes a Base36-encoded string into a [PeerId].
   ///
-  /// This is a scaffold implementation using the standard Base36 alphabet;
-  /// it does not handle the libp2p multibase prefix.
+  /// If the string starts with the multibase 'k' prefix it is stripped
+  /// before decoding.
   static PeerId decodeBase36(String input) {
+    final stripped = input.startsWith('k') ? input.substring(1) : input;
     const alphabet = '0123456789abcdefghijklmnopqrstuvwxyz';
     final map = <String, int>{};
     for (var i = 0; i < alphabet.length; i++) {
       map[alphabet[i]] = i;
     }
 
-    if (input.isEmpty) {
+    if (stripped.isEmpty) {
       return PeerId.fromBytes(<int>[]);
     }
 
     var zeroCount = 0;
-    while (zeroCount < input.length && input[zeroCount] == '0') {
+    while (zeroCount < stripped.length && stripped[zeroCount] == '0') {
       zeroCount++;
     }
 
     var value = BigInt.zero;
-    for (var i = zeroCount; i < input.length; i++) {
-      final char = input[i];
+    for (var i = zeroCount; i < stripped.length; i++) {
+      final char = stripped[i];
       final idx = map[char];
       if (idx == null) {
         throw ArgumentError('Invalid Base36 character: $char');

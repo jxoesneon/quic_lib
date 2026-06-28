@@ -21,7 +21,7 @@ import 'package:dart_quic/src/wire/frame.dart';
 /// Integration tests for dart_quic v0.5.0 features.
 void main() {
   group('QuicConnection MAX_DATA', () {
-    test('receives MAX_DATA and updates connection flow controller', () {
+    test('receives MAX_DATA and updates connection flow controller', () async {
       final conn = QuicConnection(
         stateMachine: ConnectionStateMachine(),
         cidManager: ConnectionIdManager(),
@@ -36,7 +36,7 @@ void main() {
       final windowBefore = conn.connectionFlowController.availableWindow;
       expect(windowBefore, greaterThan(0));
 
-      final packet = PacketSender.buildPacket(
+      final packet = await PacketSender.buildPacket(
         frames: [MaxDataFrame(maxData: 200000)],
         space: PacketNumberSpace.application,
         dcid: List.filled(8, 0xAB),
@@ -52,7 +52,7 @@ void main() {
   });
 
   group('QuicConnection MAX_STREAM_DATA', () {
-    test('stream manager updates send window on MaxStreamDataFrame', () {
+    test('stream manager updates send window on MaxStreamDataFrame', () async {
       final conn = QuicConnection(
         stateMachine: ConnectionStateMachine(),
         cidManager: ConnectionIdManager(),
@@ -65,7 +65,7 @@ void main() {
       );
 
       // First create a stream by receiving a STREAM frame.
-      final streamPacket = PacketSender.buildPacket(
+      final streamPacket = await PacketSender.buildPacket(
         frames: [StreamFrame(streamId: 0, data: [0x01])],
         space: PacketNumberSpace.application,
         dcid: List.filled(8, 0xAB),
@@ -78,7 +78,7 @@ void main() {
       final windowBefore = sendController!.availableWindow;
 
       // Now receive a MAX_STREAM_DATA frame for that stream.
-      final maxStreamDataPacket = PacketSender.buildPacket(
+      final maxStreamDataPacket = await PacketSender.buildPacket(
         frames: [MaxStreamDataFrame(streamId: 0, maxStreamData: 200000)],
         space: PacketNumberSpace.application,
         dcid: List.filled(8, 0xAB),

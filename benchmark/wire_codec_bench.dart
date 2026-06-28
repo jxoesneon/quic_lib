@@ -6,11 +6,11 @@ import 'package:dart_quic/src/wire/frame.dart';
 import 'package:dart_quic/src/wire/packet_builder.dart';
 
 // Simple benchmark runner (no external deps)
-void main() {
+Future<void> main() async {
   final rng = Random(42);
 
   // Benchmark 1: VarInt encode/decode
-  _benchmark('VarInt encode/decode', () {
+  await _benchmark('VarInt encode/decode', () async {
     for (var i = 0; i < 100000; i++) {
       final value = rng.nextInt(1 << 30);
       final encoded = VarInt.encode(value);
@@ -19,7 +19,7 @@ void main() {
   });
 
   // Benchmark 2: LongHeader serialize/parse
-  _benchmark('LongHeader serialize/parse', () {
+  _benchmark('LongHeader serialize/parse', () async {
     final header = LongHeader(
       version: 0x00000001,
       packetType: LongHeader.typeInitial,
@@ -30,13 +30,13 @@ void main() {
       token: null,
     );
     for (var i = 0; i < 10000; i++) {
-      final bytes = header.serialize();
+      final bytes = await header.serialize();
       PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 8);
     }
   });
 
   // Benchmark 3: Frame serialize/parse
-  _benchmark('Frame serialize/parse', () {
+  await _benchmark('Frame serialize/parse', () async {
     final frame = StreamFrame(
       streamId: 4,
       data: [0x48, 0x65, 0x6c, 0x6c, 0x6f],
@@ -51,7 +51,7 @@ void main() {
   });
 
   // Benchmark 4: PacketBuilder
-  _benchmark('PacketBuilder', () {
+  await _benchmark('PacketBuilder', () async {
     final header = LongHeader(
       version: 0x00000001,
       packetType: LongHeader.typeInitial,
@@ -72,19 +72,19 @@ void main() {
       ),
     ];
     for (var i = 0; i < 5000; i++) {
-      PacketBuilder.build(header, frames);
+      await PacketBuilder.build(header, frames);
     }
   });
 }
 
-void _benchmark(String name, void Function() fn) {
+Future<void> _benchmark(String name, Future<void> Function() fn) async {
   // Warmup
   for (var i = 0; i < 100; i++) {
-    fn();
+    await fn();
   }
   // Measure
   final sw = Stopwatch()..start();
-  fn();
+  await fn();
   sw.stop();
   print('$name: ${sw.elapsedMicroseconds} us');
 }

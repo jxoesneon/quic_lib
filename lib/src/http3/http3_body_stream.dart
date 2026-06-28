@@ -46,6 +46,22 @@ class Http3BodyStream {
     _chunkController.add(bytes);
   }
 
+  /// Send a body chunk by injecting a DATA frame.
+  ///
+  /// Convenience wrapper around [addFrame] that constructs the frame from
+  /// raw [chunk] bytes.
+  void sendBody(Uint8List chunk) {
+    addFrame(Http3DataFrame(data: chunk));
+  }
+
+  /// Retrieve the concatenated body data received so far.
+  ///
+  /// Returns `null` if no DATA frames have been received.
+  Uint8List? getBody() {
+    if (_bufferedChunks.isEmpty) return null;
+    return _concatenate();
+  }
+
   Uint8List _concatenate() {
     if (_bufferedChunks.isEmpty) return Uint8List(0);
     final totalLength = _bufferedChunks.fold<int>(0, (sum, c) => sum + c.length);

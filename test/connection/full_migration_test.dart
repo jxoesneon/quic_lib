@@ -31,8 +31,8 @@ void main() {
       );
     }
 
-    Uint8List _buildPacket(List<Frame> frames) {
-      return PacketBuilder.build(
+    Future<Uint8List> _buildPacket(List<Frame> frames) async {
+      return await PacketBuilder.build(
         ShortHeader(
           destinationConnectionId: [
             0x01,
@@ -75,10 +75,10 @@ void main() {
       endpoint.close();
     });
 
-    test('Processing PATH_CHALLENGE + PATH_RESPONSE validates path and increments validatedPathCount', () {
+    test('Processing PATH_CHALLENGE + PATH_RESPONSE validates path and increments validatedPathCount', () async {
       final conn = _createConnection();
       final challenge = conn.migrationHelper.generateChallenge(currentTimeUs: 0);
-      final responsePacket = _buildPacket([
+      final responsePacket = await _buildPacket([
         PathResponseFrame(data: challenge.data),
       ]);
 
@@ -91,13 +91,13 @@ void main() {
       expect(conn.validatedPathCount, equals(1));
     });
 
-    test('Path validation clears anti-amplification limit', () {
+    test('Path validation clears anti-amplification limit', () async {
       final conn = _createConnection();
       conn.onBytesReceived(100);
       expect(conn.canSend(1000), isFalse);
 
       final challenge = conn.migrationHelper.generateChallenge(currentTimeUs: 0);
-      final responsePacket = _buildPacket([
+      final responsePacket = await _buildPacket([
         PathResponseFrame(data: challenge.data),
       ]);
 

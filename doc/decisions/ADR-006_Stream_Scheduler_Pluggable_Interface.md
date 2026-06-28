@@ -1,7 +1,7 @@
 ---
 title: "ADR-006: Stream Scheduler as Pluggable Interface"
 category: decision
-status: "Accepted"
+status: "Implemented"
 ---
 
 # ADR-006: Stream Scheduler as Pluggable Interface

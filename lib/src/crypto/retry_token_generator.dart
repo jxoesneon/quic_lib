@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:dart_quic/src/crypto/cipher_suites.dart';
 import 'package:dart_quic/src/crypto/crypto_backend.dart';
 import 'package:dart_quic/src/crypto/initial_secrets.dart';
+import 'package:dart_quic/src/utils/collections.dart';
 
 /// Generates and validates QUIC Retry tokens per RFC 9000.
 ///
@@ -76,7 +77,7 @@ class RetryTokenGenerator {
 
     // Verify the client address embedded in the token matches.
     final tokenAddr = token.sublist(8, 8 + clientAddress.length);
-    if (!_listsEqual(tokenAddr, clientAddress)) {
+    if (!listEquals(tokenAddr, clientAddress)) {
       return false;
     }
 
@@ -85,7 +86,7 @@ class RetryTokenGenerator {
       8 + clientAddress.length,
       expectedPayloadLen,
     );
-    if (!_listsEqual(tokenDcid, dcid)) {
+    if (!listEquals(tokenDcid, dcid)) {
       return false;
     }
 
@@ -93,7 +94,7 @@ class RetryTokenGenerator {
     final actualHmac = token.sublist(expectedPayloadLen);
     final expectedHmac = await _backend.hmac(Sha256(), _secretKey, payload);
 
-    return _listsEqual(expectedHmac, actualHmac);
+    return listEquals(expectedHmac, actualHmac);
   }
 
   static Uint8List _encodeUint64(int value) {
@@ -114,15 +115,4 @@ class RetryTokenGenerator {
     return result;
   }
 
-  static bool _listsEqual(List<int> a, List<int> b) {
-    if (a.length != b.length) {
-      return false;
-    }
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) {
-        return false;
-      }
-    }
-    return true;
-  }
 }

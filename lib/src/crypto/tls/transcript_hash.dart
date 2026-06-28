@@ -4,9 +4,10 @@ import 'package:dart_quic/src/crypto/crypto_backend.dart';
 
 /// Maintains a running TLS 1.3 transcript hash.
 ///
-/// In real TLS 1.3, the transcript hash is computed as
+/// In TLS 1.3, the transcript hash is computed as
 /// Hash(message1 || message2 || ...).
-/// This scaffold maintains a byte buffer and hashes it on each addition.
+/// This class maintains a byte buffer and hashes it on each addition,
+/// producing the correct transcript hash for handshake messages.
 class TranscriptHash {
   final CryptoBackend _backend;
   final BytesBuilder _buffer;

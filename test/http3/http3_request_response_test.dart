@@ -5,6 +5,7 @@ import 'package:dart_quic/src/http3/headers_frame.dart';
 import 'package:dart_quic/src/http3/http3_connection.dart';
 import 'package:dart_quic/src/http3/http3_request.dart';
 import 'package:dart_quic/src/http3/http3_response.dart';
+import 'package:dart_quic/src/http3/qpack_encoder.dart';
 import 'package:test/test.dart';
 
 class FakeQuicConnection {
@@ -67,6 +68,90 @@ void main() {
       final decoded = Http3Response.decodeHeaders(encoded);
       expect(decoded.statusCode, equals(200));
       expect(decoded.headers['content-type'], equals('text/plain'));
+    });
+
+    test('encode and decode response with empty headers', () {
+      final response = Http3Response(
+        statusCode: 404,
+        headers: {},
+      );
+      final encoded = response.encodeHeaders();
+      expect(encoded.isNotEmpty, isTrue);
+
+      final decoded = Http3Response.decodeHeaders(encoded);
+      expect(decoded.statusCode, equals(404));
+      expect(decoded.headers, isEmpty);
+    });
+
+    test('decode response with no :status falls back to 0', () {
+      // Encode only a non-status header so :status is missing
+      final encoded = QpackEncoder.encodeFieldLines([
+        (name: 'content-type', value: 'text/html'),
+      ]);
+      final decoded = Http3Response.decodeHeaders(encoded);
+      expect(decoded.statusCode, equals(0));
+      expect(decoded.headers['content-type'], equals('text/html'));
+    });
+
+    test('decode response with invalid :status falls back to 0', () {
+      final encoded = QpackEncoder.encodeFieldLines([
+        (name: ':status', value: 'not-a-number'),
+        (name: 'server', value: 'test'),
+      ]);
+      final decoded = Http3Response.decodeHeaders(encoded);
+      expect(decoded.statusCode, equals(0));
+      expect(decoded.headers['server'], equals('test'));
+    });
+
+    test('toString includes status and headers', () {
+      final response = Http3Response(
+        statusCode: 200,
+        headers: {'content-type': 'text/plain'},
+      );
+      expect(response.toString(), contains('200'));
+      expect(response.toString(), contains('text/plain'));
+    });
+
+    test('response with body field does not affect headers encoding', () {
+      final body = Uint8List.fromList([0x48, 0x65, 0x6c, 0x6c, 0x6f]);
+      final response = Http3Response(
+        statusCode: 200,
+        headers: {'content-type': 'text/plain'},
+        body: body,
+      );
+      final encoded = response.encodeHeaders();
+      final decoded = Http3Response.decodeHeaders(encoded);
+      expect(decoded.statusCode, equals(200));
+      expect(decoded.headers['content-type'], equals('text/plain'));
+      expect(decoded.body, isNull);
+    });
+
+    test('encodeHeaders lowercases header names', () {
+      final response = Http3Response(
+        statusCode: 200,
+        headers: {'Content-Type': 'text/plain', 'X-Custom': 'value'},
+      );
+      final encoded = response.encodeHeaders();
+      final decoded = Http3Response.decodeHeaders(encoded);
+      expect(decoded.headers['content-type'], equals('text/plain'));
+      expect(decoded.headers['x-custom'], equals('value'));
+    });
+
+    test('decode preserves multiple headers', () {
+      final response = Http3Response(
+        statusCode: 302,
+        headers: {
+          'location': '/redirect',
+          'cache-control': 'no-cache',
+          'set-cookie': 'session=abc',
+        },
+      );
+      final encoded = response.encodeHeaders();
+      final decoded = Http3Response.decodeHeaders(encoded);
+      expect(decoded.statusCode, equals(302));
+      expect(decoded.headers['location'], equals('/redirect'));
+      expect(decoded.headers['cache-control'], equals('no-cache'));
+      expect(decoded.headers['set-cookie'], equals('session=abc'));
     });
   });
 

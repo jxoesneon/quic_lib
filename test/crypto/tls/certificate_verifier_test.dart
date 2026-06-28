@@ -8,6 +8,9 @@ import 'package:dart_quic/src/crypto/tls/certificate_message.dart';
 import 'package:dart_quic/src/crypto/tls/certificate_verifier.dart';
 import 'package:test/test.dart';
 
+import '../../helpers/mock_crypto_backend.dart';
+import '../../helpers/minimal_cert.dart';
+
 void main() {
   late CryptoBackend backend;
   late CertificateVerifier verifier;
@@ -101,32 +104,53 @@ void main() {
   });
 
   group('CertificateVerifier.verifyCertificateChain', () {
-    test('returns true for empty chain (scaffold behaviour)', () {
+    test('returns false for empty chain', () async {
       final trustedRoot = _SimplePublicKey([0xAA]);
-      final result = verifier.verifyCertificateChain([], trustedRoot);
-      expect(result, isTrue);
+      // SECURITY: Empty chains are never valid.
+      final result = await verifier.verifyCertificateChain([], trustedRoot);
+      expect(result, isFalse);
     });
 
-    test('returns true for single-cert chain (scaffold behaviour)', () {
+    test('rejects single-cert chain when backend returns false', () async {
+      final rejectBackend = _RejectingCryptoBackend();
+      final rejectVerifier = CertificateVerifier(rejectBackend);
       final trustedRoot = _SimplePublicKey([0xBB]);
       final cert = CertificateMessage(entries: [
-        CertificateEntry(certData: [0x01, 0x02]),
+        CertificateEntry(certData: buildMinimalCert()),
       ]);
-      final result = verifier.verifyCertificateChain([cert], trustedRoot);
-      expect(result, isTrue);
+      final result = await rejectVerifier.verifyCertificateChain([cert], trustedRoot);
+      expect(result, isFalse);
     });
 
-    test('returns true for multi-cert chain (scaffold behaviour)', () {
+    test('rejects multi-cert chain when backend returns false', () async {
+      final rejectBackend = _RejectingCryptoBackend();
+      final rejectVerifier = CertificateVerifier(rejectBackend);
       final trustedRoot = _SimplePublicKey([0xCC]);
       final chain = [
         CertificateMessage(entries: [
-          CertificateEntry(certData: [0x01]),
+          CertificateEntry(certData: buildMinimalCert()),
         ]),
         CertificateMessage(entries: [
-          CertificateEntry(certData: [0x02]),
+          CertificateEntry(certData: buildMinimalCert()),
         ]),
       ];
-      final result = verifier.verifyCertificateChain(chain, trustedRoot);
+      final result = await rejectVerifier.verifyCertificateChain(chain, trustedRoot);
+      expect(result, isFalse);
+    });
+
+    test('uses next certificate as issuer for intermediates', () async {
+      final mockBackend = MockCryptoBackend();
+      final mockVerifier = CertificateVerifier(mockBackend);
+      final trustedRoot = _SimplePublicKey([0xAA]);
+      final chain = [
+        CertificateMessage(entries: [
+          CertificateEntry(certData: buildMinimalCert()),
+        ]),
+        CertificateMessage(entries: [
+          CertificateEntry(certData: buildMinimalCert()),
+        ]),
+      ];
+      final result = await mockVerifier.verifyCertificateChain(chain, trustedRoot);
       expect(result, isTrue);
     });
   });
@@ -140,6 +164,17 @@ class _SimplePublicKey implements PublicKey {
   @override
   final List<int> bytes;
   _SimplePublicKey(this.bytes);
+}
+
+/// A mock backend that always rejects Ed25519 signatures.
+class _RejectingCryptoBackend extends MockCryptoBackend {
+  @override
+  Future<bool> ed25519Verify(
+    PublicKey publicKey,
+    List<int> message,
+    List<int> signature,
+  ) =>
+      Future.value(false);
 }
 
 /// Generates a raw ECDSA P-256 signature (r || s, 64 bytes) using

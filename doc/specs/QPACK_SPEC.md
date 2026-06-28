@@ -9,7 +9,7 @@ rfc_basis:
 dependencies:
   - "HTTP3_SPEC.md"
   - "ERROR_REGISTRY.md"
-  - "ROADMAP.md"
+  - "../../ROADMAP.md"
 ---
 
 # QPACK Codec Specification
@@ -378,4 +378,4 @@ class QpackFieldLine {
 
 - [HTTP3_SPEC.md](HTTP3_SPEC.md) — QPACK compresses field sections inside HEADERS frames; HTTP/3 SETTINGS govern dynamic table capacity and blocked stream limits.
 - [ERROR_REGISTRY.md](ERROR_REGISTRY.md) — Defines `QPACK_DECOMPRESSION_FAILED` (`0x0200`) and `QPACK_ENCODER_STREAM_ERROR` (`0x0201`) referenced in this spec.
-- [ROADMAP.md](ROADMAP.md) — QPACK codec is a prerequisite for HTTP/3 header compression deliverables.
+- [ROADMAP.md](../../ROADMAP.md) — QPACK codec is a prerequisite for HTTP/3 header compression deliverables.

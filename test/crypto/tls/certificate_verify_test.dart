@@ -68,5 +68,21 @@ void main() {
       expect(parsed.signatureScheme, equals(CertificateVerify.ed25519));
       expect(parsed.signature, isEmpty);
     });
+
+    test('parse throws for less than 4 bytes', () {
+      expect(
+        () => CertificateVerify.parse(Uint8List.fromList([0x08, 0x07])),
+        throwsArgumentError,
+      );
+    });
+
+    test('parse throws when signature length exceeds bytes', () {
+      // scheme=0x0807, sigLen=0x0100 (256), but only 2 bytes of signature
+      final bytes = Uint8List.fromList([0x08, 0x07, 0x01, 0x00, 0xAB, 0xCD]);
+      expect(
+        () => CertificateVerify.parse(bytes),
+        throwsArgumentError,
+      );
+    });
   });
 }

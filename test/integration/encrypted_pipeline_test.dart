@@ -36,7 +36,7 @@ void main() {
       final conn = _createConnection(keyManager: keyManager);
       conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
 
-      final plaintext = conn.buildPacket(
+      final plaintext = await conn.buildPacket(
         space: PacketNumberSpace.initial,
         frames: [CryptoFrame(offset: 0, data: [0x01, 0x02, 0x03])],
         dcid: dcid,
@@ -59,7 +59,7 @@ void main() {
       final conn = _createConnection();
       conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
 
-      final plaintext = conn.buildPacket(
+      final plaintext = await conn.buildPacket(
         space: PacketNumberSpace.initial,
         frames: [CryptoFrame(offset: 0, data: [0x01])],
         dcid: dcid,
@@ -100,9 +100,8 @@ void main() {
       expect(cryptoAssembler.nextOffset, equals(0));
       final processed = await conn.processEncryptedDatagram(encryptedPacket);
       expect(processed, equals(1));
-      // The encrypted pipeline scaffold returns already-parsed frames.
-      // With real decryption, the assembler would be populated.
-      // For now, we verify the pipeline didn't crash.
+      // Real decryption populates the assembler with the delivered CRYPTO data.
+      expect(cryptoAssembler.nextOffset, greaterThan(0));
     });
 
     test('processEncryptedDatagram with keys dispatches STREAM frames', () async {

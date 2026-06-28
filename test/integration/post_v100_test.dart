@@ -19,7 +19,28 @@ import 'package:dart_quic/src/wire/frame.dart';
 import 'package:dart_quic/src/wire/packet_builder.dart';
 import 'package:dart_quic/src/wire/packet_header.dart';
 import 'package:dart_quic/src/wire/quic_versions.dart';
+import 'package:dart_quic/src/crypto/tls/tls_message_builder.dart';
 import 'package:dart_quic/src/wire/v2_header.dart';
+
+/// Builds a raw key_share extension for x25519.
+Uint8List _buildKeyShareExtension(List<int> keyBytes) {
+  final entryLength = 4 + keyBytes.length;
+  final listLength = entryLength;
+  final extDataLength = 2 + listLength;
+  final buffer = BytesBuilder();
+  buffer.addByte(0x00);
+  buffer.addByte(0x33);
+  buffer.addByte((extDataLength >> 8) & 0xFF);
+  buffer.addByte(extDataLength & 0xFF);
+  buffer.addByte((listLength >> 8) & 0xFF);
+  buffer.addByte(listLength & 0xFF);
+  buffer.addByte(0x00);
+  buffer.addByte(0x1d);
+  buffer.addByte((keyBytes.length >> 8) & 0xFF);
+  buffer.addByte(keyBytes.length & 0xFF);
+  buffer.add(keyBytes);
+  return Uint8List.fromList(buffer.toBytes());
+}
 
 /// Integration tests for dart_quic post-v1.0 features.
 void main() {
@@ -65,8 +86,14 @@ void main() {
       // Before processing, the transcript hash should be empty.
       expect(coordinator.transcriptHash.currentHash, isEmpty);
 
-      // A minimal ClientHello payload with enough bytes for the scaffold.
-      final clientHelloData = List<int>.generate(64, (i) => i);
+      final random = Uint8List(32);
+      final keyShareExt = _buildKeyShareExtension(List<int>.filled(32, 0xCD));
+      final clientHelloData = TlsMessageBuilder.buildClientHello(
+        random,
+        Uint8List(0),
+        [0x1301],
+        [keyShareExt],
+      );
       final clientHelloFrame = CryptoFrame(offset: 0, data: clientHelloData);
 
       await coordinator.processClientHello(clientHelloFrame);
@@ -118,7 +145,7 @@ void main() {
   });
 
   group('V2LongHeader', () {
-    test('serialize produces v2-format bytes', () {
+    test('serialize produces v2-format bytes', () async {
       final header = V2LongHeader(
         packetType: V2LongHeader.typeInitial,
         destinationConnectionId: [0xAB, 0xCD],
@@ -128,7 +155,7 @@ void main() {
         token: const [],
       );
 
-      final bytes = header.serialize();
+      final bytes = await header.serialize();
       expect(bytes, isNotEmpty);
 
       // Verify first byte: HF=1, FB=1, Reserved=00, PP=packetType<<2, VV=version&0x03
@@ -144,7 +171,7 @@ void main() {
       expect(version, equals(QuicVersions.v2));
     });
 
-    test('serialize / parse round-trip', () {
+    test('serialize / parse round-trip', () async {
       final header = V2LongHeader(
         packetType: V2LongHeader.typeHandshake,
         destinationConnectionId: [0x01, 0x02],
@@ -153,7 +180,7 @@ void main() {
         payload: [0xAA, 0xBB],
       );
 
-      final bytes = header.serialize();
+      final bytes = await header.serialize();
       final parsed = V2LongHeader.parse(bytes);
 
       expect(parsed.packetType, equals(header.packetType));

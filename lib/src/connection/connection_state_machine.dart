@@ -15,11 +15,22 @@ import 'package:dart_quic/src/security/rate_limiter.dart';
 /// - draining → closed (after drain timeout)
 /// - Any → closed (on immediate abort)
 enum ConnectionState {
+  /// Waiting for a connection to be initiated.
   idle,
+
+  /// TLS handshake and address validation in progress.
   handshaking,
+
+  /// Handshake complete; application data may flow.
   established,
+
+  /// Close initiated by this endpoint; draining outgoing packets.
   closing,
+
+  /// Connection fully terminated.
   closed,
+
+  /// Peer-initiated close received; draining incoming packets.
   draining,
 }
 

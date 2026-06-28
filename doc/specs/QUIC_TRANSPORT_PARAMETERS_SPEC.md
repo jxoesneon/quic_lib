@@ -10,7 +10,7 @@ dependencies:
   - "QUIC_WIRE_SPEC.md"
   - "QUIC_CRYPTO_SPEC.md"
   - "HTTP3_SPEC.md"
-  - "ROADMAP.md"
+  - "../../ROADMAP.md"
   - "ERROR_REGISTRY.md"
 ---
 
@@ -196,5 +196,5 @@ class TransportParameterError {
 - [QUIC_WIRE_SPEC.md](QUIC_WIRE_SPEC.md) — Frame parsing and varint encoding.
 - [QUIC_CRYPTO_SPEC.md](QUIC_CRYPTO_SPEC.md) — TLS handshake integration (transport parameters extension).
 - [HTTP3_SPEC.md](HTTP3_SPEC.md) — HTTP/3 SETTINGS pre-negotiation via `h3_settings` parameter.
-- [ROADMAP.md](ROADMAP.md) — Milestone 1.3 (TLS integration) and 1.5 (flow control limits).
+- [ROADMAP.md](../../ROADMAP.md) — Milestone 1.3 (TLS integration) and 1.5 (flow control limits).
 - [DART_API_SPEC.md](DART_API_SPEC.md) — `QuicConfiguration` and `TransportParameters` class.

@@ -10,7 +10,7 @@ dependencies:
   - "CUBIC_SPEC.md"
   - "DART_API_SPEC.md"
   - "QUIC_DATAGRAM_SPEC.md"
-  - "ROADMAP.md"
+  - "../../ROADMAP.md"
 ---
 
 # QUIC Loss Detection and Recovery Specification
@@ -375,7 +375,7 @@ The congestion control interface is defined in [DART_API_SPEC.md §2.3](DART_API
 - [CUBIC_SPEC.md](CUBIC_SPEC.md) — Loss detection and RTT estimation are reused by CUBIC.
 - [DART_API_SPEC.md](DART_API_SPEC.md) — References SentPacket type and congestion control interface.
 - [QUIC_DATAGRAM_SPEC.md](QUIC_DATAGRAM_SPEC.md) — Congestion control and bytes_in_flight accounting for datagrams.
-- [ROADMAP.md](ROADMAP.md) — Lists QUIC_RECOVERY_SPEC as a formal specification deliverable.
+- [ROADMAP.md](../../ROADMAP.md) — Lists QUIC_RECOVERY_SPEC as a formal specification deliverable.
 ## 6. Testing Strategy
 
 - Simulation: Drive loss detector with synthetic ACK sequences.

@@ -1,10 +1,21 @@
 enum SendStreamState {
+  /// Stream is ready to send data.
   ready,
+
+  /// Data has been sent; waiting for ACK.
   send,
+
+  /// All data including FIN has been sent.
   sent,
-  received, // data acked (terminal success)
+
+  /// All data has been acknowledged by the peer (terminal success).
+  received,
+
+  /// RESET_STREAM was sent by this endpoint.
   resetSent,
-  resetReceived, // terminal aborted
+
+  /// RESET_STREAM was acknowledged by the peer (terminal aborted).
+  resetReceived,
 }
 
 class SendStateMachine {

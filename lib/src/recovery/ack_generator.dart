@@ -15,7 +15,8 @@ class AckGenerator {
       _largestAcked = packetNumber;
       _largestAckReceivedTime = receiveTimeUs;
     }
-    // Simplified: no range tracking for now
+    // TODO: Implement ACK range tracking per RFC 9000 §13.2.1.
+    // Simplified: no range tracking for now.
   }
 
   /// Build an ACK frame from current state.

@@ -9,7 +9,7 @@ rfc_basis:
 dependencies:
   - "ERROR_REGISTRY.md"
   - "QUIC_DATAGRAM_SPEC.md"
-  - "ROADMAP.md"
+  - "../../ROADMAP.md"
 ---
 
 # QUIC Streams Specification
@@ -283,7 +283,7 @@ The implementation SHOULD support priority hints from the application layer (HTT
 
 - [ERROR_REGISTRY.md](ERROR_REGISTRY.md) — Defines stream reset and STOP_SENDING semantics.
 - [QUIC_DATAGRAM_SPEC.md](QUIC_DATAGRAM_SPEC.md) — Contrasts datagram semantics with stream semantics.
-- [ROADMAP.md](ROADMAP.md) — Lists QUIC_STREAMS_SPEC as a formal specification deliverable.
+- [ROADMAP.md](../../ROADMAP.md) — Lists QUIC_STREAMS_SPEC as a formal specification deliverable.
 ## 6. Testing Strategy
 
 - State machine testing: Verify all valid transitions and reject invalid ones.

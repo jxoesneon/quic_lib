@@ -11,7 +11,7 @@ rfc_basis:
   - "RFC 9221"
 dependencies:
   - "ERROR_REGISTRY.md"
-  - "ROADMAP.md"
+  - "../../ROADMAP.md"
 ---
 
 # WebTransport Specification
@@ -268,7 +268,7 @@ The WebTransport Dart API is defined in [DART_API_SPEC.md §2.7](DART_API_SPEC.m
 ## Used By
 
 - [ERROR_REGISTRY.md](ERROR_REGISTRY.md) — Defines WebTransport capsule types and session lifecycle.
-- [ROADMAP.md](ROADMAP.md) — Lists WEBTRANSPORT_SPEC as a formal specification deliverable.
+- [ROADMAP.md](../../ROADMAP.md) — Lists WEBTRANSPORT_SPEC as a formal specification deliverable.
 ## 6. Testing Strategy
 
 - Unit: Signal value encoding/decoding, datagram framing.

@@ -6,7 +6,7 @@ status: "Specification"
 subsystem: "Release Management"
 rfc_basis: []
 dependencies:
-  - "ROADMAP.md"
+  - "../../ROADMAP.md"
 ---
 
 # Versioning Policy
@@ -246,4 +246,4 @@ A spec may be demoted from `stable` back to `draft` if:
 
 ## Used By
 
-- [ROADMAP.md](ROADMAP.md) — References ROADMAP for phased implementation timeline.
+- [ROADMAP.md](../../ROADMAP.md) — References ROADMAP for phased implementation timeline.

@@ -1,6 +1,6 @@
 # dart_quic Architecture
 
-**Version:** 0.1.0-alpha.1  
+**Version:** 1.2.0  
 **Last updated:** 2026-06-27
 
 ---

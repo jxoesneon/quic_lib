@@ -12,7 +12,7 @@
 Please report security vulnerabilities via the repository's private vulnerability reporting feature on GitHub, or by emailing the maintainers directly.
 
 - **GitHub**: Use the repository's Security > Advisories > Report a vulnerability
-- **Email**: security@dart-quic.dev (placeholder — update before Phase 1)
+- **Email**: Open an issue for security contact information.
 
 ## Disclosure Policy
 

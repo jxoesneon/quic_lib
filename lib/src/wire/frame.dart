@@ -10,6 +10,7 @@ abstract class Frame {
 // ---------------------------------------------------------------------------
 // 0x00 PADDING
 // ---------------------------------------------------------------------------
+/// A PADDING frame (RFC 9000 Section 19.1).
 class PaddingFrame implements Frame {
   final int length;
   PaddingFrame({this.length = 1});
@@ -20,6 +21,7 @@ class PaddingFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x01 PING
 // ---------------------------------------------------------------------------
+/// A PING frame (RFC 9000 Section 19.2).
 class PingFrame implements Frame {
   PingFrame();
   @override int get frameType => 0x01;
@@ -29,6 +31,7 @@ class PingFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x02 ACK
 // ---------------------------------------------------------------------------
+/// An ACK frame (RFC 9000 Section 19.3).
 class AckFrame implements Frame {
   final int largestAcknowledged;
   final int ackDelay;
@@ -104,6 +107,7 @@ class AckEcnFrame extends AckFrame {
 // ---------------------------------------------------------------------------
 // 0x04 RESET_STREAM
 // ---------------------------------------------------------------------------
+/// A RESET_STREAM frame (RFC 9000 Section 19.4).
 class ResetStreamFrame implements Frame {
   final int streamId;
   final int errorCode;
@@ -127,6 +131,7 @@ class ResetStreamFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x05 STOP_SENDING
 // ---------------------------------------------------------------------------
+/// A STOP_SENDING frame (RFC 9000 Section 19.5).
 class StopSendingFrame implements Frame {
   final int streamId;
   final int errorCode;
@@ -148,6 +153,7 @@ class StopSendingFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x06 CRYPTO
 // ---------------------------------------------------------------------------
+/// A CRYPTO frame (RFC 9000 Section 19.6).
 class CryptoFrame implements Frame {
   final int offset;
   final List<int> data;
@@ -170,6 +176,7 @@ class CryptoFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x07 NEW_TOKEN
 // ---------------------------------------------------------------------------
+/// A NEW_TOKEN frame (RFC 9000 Section 19.7).
 class NewTokenFrame implements Frame {
   final List<int> token;
 
@@ -190,6 +197,7 @@ class NewTokenFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x08-0x0f STREAM
 // ---------------------------------------------------------------------------
+/// A STREAM frame (RFC 9000 Section 19.8).
 class StreamFrame implements Frame {
   final int streamId;
   final List<int> data;
@@ -233,6 +241,7 @@ class StreamFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x10 MAX_DATA
 // ---------------------------------------------------------------------------
+/// A MAX_DATA frame (RFC 9000 Section 19.9).
 class MaxDataFrame implements Frame {
   final int maxData;
   MaxDataFrame({required this.maxData});
@@ -243,6 +252,7 @@ class MaxDataFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x11 MAX_STREAM_DATA
 // ---------------------------------------------------------------------------
+/// A MAX_STREAM_DATA frame (RFC 9000 Section 19.10).
 class MaxStreamDataFrame implements Frame {
   final int streamId;
   final int maxStreamData;
@@ -264,6 +274,7 @@ class MaxStreamDataFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x12 MAX_STREAMS (bidi), 0x13 MAX_STREAMS (uni)
 // ---------------------------------------------------------------------------
+/// A MAX_STREAMS frame (RFC 9000 Section 19.11).
 class MaxStreamsFrame implements Frame {
   final int maxStreams;
   final bool isUnidirectional;
@@ -284,6 +295,7 @@ class MaxStreamsFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x14 DATA_BLOCKED
 // ---------------------------------------------------------------------------
+/// A DATA_BLOCKED frame (RFC 9000 Section 19.12).
 class DataBlockedFrame implements Frame {
   final int maxData;
   DataBlockedFrame({required this.maxData});
@@ -294,6 +306,7 @@ class DataBlockedFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x15 STREAM_DATA_BLOCKED
 // ---------------------------------------------------------------------------
+/// A STREAM_DATA_BLOCKED frame (RFC 9000 Section 19.13).
 class StreamDataBlockedFrame implements Frame {
   final int streamId;
   final int maxStreamData;
@@ -315,6 +328,7 @@ class StreamDataBlockedFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x16 STREAMS_BLOCKED (bidi), 0x17 STREAMS_BLOCKED (uni)
 // ---------------------------------------------------------------------------
+/// A STREAMS_BLOCKED frame (RFC 9000 Section 19.14).
 class StreamsBlockedFrame implements Frame {
   final int maxStreams;
   final bool isUnidirectional;
@@ -335,6 +349,7 @@ class StreamsBlockedFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x18 NEW_CONNECTION_ID
 // ---------------------------------------------------------------------------
+/// A NEW_CONNECTION_ID frame (RFC 9000 Section 19.15).
 class NewConnectionIdFrame implements Frame {
   final int sequenceNumber;
   final int retirePriorTo;
@@ -370,6 +385,7 @@ class NewConnectionIdFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x19 RETIRE_CONNECTION_ID
 // ---------------------------------------------------------------------------
+/// A RETIRE_CONNECTION_ID frame (RFC 9000 Section 19.16).
 class RetireConnectionIdFrame implements Frame {
   final int sequenceNumber;
   RetireConnectionIdFrame({required this.sequenceNumber});
@@ -380,6 +396,7 @@ class RetireConnectionIdFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x1a PATH_CHALLENGE
 // ---------------------------------------------------------------------------
+/// A PATH_CHALLENGE frame (RFC 9000 Section 19.17).
 class PathChallengeFrame implements Frame {
   final List<int> data; // 8 bytes
 
@@ -394,6 +411,7 @@ class PathChallengeFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x1b PATH_RESPONSE
 // ---------------------------------------------------------------------------
+/// A PATH_RESPONSE frame (RFC 9000 Section 19.18).
 class PathResponseFrame implements Frame {
   final List<int> data; // 8 bytes
 
@@ -408,6 +426,7 @@ class PathResponseFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x1c CONNECTION_CLOSE (transport)
 // ---------------------------------------------------------------------------
+/// A CONNECTION_CLOSE frame for transport errors (RFC 9000 Section 19.19).
 class ConnectionCloseFrame implements Frame {
   final int errorCode;
   final int? offendingFrameType;
@@ -437,6 +456,7 @@ class ConnectionCloseFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x1d CONNECTION_CLOSE (application)
 // ---------------------------------------------------------------------------
+/// A CONNECTION_CLOSE frame for application errors (RFC 9000 Section 19.19).
 class ApplicationCloseFrame implements Frame {
   final int errorCode;
   final String reasonPhrase;
@@ -460,6 +480,7 @@ class ApplicationCloseFrame implements Frame {
 // ---------------------------------------------------------------------------
 // 0x1e HANDSHAKE_DONE
 // ---------------------------------------------------------------------------
+/// A HANDSHAKE_DONE frame (RFC 9000 Section 19.20).
 class HandshakeDoneFrame implements Frame {
   HandshakeDoneFrame();
   @override int get frameType => 0x1e;
@@ -488,6 +509,23 @@ class FrameCodec {
     return _frameLength(frame, bytes, offset);
   }
 
+  // SECURITY: Helper for safe buffer access during frame parsing.
+  static Uint8List _safeSublist(Uint8List bytes, int start, int length, {int? maxLength}) {
+    if (start < 0 || start > bytes.length) {
+      throw ArgumentError('Invalid start offset');
+    }
+    if (length < 0) {
+      throw ArgumentError('Invalid length');
+    }
+    if (start + length > bytes.length) {
+      throw ArgumentError('Frame data exceeds buffer bounds');
+    }
+    if (maxLength != null && length > maxLength) {
+      throw ArgumentError('Frame data exceeds maximum allowed size');
+    }
+    return bytes.sublist(start, start + length);
+  }
+
   static Frame _parseFrame(int type, Uint8List bytes, int offset) {
     int readVarInt(int off) {
       return VarInt.decode(bytes.buffer, offset: bytes.offsetInBytes + off);
@@ -510,12 +548,19 @@ class FrameCodec {
         pos += varIntLength(pos);
         final ackRangeCount = readVarInt(pos);
         pos += varIntLength(pos);
+        // SECURITY: Limit ACK ranges to prevent CPU/memory exhaustion DoS.
+        if (ackRangeCount > 256) {
+          throw ArgumentError('ACK frame has too many ranges');
+        }
         final firstRangeLength = readVarInt(pos);
         pos += varIntLength(pos);
         final ranges = <AckRange>[];
         if (ackRangeCount > 0) {
           ranges.add(AckRange(gap: 0, length: firstRangeLength));
           for (var i = 1; i < ackRangeCount; i++) {
+            if (pos >= bytes.length) {
+              throw ArgumentError('ACK frame truncated while parsing ranges');
+            }
             final gap = readVarInt(pos);
             pos += varIntLength(pos);
             final length = readVarInt(pos);
@@ -567,12 +612,12 @@ class FrameCodec {
         pos += varIntLength(pos);
         final lengthValue = readVarInt(pos);
         pos += varIntLength(pos);
-        final data = bytes.sublist(pos, pos + lengthValue);
+        final data = _safeSublist(bytes, pos, lengthValue, maxLength: 16 * 1024 * 1024);
         return CryptoFrame(offset: offsetValue, data: data);
       case 0x07: // NEW_TOKEN
         final lengthValue = readVarInt(pos);
         pos += varIntLength(pos);
-        final token = bytes.sublist(pos, pos + lengthValue);
+        final token = _safeSublist(bytes, pos, lengthValue, maxLength: 4096);
         return NewTokenFrame(token: token);
       case 0x08:
       case 0x09:
@@ -599,11 +644,17 @@ class FrameCodec {
         if (hasLen) {
           lengthValue = readVarInt(pos);
           pos += varIntLength(pos);
+          if (pos + lengthValue > bytes.length) {
+            throw ArgumentError('STREAM frame data exceeds buffer bounds');
+          }
+          if (lengthValue > 64 * 1024) {
+            throw ArgumentError('STREAM frame data too large');
+          }
         } else {
           lengthValue = bytes.length - pos;
         }
 
-        final data = bytes.sublist(pos, pos + lengthValue);
+        final data = _safeSublist(bytes, pos, lengthValue);
         return StreamFrame(
           streamId: streamId,
           data: data,
@@ -639,9 +690,12 @@ class FrameCodec {
         final retirePriorTo = readVarInt(pos);
         pos += varIntLength(pos);
         final connectionIdLength = bytes[pos++];
-        final connectionId = bytes.sublist(pos, pos + connectionIdLength);
+        if (connectionIdLength > 20) {
+          throw ArgumentError('Connection ID too long (max 20 bytes)');
+        }
+        final connectionId = _safeSublist(bytes, pos, connectionIdLength);
         pos += connectionIdLength;
-        final statelessResetToken = bytes.sublist(pos, pos + 16);
+        final statelessResetToken = _safeSublist(bytes, pos, 16);
         pos += 16;
         return NewConnectionIdFrame(
           sequenceNumber: sequenceNumber,
@@ -654,10 +708,10 @@ class FrameCodec {
         pos += varIntLength(pos);
         return RetireConnectionIdFrame(sequenceNumber: sequenceNumber);
       case 0x1a: // PATH_CHALLENGE
-        final data = bytes.sublist(pos, pos + 8);
+        final data = _safeSublist(bytes, pos, 8);
         return PathChallengeFrame(data: data);
       case 0x1b: // PATH_RESPONSE
-        final data = bytes.sublist(pos, pos + 8);
+        final data = _safeSublist(bytes, pos, 8);
         return PathResponseFrame(data: data);
       case 0x1c: // CONNECTION_CLOSE (transport)
         final errorCode = readVarInt(pos);
@@ -666,7 +720,7 @@ class FrameCodec {
         pos += varIntLength(pos);
         final reasonPhraseLength = readVarInt(pos);
         pos += varIntLength(pos);
-        final reasonPhraseBytes = bytes.sublist(pos, pos + reasonPhraseLength);
+        final reasonPhraseBytes = _safeSublist(bytes, pos, reasonPhraseLength, maxLength: 1024);
         final reasonPhrase = String.fromCharCodes(reasonPhraseBytes);
         return ConnectionCloseFrame(
           errorCode: errorCode,
@@ -678,7 +732,7 @@ class FrameCodec {
         pos += varIntLength(pos);
         final reasonPhraseLength = readVarInt(pos);
         pos += varIntLength(pos);
-        final reasonPhraseBytes = bytes.sublist(pos, pos + reasonPhraseLength);
+        final reasonPhraseBytes = _safeSublist(bytes, pos, reasonPhraseLength, maxLength: 1024);
         final reasonPhrase = String.fromCharCodes(reasonPhraseBytes);
         return ApplicationCloseFrame(
           errorCode: errorCode,

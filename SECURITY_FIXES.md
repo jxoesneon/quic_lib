@@ -188,7 +188,7 @@
 
 ---
 
-## Protocol Audit of Five Mandatory Amendments (Post-Meta-Analysis)
+## Security Audit Amendments (Post-Audit)
 
 ### A1. QuicConnection Subsystem Wiring
 **File:** `lib/src/connection/quic_connection.dart`

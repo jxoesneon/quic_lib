@@ -10,7 +10,7 @@ dependencies:
   - "ERROR_REGISTRY.md"
   - "QUIC_DATAGRAM_SPEC.md"
   - "RFC_9000_NOTES.md"
-  - "ROADMAP.md"
+  - "../../ROADMAP.md"
   - "TEST_VECTORS.md"
 ---
 
@@ -377,7 +377,7 @@ Multiple QUIC packets can be coalesced into a single UDP datagram:
 - [ERROR_REGISTRY.md](ERROR_REGISTRY.md) — Defines CONNECTION_CLOSE frame types and varint encoding.
 - [QUIC_DATAGRAM_SPEC.md](QUIC_DATAGRAM_SPEC.md) — Frame parsing/serialization for varints and frame types.
 - [../research/RFC_9000_NOTES.md](../research/RFC_9000_NOTES.md) — Research notes reference QUIC_WIRE_SPEC for complete frame type reference.
-- [ROADMAP.md](ROADMAP.md) — Lists QUIC_WIRE_SPEC as a formal specification deliverable.
+- [ROADMAP.md](../../ROADMAP.md) — Lists QUIC_WIRE_SPEC as a formal specification deliverable.
 - [TEST_VECTORS.md](TEST_VECTORS.md) — Wire-format test vectors for varint and packet encoding.
 ## 6. Testing Strategy
 

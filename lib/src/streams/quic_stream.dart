@@ -4,6 +4,11 @@ import 'dart:typed_data';
 import 'package:dart_quic/src/streams/send_state_machine.dart';
 import 'package:dart_quic/src/streams/receive_state_machine.dart';
 
+/// Base interface for a QUIC stream, providing common read/write/close operations.
+///
+/// Subclasses implement either the sending side ([QuicSendStream]) or the
+/// receiving side ([QuicReceiveStream]) of a bidirectional or unidirectional
+/// stream.
 abstract class QuicStream {
   int get streamId;
   bool get isBidirectional;
@@ -14,6 +19,7 @@ abstract class QuicStream {
   void reset({int errorCode = 0});
 }
 
+/// QUIC send-side stream. Buffers outgoing data and tracks the send state machine.
 class QuicSendStream implements QuicStream {
   @override final int streamId;
   final StreamController<Uint8List> _dataController;
@@ -40,6 +46,8 @@ class QuicSendStream implements QuicStream {
   @override bool get isUnidirectional => (streamId & 0x02) != 0;
 }
 
+/// QUIC receive-side stream. Delivers incoming data via [incomingData] and
+/// tracks the receive state machine until the FIN bit is seen.
 class QuicReceiveStream implements QuicStream {
   @override final int streamId;
   final StreamController<Uint8List> _dataController;

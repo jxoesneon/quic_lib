@@ -82,24 +82,32 @@ Uint8List _encodeBigInt(BigInt value, int length) {
 pc.RSAPublicKey _parseRsaPublicKey(List<int> bytes) {
   final parser = ASN1Parser(Uint8List.fromList(bytes));
   final top = parser.nextObject();
+  BigInt? modulus;
+  BigInt? exponent;
   if (top is ASN1Sequence) {
     // PKCS#1 RSAPublicKey: SEQUENCE { modulus, publicExponent }
     if (top.elements.length == 2 && top.elements[0] is ASN1Integer) {
-      final modulus = (top.elements[0] as ASN1Integer).valueAsBigInteger;
-      final exponent = (top.elements[1] as ASN1Integer).valueAsBigInteger;
-      return pc.RSAPublicKey(modulus, exponent);
+      modulus = (top.elements[0] as ASN1Integer).valueAsBigInteger;
+      exponent = (top.elements[1] as ASN1Integer).valueAsBigInteger;
     }
     // X.509 SubjectPublicKeyInfo: SEQUENCE { AlgorithmIdentifier, BIT STRING }
-    if (top.elements.length == 2 && top.elements[1] is ASN1BitString) {
+    else if (top.elements.length == 2 && top.elements[1] is ASN1BitString) {
       final bitString = top.elements[1] as ASN1BitString;
       final innerParser = ASN1Parser(bitString.contentBytes());
       final innerSeq = innerParser.nextObject() as ASN1Sequence;
-      final modulus = (innerSeq.elements[0] as ASN1Integer).valueAsBigInteger;
-      final exponent = (innerSeq.elements[1] as ASN1Integer).valueAsBigInteger;
-      return pc.RSAPublicKey(modulus, exponent);
+      modulus = (innerSeq.elements[0] as ASN1Integer).valueAsBigInteger;
+      exponent = (innerSeq.elements[1] as ASN1Integer).valueAsBigInteger;
     }
   }
-  throw ArgumentError('Unable to parse RSA public key');
+  if (modulus == null || exponent == null) {
+    throw ArgumentError('Unable to parse RSA public key');
+  }
+  // SECURITY: Reject weak RSA keys (minimum 2048 bits per NIST recommendation).
+  final modulusBits = modulus.bitLength;
+  if (modulusBits < 2048) {
+    throw ArgumentError('RSA modulus too small: $modulusBits bits (minimum 2048)');
+  }
+  return pc.RSAPublicKey(modulus, exponent);
 }
 
 // ---------------------------------------------------------------------------
@@ -467,7 +475,7 @@ class DefaultCryptoBackend implements CryptoBackend {
       _ => throw UnsupportedError('Unsupported RSA hash: ${hash.name}'),
     };
     final signer = pc.Signer('$digestName/RSA');
-    signer.init(false, pc.PublicKeyParameter(rsaKey));
+    signer.init(false, pc.PublicKeyParameter<pc.RSAPublicKey>(rsaKey));
 
     try {
       return signer.verifySignature(

@@ -6,7 +6,7 @@ status: "Specification"
 subsystem: "Datagram Extension"
 rfc_basis: []
 dependencies:
-  - "ROADMAP.md"
+  - "../../ROADMAP.md"
   - "WEBTRANSPORT_SPEC.md"
 ---
 
@@ -180,7 +180,7 @@ An application datagram larger than the maximum payload MUST be either fragmente
 
 ## Used By
 
-- [ROADMAP.md](ROADMAP.md) — QUIC Datagram extension is part of the transport layer roadmap.
+- [ROADMAP.md](../../ROADMAP.md) — QUIC Datagram extension is part of the transport layer roadmap.
 - [WEBTRANSPORT_SPEC.md](WEBTRANSPORT_SPEC.md) — WebTransport may use QUIC datagrams for unreliable messaging.
 ## 7. Testing Strategy
 

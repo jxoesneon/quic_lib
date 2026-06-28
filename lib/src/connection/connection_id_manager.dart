@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'dart:typed_data';
 
+import '../utils/hex.dart';
+
 /// Record representing an active Connection ID.
 typedef ConnectionIdRecord = ({
   List<int> connectionId,
@@ -70,7 +72,7 @@ class ConnectionIdManager {
     );
 
     _active[seq] = entry;
-    _cidToSequence[_encodeKey(cid)] = seq;
+    _cidToSequence[bytesToHex(cid)] = seq;
 
     return (
       connectionId: List<int>.unmodifiable(cid),
@@ -86,7 +88,7 @@ class ConnectionIdManager {
     final entry = _active.remove(sequenceNumber);
     if (entry == null) return;
 
-    _cidToSequence.remove(_encodeKey(entry.connectionId));
+    _cidToSequence.remove(bytesToHex(entry.connectionId));
     // SECURITY: Evict oldest retired CID if at capacity.
     while (_retired.length >= maxRetiredIds) {
       final oldest = _retired.keys.reduce((a, b) => a < b ? a : b);
@@ -114,7 +116,7 @@ class ConnectionIdManager {
       statelessResetToken: List<int>.from(statelessResetToken),
     );
     _active[sequenceNumber] = entry;
-    _cidToSequence[_encodeKey(connectionId)] = sequenceNumber;
+    _cidToSequence[bytesToHex(connectionId)] = sequenceNumber;
   }
 
   /// Returns `true` if [connectionId] is currently in the active set.
@@ -128,7 +130,7 @@ class ConnectionIdManager {
   ///
   /// Returns `null` if the CID is unknown or retired.
   int? lookupSequenceNumber(List<int> connectionId) {
-    return _cidToSequence[_encodeKey(connectionId)];
+    return _cidToSequence[bytesToHex(connectionId)];
   }
 
   /// Returns a snapshot of all currently active connection IDs.
@@ -146,9 +148,9 @@ class ConnectionIdManager {
       final length = minConnectionIdLength +
           _random.nextInt(maxConnectionIdLength - minConnectionIdLength + 1);
       final cid = _generateSecureBytes(length);
-      final key = _encodeKey(cid);
+      final key = bytesToHex(cid);
       if (!_cidToSequence.containsKey(key) &&
-          !_retired.values.any((e) => _encodeKey(e.connectionId) == key)) {
+          !_retired.values.any((e) => bytesToHex(e.connectionId) == key)) {
         return cid;
       }
     }
@@ -165,14 +167,7 @@ class ConnectionIdManager {
     return bytes;
   }
 
-  String _encodeKey(List<int> bytes) {
-    // Using a fast hex encoder. Each byte becomes two hex characters.
-    final buffer = StringBuffer();
-    for (final b in bytes) {
-      buffer.write(b.toRadixString(16).padLeft(2, '0'));
-    }
-    return buffer.toString();
-  }
+
 }
 
 class _ConnectionIdEntry {

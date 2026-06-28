@@ -27,7 +27,7 @@ QuicConnection _createConnection() {
   );
 }
 
-Uint8List _buildResponseDatagram(List<int> challengeData, List<int> dcid) {
+Future<Uint8List> _buildResponseDatagram(List<int> challengeData, List<int> dcid) async {
   final frames = <Frame>[PathResponseFrame(data: challengeData)];
   final payload = Uint8List.fromList(frames.expand((f) => f.serialize()).toList());
   final header = ShortHeader(
@@ -36,7 +36,7 @@ Uint8List _buildResponseDatagram(List<int> challengeData, List<int> dcid) {
     packetNumberLength: 1,
     payload: payload,
   );
-  return header.serialize();
+  return await header.serialize();
 }
 
 void main() {
@@ -45,13 +45,14 @@ void main() {
       final conn = _createConnection();
       final dcid = List<int>.filled(8, 0);
       final future = conn.probeNewPath(dcid);
+      await Future.delayed(Duration.zero);
       expect(conn.lastProbePacket, isNotNull);
       expect(conn.lastProbePacket!.length, greaterThan(0));
 
       // Clean up: complete the future so it does not hang.
       final result = PacketReceiver.processPacket(conn.lastProbePacket!);
       final challengeFrame = result!.frames.whereType<PathChallengeFrame>().first;
-      final responseDatagram = _buildResponseDatagram(challengeFrame.data, dcid);
+      final responseDatagram = await _buildResponseDatagram(challengeFrame.data, dcid);
       conn.processIncomingDatagram(responseDatagram);
       await future;
     });
@@ -60,12 +61,13 @@ void main() {
       final conn = _createConnection();
       expect(conn.isProbingPath, isFalse);
       final future = conn.probeNewPath(List<int>.filled(8, 0));
+      await Future.delayed(Duration.zero);
       expect(conn.isProbingPath, isTrue);
 
       // Clean up
       final result = PacketReceiver.processPacket(conn.lastProbePacket!);
       final challengeFrame = result!.frames.whereType<PathChallengeFrame>().first;
-      final responseDatagram = _buildResponseDatagram(challengeFrame.data, List<int>.filled(8, 0));
+      final responseDatagram = await _buildResponseDatagram(challengeFrame.data, List<int>.filled(8, 0));
       conn.processIncomingDatagram(responseDatagram);
       await future;
     });
@@ -74,11 +76,12 @@ void main() {
       final conn = _createConnection();
       final dcid = List<int>.filled(8, 0);
       final future = conn.probeNewPath(dcid);
+      await Future.delayed(Duration.zero);
       expect(conn.isProbingPath, isTrue);
 
       final result = PacketReceiver.processPacket(conn.lastProbePacket!);
       final challengeFrame = result!.frames.whereType<PathChallengeFrame>().first;
-      final responseDatagram = _buildResponseDatagram(challengeFrame.data, dcid);
+      final responseDatagram = await _buildResponseDatagram(challengeFrame.data, dcid);
       conn.processIncomingDatagram(responseDatagram);
 
       await future;
@@ -89,6 +92,7 @@ void main() {
       final conn = _createConnection();
       final dcid = List<int>.filled(8, 0);
       final future = conn.probeNewPath(dcid);
+      await Future.delayed(Duration.zero);
 
       final result = PacketReceiver.processPacket(conn.lastProbePacket!);
       expect(result, isNotNull);
@@ -97,7 +101,7 @@ void main() {
       expect(challengeFrames.first.data.length, equals(8));
 
       // Clean up
-      final responseDatagram = _buildResponseDatagram(challengeFrames.first.data, dcid);
+      final responseDatagram = await _buildResponseDatagram(challengeFrames.first.data, dcid);
       conn.processIncomingDatagram(responseDatagram);
       await future;
     });

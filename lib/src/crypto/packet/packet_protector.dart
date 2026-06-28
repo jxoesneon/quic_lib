@@ -28,6 +28,9 @@ class PacketProtector {
     }
   }
 
+  /// AEAD authentication tag length in bytes (typically 16).
+  int get tagLength => _aead.tagLength;
+
   /// Encrypt a QUIC packet payload.
   ///
   /// [packetNumber] is the full reconstructed packet number.

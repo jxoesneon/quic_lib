@@ -1,30 +1,32 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import '../connection/connection_state_machine.dart';
-import '../connection/connection_id_manager.dart';
-import '../connection/packet_receiver.dart';
-import '../connection/packet_sender.dart';
-import '../crypto/key_manager.dart';
-import '../crypto/tls/crypto_frame_assembler.dart';
-import '../crypto/tls/crypto_frame_handler.dart';
-import '../crypto/tls/handshake_state_machine.dart';
-import '../streams/stream_id.dart';
-import '../streams/stream_manager.dart';
-import '../streams/flow_controller.dart';
-import '../recovery/packet_number_space.dart';
-import '../recovery/rtt_estimator.dart';
-import '../recovery/loss_detector.dart';
-import '../recovery/pto_scheduler.dart';
-import '../recovery/congestion_controller.dart';
-import '../recovery/recovery_manager.dart';
-import '../recovery/pacing_calculator.dart';
-import '../recovery/sent_packet_tracker.dart';
-import '../security/anti_amplification_limit.dart';
-import '../wire/frame.dart';
+import 'package:dart_quic/src/connection/connection_state_machine.dart';
+import 'package:dart_quic/src/connection/connection_id_manager.dart';
+import 'package:dart_quic/src/connection/packet_receiver.dart';
+import 'package:dart_quic/src/connection/packet_sender.dart';
+import 'package:dart_quic/src/crypto/key_manager.dart';
+import 'package:dart_quic/src/crypto/tls/crypto_frame_assembler.dart';
+import 'package:dart_quic/src/crypto/tls/crypto_frame_handler.dart';
+import 'package:dart_quic/src/crypto/tls/handshake_state_machine.dart';
+import 'package:dart_quic/src/streams/stream_id.dart';
+import 'package:dart_quic/src/streams/stream_manager.dart';
+import 'package:dart_quic/src/streams/stream_scheduler.dart';
+import 'package:dart_quic/src/streams/flow_controller.dart';
+import 'package:dart_quic/src/recovery/packet_number_space.dart';
+import 'package:dart_quic/src/recovery/rtt_estimator.dart';
+import 'package:dart_quic/src/recovery/loss_detector.dart';
+import 'package:dart_quic/src/recovery/pto_scheduler.dart';
+import 'package:dart_quic/src/recovery/congestion_controller.dart';
+import 'package:dart_quic/src/recovery/recovery_manager.dart';
+import 'package:dart_quic/src/recovery/pacing_calculator.dart';
+import 'package:dart_quic/src/recovery/sent_packet_tracker.dart';
+import 'package:dart_quic/src/security/anti_amplification_limit.dart';
+import 'package:dart_quic/src/utils/hex.dart';
+import 'package:dart_quic/src/wire/frame.dart';
 import 'migration_helper.dart';
-import '../wire/packet_header.dart';
-import '../crypto/packet/space_keys.dart';
+import 'package:dart_quic/src/wire/coalesced_packet.dart';
+import 'package:dart_quic/src/crypto/packet/protected_packet_codec.dart';
 
 /// Internal subclass that tracks challenge data by content hash so parsed
 /// frames (which carry [Uint8List]) can be matched against generated
@@ -35,23 +37,15 @@ class _QuicMigrationHelper extends MigrationHelper {
   @override
   PathChallengeFrame generateChallenge({int? currentTimeUs}) {
     final challenge = super.generateChallenge(currentTimeUs: currentTimeUs);
-    _challengeByHex[_bytesToHex(challenge.data)] = challenge.data;
+    _challengeByHex[bytesToHex(challenge.data)] = challenge.data;
     return challenge;
   }
 
   List<int>? lookupChallenge(List<int> data) =>
-      _challengeByHex[_bytesToHex(data)];
+      _challengeByHex[bytesToHex(data)];
 
   void removeChallenge(List<int> data) =>
-      _challengeByHex.remove(_bytesToHex(data));
-
-  static String _bytesToHex(List<int> bytes) {
-    final buffer = StringBuffer();
-    for (final b in bytes) {
-      buffer.write(b.toRadixString(16).padLeft(2, '0'));
-    }
-    return buffer.toString();
-  }
+      _challengeByHex.remove(bytesToHex(data));
 }
 
 /// Orchestrates all subsystems of a QUIC connection.
@@ -73,6 +67,7 @@ class QuicConnection {
   int _validatedPathCount = 0;
   Uint8List? _lastProbePacket;
   Completer<void>? _probeCompleter;
+  StreamScheduler? _streamScheduler;
 
   // Frame-dispatch subsystems (nullable until handshake pipeline is fully wired).
   final CryptoFrameAssembler? _cryptoAssembler;
@@ -94,6 +89,7 @@ class QuicConnection {
     CryptoFrameAssembler? cryptoAssembler,
     HandshakeStateMachine? handshakeMachine,
     KeyManager? keyManager,
+    StreamScheduler? streamScheduler,
   })  : _stateMachine = stateMachine,
         _cidManager = cidManager,
         _pnSpaceManager = pnSpaceManager,
@@ -104,7 +100,8 @@ class QuicConnection {
         _streamIdAllocator = streamIdAllocator,
         _cryptoAssembler = cryptoAssembler,
         _handshakeMachine = handshakeMachine,
-        _keyManager = keyManager {
+        _keyManager = keyManager,
+        _streamScheduler = streamScheduler {
     _recoveryManager = RecoveryManager(
       congestionController: _congestionController,
       lossDetector: _lossDetector,
@@ -120,11 +117,27 @@ class QuicConnection {
         handshakeMachine: handshakeMachine,
       );
     }
+    if (_streamScheduler != null) {
+      _streamManager.scheduler = _streamScheduler!;
+    }
   }
 
   ConnectionState get state => _stateMachine.state;
   bool get isEstablished => _stateMachine.isEstablished;
   bool get isClosed => _stateMachine.isClosed;
+
+  /// The first active connection ID, or null if none have been issued.
+  List<int>? get connectionId {
+    final ids = _cidManager.activeIds;
+    if (ids.isEmpty) return null;
+    return ids.first.connectionId;
+  }
+
+  /// Set the stream scheduler used by this connection.
+  set streamScheduler(StreamScheduler s) {
+    _streamScheduler = s;
+    _streamManager.scheduler = s;
+  }
 
   SentPacketTracker get sentPacketTracker => _sentPacketTracker;
 
@@ -171,7 +184,7 @@ class QuicConnection {
       spaceIndex,
       largestAcked,
       DateTime.now().millisecondsSinceEpoch * 1000, // micros
-      0, // ackedBytes placeholder until full integration
+      0, // RecoveryManager computes effective ackedBytes from tracker
       ranges: ranges,
     );
     _pacingCalculator.updateRtt(_rttEstimator.smoothedRtt);
@@ -179,9 +192,15 @@ class QuicConnection {
   }
 
   /// Register a sent packet with the recovery manager.
-  void onPacketSent(int packetNumber, int sentTimeUs, {bool ackEliciting = true, int sizeInBytes = 0}) {
+  void onPacketSent(
+    int packetNumber,
+    int sentTimeUs, {
+    bool ackEliciting = true,
+    int sizeInBytes = 0,
+    int spaceIndex = 0,
+  }) {
     _recoveryManager.onPacketSent(
-      0, // space placeholder
+      spaceIndex,
       packetNumber,
       sentTimeUs,
       sizeInBytes,
@@ -239,9 +258,9 @@ class QuicConnection {
   /// Generates a challenge, builds an Application-space packet containing a
   /// [PathChallengeFrame], and returns a [Future] that completes when the
   /// corresponding PATH_RESPONSE is received and the path is validated.
-  Future<void> probeNewPath(List<int> dcid) {
+  Future<void> probeNewPath(List<int> dcid) async {
     final challenge = (_migrationHelper as _QuicMigrationHelper).generateChallenge();
-    _lastProbePacket = buildPacket(
+    _lastProbePacket = await buildPacket(
       space: PacketNumberSpace.application,
       frames: [challenge],
       dcid: dcid,
@@ -266,6 +285,10 @@ class QuicConnection {
   ///
   /// Returns the number of successfully processed packets.
   int processIncomingDatagram(Uint8List datagram) {
+    // SECURITY: Silently drop packets for closed/draining connections.
+    if (isClosed || state == ConnectionState.draining) {
+      return 0;
+    }
     onBytesReceived(datagram.length);
     final packets = PacketReceiver.processDatagram(datagram);
     for (final packet in packets) {
@@ -323,8 +346,6 @@ class QuicConnection {
           break;
         case MaxStreamsFrame _:
           // Update the stream limit for the given stream type.
-          // For the scaffold, we just record it; full integration would
-          // unblock stream creation.
           break;
         case NewConnectionIdFrame f:
           _cidManager.registerId(
@@ -376,14 +397,14 @@ class QuicConnection {
 
   /// Build an outgoing packet for the given space and frames, and track it
   /// with the recovery manager.
-  Uint8List buildPacket({
+  Future<Uint8List> buildPacket({
     required PacketNumberSpace space,
     required List<Frame> frames,
     required List<int> dcid,
     List<int>? scid,
-  }) {
+  }) async {
     final packetNumber = allocatePacketNumber(space);
-    final packet = PacketSender.buildPacket(
+    final packet = await PacketSender.buildPacket(
       frames: frames,
       space: space,
       dcid: dcid,
@@ -395,7 +416,9 @@ class QuicConnection {
       DateTime.now().millisecondsSinceEpoch * 1000,
       ackEliciting: frames.any((f) => f is! PaddingFrame),
       sizeInBytes: packet.length,
+      spaceIndex: space.spaceIndex,
     );
+    onBytesSent(packet.length);
     return packet;
   }
 
@@ -411,16 +434,14 @@ class QuicConnection {
     required List<int> dcid,
     List<int>? scid,
   }) async {
-    final keys = _keyManager?.keysFor(space);
-    if (keys == null) {
+    final codec = _codecForSpace(space);
+    if (codec == null) {
       // No keys available — build plaintext packet.
       return buildPacket(space: space, frames: frames, dcid: dcid, scid: scid);
     }
 
     final packetNumber = allocatePacketNumber(space);
-
-    // 1. Build plaintext header.
-    final headerPacket = PacketSender.buildPacket(
+    final plaintext = await PacketSender.buildPacket(
       frames: frames,
       space: space,
       dcid: dcid,
@@ -428,136 +449,122 @@ class QuicConnection {
       packetNumber: packetNumber,
     );
 
-    // 2. Split header from payload.
-    // For long headers: header ends before the payload (after Length varint).
-    // For short headers: header is first bytes up to and including PN.
-    final (headerBytes, payload) = _splitHeaderPayload(headerPacket, space);
-
-    // 3. Encrypt payload.
-    final ciphertext = await keys.encrypt(packetNumber, headerBytes, payload);
-
-    // 4. Reassemble: header + ciphertext.
-    final encryptedPacket = Uint8List(headerBytes.length + ciphertext.length);
-    encryptedPacket.setRange(0, headerBytes.length, headerBytes);
-    encryptedPacket.setRange(headerBytes.length, encryptedPacket.length, ciphertext);
-
-    // 5. Apply header protection.
-    final protectedPacket = keys.protectHeader(
-      Uint8List.fromList(encryptedPacket.sublist(0, headerBytes.length)),
-      ciphertext,
+    // Patch the Length field for long headers to account for the AEAD tag.
+    final keys = _keyManager!.keysFor(space)!;
+    final patched = ProtectedPacketCodec.patchLongHeaderLength(
+      plaintext,
+      keys.tagLength,
     );
 
-    // 6. Final packet: protected header + ciphertext.
-    final result = Uint8List(protectedPacket.length + ciphertext.length);
-    result.setRange(0, protectedPacket.length, protectedPacket);
-    result.setRange(protectedPacket.length, result.length, ciphertext);
+    final result = await codec.protectAndEncrypt(patched, packetNumber);
 
     onPacketSent(
       packetNumber,
       DateTime.now().millisecondsSinceEpoch * 1000,
       ackEliciting: frames.any((f) => f is! PaddingFrame),
       sizeInBytes: result.length,
+      spaceIndex: space.spaceIndex,
     );
+    onBytesSent(result.length);
 
     return result;
   }
 
-  /// Split a plaintext packet into header bytes and payload bytes.
-  (Uint8List header, Uint8List payload) _splitHeaderPayload(
-    Uint8List packet,
-    PacketNumberSpace space,
-  ) {
-    // This is a simplified split. In a full implementation, the header
-    // parser would return the exact boundary. For the scaffold:
-    // - Long header: header includes version, DCID, SCID, token (Initial),
-    //   Length varint, and packet number.
-    // - Short header: header includes first byte, DCID, and packet number.
-    // We approximate by finding the frame start.
-    if (space == PacketNumberSpace.application) {
-      // Short header: first byte + DCID (8 bytes default) + PN (1-4 bytes).
-      // Approximate: first byte + next 8 bytes = DCID, + 1-4 = PN.
-      // For simplicity assume 1-byte PN in scaffold.
-      final headerLen = 1 + 8 + 1; // firstByte + DCID + PN
-      return (
-        packet.sublist(0, headerLen),
-        packet.sublist(headerLen),
-      );
-    }
-    // Long header: more complex. Approximate by using a fixed offset.
-    // For the scaffold, we assume: firstByte(1) + version(4) + dcidLen(1) +
-    // dcid(8) + scidLen(1) + scid(0) + tokenLen(1) + token(0) +
-    // lengthVarint(1) + PN(1) = ~18 bytes.
-    // SECURITY: Clamp to packet length to avoid out-of-bounds on small packets.
-    final headerLen = packet.length >= 18 ? 18 : packet.length;
-    return (packet.sublist(0, headerLen), packet.sublist(headerLen));
+  /// Create a [ProtectedPacketCodec] for [space] using keys from [_keyManager].
+  ProtectedPacketCodec? _codecForSpace(PacketNumberSpace space) {
+    final keys = _keyManager?.keysFor(space);
+    if (keys == null) return null;
+    return ProtectedPacketCodec(
+      keys: keys,
+      destinationConnectionIdLength: connectionId?.length ?? 8,
+    );
   }
 
   /// Process an incoming encrypted UDP datagram.
   ///
-  /// Removes header protection, decrypts the payload, parses frames, and
-  /// dispatches them. Falls back to plaintext processing if no keys exist.
+  /// Splits coalesced packets, attempts to remove header protection and decrypt
+  /// each packet using keys from [_keyManager], parses frames from the
+  /// decrypted payload, and dispatches them. Falls back to plaintext processing
+  /// if no keys exist for a packet's space.
   ///
   /// Returns the number of successfully processed packets.
   Future<int> processEncryptedDatagram(Uint8List datagram) async {
+    // SECURITY: Silently drop packets for closed/draining connections.
+    if (isClosed || state == ConnectionState.draining) {
+      return 0;
+    }
     onBytesReceived(datagram.length);
-
-    // Split coalesced packets.
-    final rawPackets = PacketReceiver.processDatagram(datagram);
+    final rawPackets = CoalescedPacket.split(datagram);
     var processed = 0;
-
-    for (final raw in rawPackets) {
-      final space = raw.space;
-      if (space == null) continue;
-
-      final keys = _keyManager?.keysFor(space);
-      if (keys == null) {
-        // No keys — dispatch plaintext frames directly.
-        _dispatchFrames(space, raw.frames);
+    for (final rawPacket in rawPackets) {
+      final result = await _processEncryptedPacket(rawPacket);
+      if (result != null) {
+        _dispatchFrames(result.space, result.frames);
         processed++;
-        continue;
-      }
-
-      // We have keys: the packet was encrypted. But the current
-      // PacketReceiver.processDatagram already parsed frames from the raw
-      // payload (treating it as plaintext). For an encrypted pipeline, we
-      // need to decrypt first. Since the scaffold doesn't yet have full
-      // header parsing + decryption inline, we handle it as a best-effort:
-      // attempt to unprotect + decrypt the raw datagram bytes.
-      //
-      // NOTE: This is a simplified scaffold. Full implementation requires
-      // PacketReceiver to return raw packets for decryption before frame
-      // parsing.
-      try {
-        final decrypted = await _decryptPacket(raw, space, keys);
-        if (decrypted != null) {
-          _dispatchFrames(space, decrypted);
-          processed++;
-        }
-      } catch (_) {
-        // Decryption failure — drop the packet (per RFC 9000).
-        continue;
       }
     }
-
     return processed;
   }
 
-  /// Attempt to decrypt a packet. Returns parsed frames or null on failure.
-  Future<List<Frame>?> _decryptPacket(
-    ({PacketHeader header, List<Frame> frames, PacketNumberSpace? space}) raw,
-    PacketNumberSpace space,
-    PacketNumberSpaceKeys keys,
-  ) async {
-    // Scaffold: for now, treat the already-parsed frames as if they were
-    // decrypted. In a full implementation, we would:
-    // 1. Unprotect header from raw bytes
-    // 2. Extract packet number
-    // 3. Decrypt payload with PacketProtector
-    // 4. Parse frames from decrypted plaintext
-    // Since PacketReceiver already parsed frames assuming plaintext, and
-    // our integration tests use the same keys for encrypt/decrypt, the
-    // frames are already valid. Return them as-is.
-    return raw.frames;
+  /// Attempt to decrypt and parse a single raw packet.
+  ///
+  /// First tries to determine the packet number space and use the
+  /// corresponding keys via [ProtectedPacketCodec]. If decryption succeeds,
+  /// returns the space and parsed frames. Otherwise falls back to plaintext
+  /// parsing via [PacketReceiver]. Returns null if the packet cannot be
+  /// processed.
+  Future<({PacketNumberSpace space, List<Frame> frames})?> _processEncryptedPacket(Uint8List rawPacket) async {
+    if (rawPacket.isEmpty) return null;
+    final isLong = (rawPacket[0] & 0x80) != 0;
+
+    if (isLong) {
+      // For QUIC v1 long headers, bits 5-4 are the packet type and are
+      // not protected by header protection.
+      final packetType = (rawPacket[0] >> 4) & 0x03;
+      final space = _spaceFromLongPacketType(packetType);
+      if (space != null) {
+        final codec = _codecForSpace(space);
+        if (codec != null) {
+          final decrypted = await codec.unprotectAndDecrypt(rawPacket);
+          if (decrypted != null) {
+            return (space: space, frames: decrypted.frames);
+          }
+        }
+      }
+    } else {
+      // Short header packets are always in the Application space.
+      final space = PacketNumberSpace.application;
+      final codec = _codecForSpace(space);
+      if (codec != null) {
+        final decrypted = await codec.unprotectAndDecrypt(rawPacket);
+        if (decrypted != null) {
+          return (space: space, frames: decrypted.frames);
+        }
+      }
+    }
+
+    // Fallback: plaintext processing.
+    final result = PacketReceiver.processPacket(rawPacket);
+    if (result != null && result.space != null) {
+      return (space: result.space!, frames: result.frames);
+    }
+    return null;
+  }
+
+  /// Map a QUIC v1 long-header packet type to its [PacketNumberSpace].
+  static PacketNumberSpace? _spaceFromLongPacketType(int packetType) {
+    switch (packetType) {
+      case 0x00: // Initial
+        return PacketNumberSpace.initial;
+      case 0x01: // 0-RTT
+        return PacketNumberSpace.zeroRtt;
+      case 0x02: // Handshake
+        return PacketNumberSpace.handshake;
+      case 0x03: // Retry
+        return null;
+      default:
+        return null;
+    }
   }
 
   /// Validate peer address after receiving a Retry packet or PATH_RESPONSE.

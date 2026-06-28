@@ -38,7 +38,7 @@ void main() {
       final frames = [CryptoFrame(offset: 0, data: [0x01, 0x00, 0x00, 0x05, 0x01])];
 
       // 6. Build the packet
-      final packet = PacketBuilder.build(header, frames);
+      final packet = await PacketBuilder.build(header, frames);
 
       // 7. Verify packet is not empty and has correct form
       expect(packet.isNotEmpty, isTrue);

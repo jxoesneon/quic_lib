@@ -6,10 +6,19 @@ import 'package:dart_quic/src/crypto/zero_rtt_helper.dart';
 import 'package:dart_quic/src/crypto/packet/header_protection.dart';
 import 'package:dart_quic/src/crypto/packet/packet_protector.dart';
 import 'package:dart_quic/src/crypto/packet/space_keys.dart';
+import 'package:dart_quic/src/crypto/tls/handshake_key_exchange.dart';
 import 'package:dart_quic/src/recovery/packet_number_space.dart';
 
 // Re-export for test convenience.
 export 'initial_secrets.dart' show SimpleSecretKey;
+
+/// Client and server keys for a single packet number space.
+class _DirectionalKeys {
+  final PacketNumberSpaceKeys client;
+  final PacketNumberSpaceKeys server;
+
+  _DirectionalKeys({required this.client, required this.server});
+}
 
 /// Derives and manages packet protection keys for all QUIC packet number spaces.
 ///
@@ -18,35 +27,35 @@ export 'initial_secrets.dart' show SimpleSecretKey;
 /// - Handshake keys: derived from the TLS handshake traffic secret
 /// - Application keys: derived from the TLS application traffic secret
 ///
-/// **Status:** Initial-space derivation is complete. Handshake and Application
-/// key transitions are scaffolded for future TLS integration.
+/// Client and server keys are tracked separately per space so that the
+/// correct directional keys can be selected for sending and receiving.
 class KeyManager {
-  final Map<PacketNumberSpace, PacketNumberSpaceKeys> _keys = {};
+  /// Role of the endpoint that owns this key manager.
+  final HandshakeRole role;
 
-  KeyManager._();
+  final Map<PacketNumberSpace, _DirectionalKeys> _keys = {};
+
+  KeyManager._(this.role);
 
   /// Create a [KeyManager] with pre-derived keys for testing.
-  KeyManager.forTest();
+  KeyManager.forTest() : role = HandshakeRole.client;
 
   /// Derive Initial-space keys from the destination connection ID.
   static Future<KeyManager> deriveInitial(
     List<int> destinationConnectionId,
-    CryptoBackend backend,
-  ) async {
-    final manager = KeyManager._();
+    CryptoBackend backend, {
+    HandshakeRole role = HandshakeRole.client,
+  }) async {
+    final manager = KeyManager._(role);
     final secrets = await InitialSecrets.derive(
       destinationConnectionId,
       backend: backend,
     );
 
-    // For Initial packets we use AES-128-GCM (mandatory QUIC cipher suite).
     final aead = Aes128Gcm();
-    final keyLength = aead.keyLength; // 16 bytes
-    final hpKeyLength = 16; // AES-128 header protection key
+    final keyLength = aead.keyLength;
+    const hpKeyLength = 16;
 
-    // Derive client keys (for sending) and server keys (for receiving).
-    // In a real implementation, the role determines which key to use for
-    // encrypt vs decrypt. For the pipeline scaffold, we use client keys.
     final clientKeys = await KeyDerivation.deriveKeys(
       secret: secrets.clientSecret,
       keyLength: keyLength,
@@ -54,34 +63,74 @@ class KeyManager {
       backend: backend,
     );
 
-    // Store keys for the Initial space.
-    // In a full implementation, client/server directionality is tracked
-    // separately. Here we store one set for the pipeline to use.
-    manager._keys[PacketNumberSpace.initial] = PacketNumberSpaceKeys(
-      protector: PacketProtector(
-        backend: backend,
-        aead: aead,
-        key: SimpleSecretKey(clientKeys.key),
-        iv: clientKeys.iv,
+    final serverKeys = await KeyDerivation.deriveKeys(
+      secret: secrets.serverSecret,
+      keyLength: keyLength,
+      hpKeyLength: hpKeyLength,
+      backend: backend,
+    );
+
+    manager._keys[PacketNumberSpace.initial] = _DirectionalKeys(
+      client: PacketNumberSpaceKeys(
+        protector: PacketProtector(
+          backend: backend,
+          aead: aead,
+          key: SimpleSecretKey(clientKeys.key),
+          iv: clientKeys.iv,
+        ),
+        headerProtection: HeaderProtection(
+          hpKey: clientKeys.hpKey,
+          isChaCha20: false,
+        ),
       ),
-      headerProtection: HeaderProtection(
-        hpKey: clientKeys.hpKey,
-        isChaCha20: false,
+      server: PacketNumberSpaceKeys(
+        protector: PacketProtector(
+          backend: backend,
+          aead: aead,
+          key: SimpleSecretKey(serverKeys.key),
+          iv: serverKeys.iv,
+        ),
+        headerProtection: HeaderProtection(
+          hpKey: serverKeys.hpKey,
+          isChaCha20: false,
+        ),
       ),
     );
 
     return manager;
   }
 
-  /// Get the keys for a packet number space, or null if not yet derived.
-  PacketNumberSpaceKeys? keysFor(PacketNumberSpace space) => _keys[space];
+  /// Get the local keys for a packet number space (used for sending),
+  /// or null if not yet derived.
+  PacketNumberSpaceKeys? keysFor(PacketNumberSpace space) {
+    final dir = _keys[space];
+    if (dir == null) return null;
+    return role == HandshakeRole.client ? dir.client : dir.server;
+  }
+
+  /// Get the peer's keys for a packet number space (used for receiving),
+  /// or null if not yet derived.
+  PacketNumberSpaceKeys? peerKeysFor(PacketNumberSpace space) {
+    final dir = _keys[space];
+    if (dir == null) return null;
+    return role == HandshakeRole.client ? dir.server : dir.client;
+  }
 
   /// Install keys for a packet number space (used for Handshake/App transitions).
   void installKeys(
     PacketNumberSpace space,
-    PacketNumberSpaceKeys keys,
-  ) {
-    _keys[space] = keys;
+    PacketNumberSpaceKeys keys, {
+    PacketNumberSpaceKeys? peerKeys,
+  }) {
+    if (peerKeys != null) {
+      _keys[space] = _DirectionalKeys(
+        client: role == HandshakeRole.client ? keys : peerKeys,
+        server: role == HandshakeRole.server ? keys : peerKeys,
+      );
+    } else {
+      // If only one set is provided, use it for both directions.
+      _keys[space] = _DirectionalKeys(client: keys, server: keys);
+    }
   }
 
   /// True if keys exist for the given space.
@@ -97,15 +146,14 @@ class KeyManager {
   static Future<KeyManager> deriveHandshake(
     SecretKey clientSecret,
     SecretKey serverSecret,
-    CryptoBackend backend,
-  ) async {
-    final manager = KeyManager._();
+    CryptoBackend backend, {
+    HandshakeRole role = HandshakeRole.client,
+  }) async {
+    final manager = KeyManager._(role);
     final aead = Aes256Gcm();
-    final keyLength = aead.keyLength; // 32 bytes
-    const hpKeyLength = 16; // AES-256 header protection key
+    final keyLength = aead.keyLength;
+    const hpKeyLength = 16;
 
-    // In a full implementation, client/server directionality is tracked
-    // separately. Here we use client keys for the pipeline scaffold.
     final clientKeys = await KeyDerivation.deriveKeys(
       secret: clientSecret,
       keyLength: keyLength,
@@ -113,16 +161,37 @@ class KeyManager {
       backend: backend,
     );
 
-    manager._keys[PacketNumberSpace.handshake] = PacketNumberSpaceKeys(
-      protector: PacketProtector(
-        backend: backend,
-        aead: aead,
-        key: SimpleSecretKey(clientKeys.key),
-        iv: clientKeys.iv,
+    final serverKeys = await KeyDerivation.deriveKeys(
+      secret: serverSecret,
+      keyLength: keyLength,
+      hpKeyLength: hpKeyLength,
+      backend: backend,
+    );
+
+    manager._keys[PacketNumberSpace.handshake] = _DirectionalKeys(
+      client: PacketNumberSpaceKeys(
+        protector: PacketProtector(
+          backend: backend,
+          aead: aead,
+          key: SimpleSecretKey(clientKeys.key),
+          iv: clientKeys.iv,
+        ),
+        headerProtection: HeaderProtection(
+          hpKey: clientKeys.hpKey,
+          isChaCha20: false,
+        ),
       ),
-      headerProtection: HeaderProtection(
-        hpKey: clientKeys.hpKey,
-        isChaCha20: false,
+      server: PacketNumberSpaceKeys(
+        protector: PacketProtector(
+          backend: backend,
+          aead: aead,
+          key: SimpleSecretKey(serverKeys.key),
+          iv: serverKeys.iv,
+        ),
+        headerProtection: HeaderProtection(
+          hpKey: serverKeys.hpKey,
+          isChaCha20: false,
+        ),
       ),
     );
 
@@ -139,15 +208,14 @@ class KeyManager {
   static Future<KeyManager> deriveApplication(
     SecretKey clientSecret,
     SecretKey serverSecret,
-    CryptoBackend backend,
-  ) async {
-    final manager = KeyManager._();
+    CryptoBackend backend, {
+    HandshakeRole role = HandshakeRole.client,
+  }) async {
+    final manager = KeyManager._(role);
     final aead = Aes128Gcm();
-    final keyLength = aead.keyLength; // 16 bytes
-    const hpKeyLength = 16; // AES-128 header protection key
+    final keyLength = aead.keyLength;
+    const hpKeyLength = 16;
 
-    // In a full implementation, client/server directionality is tracked
-    // separately. Here we use client keys for the pipeline scaffold.
     final clientKeys = await KeyDerivation.deriveKeys(
       secret: clientSecret,
       keyLength: keyLength,
@@ -155,16 +223,37 @@ class KeyManager {
       backend: backend,
     );
 
-    manager._keys[PacketNumberSpace.application] = PacketNumberSpaceKeys(
-      protector: PacketProtector(
-        backend: backend,
-        aead: aead,
-        key: SimpleSecretKey(clientKeys.key),
-        iv: clientKeys.iv,
+    final serverKeys = await KeyDerivation.deriveKeys(
+      secret: serverSecret,
+      keyLength: keyLength,
+      hpKeyLength: hpKeyLength,
+      backend: backend,
+    );
+
+    manager._keys[PacketNumberSpace.application] = _DirectionalKeys(
+      client: PacketNumberSpaceKeys(
+        protector: PacketProtector(
+          backend: backend,
+          aead: aead,
+          key: SimpleSecretKey(clientKeys.key),
+          iv: clientKeys.iv,
+        ),
+        headerProtection: HeaderProtection(
+          hpKey: clientKeys.hpKey,
+          isChaCha20: false,
+        ),
       ),
-      headerProtection: HeaderProtection(
-        hpKey: clientKeys.hpKey,
-        isChaCha20: false,
+      server: PacketNumberSpaceKeys(
+        protector: PacketProtector(
+          backend: backend,
+          aead: aead,
+          key: SimpleSecretKey(serverKeys.key),
+          iv: serverKeys.iv,
+        ),
+        headerProtection: HeaderProtection(
+          hpKey: serverKeys.hpKey,
+          isChaCha20: false,
+        ),
       ),
     );
 
@@ -184,12 +273,13 @@ class KeyManager {
   /// are available. Call [discardZeroRttKeys] after the handshake completes.
   static Future<KeyManager> deriveZeroRtt(
     SecretKey psk,
-    CryptoBackend backend,
-  ) async {
-    final manager = KeyManager._();
+    CryptoBackend backend, {
+    HandshakeRole role = HandshakeRole.client,
+  }) async {
+    final manager = KeyManager._(role);
     final aead = Aes128Gcm();
-    final keyLength = aead.keyLength; // 16 bytes
-    const hpKeyLength = 16; // AES-128 header protection key
+    final keyLength = aead.keyLength;
+    const hpKeyLength = 16;
 
     final keys = await ZeroRttHelper.deriveKeys(
       psk: psk,
@@ -198,7 +288,7 @@ class KeyManager {
       backend: backend,
     );
 
-    manager._keys[PacketNumberSpace.zeroRtt] = PacketNumberSpaceKeys(
+    final spaceKeys = PacketNumberSpaceKeys(
       protector: PacketProtector(
         backend: backend,
         aead: aead,
@@ -209,6 +299,12 @@ class KeyManager {
         hpKey: keys.hpKey,
         isChaCha20: false,
       ),
+    );
+
+    // 0-RTT keys are symmetric: both directions use the same key.
+    manager._keys[PacketNumberSpace.zeroRtt] = _DirectionalKeys(
+      client: spaceKeys,
+      server: spaceKeys,
     );
 
     return manager;

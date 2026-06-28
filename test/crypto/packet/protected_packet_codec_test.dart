@@ -57,7 +57,7 @@ void main() {
         token: const [],
       );
 
-      final plaintext = PacketBuilder.build(header, frames);
+      final plaintext = await PacketBuilder.build(header, frames);
       final packetNumber = 42;
 
       final protected = await codec.protectAndEncrypt(plaintext, packetNumber);
@@ -102,7 +102,7 @@ void main() {
         packetNumberLength: 2,
       );
 
-      final plaintext = PacketBuilder.build(header, frames);
+      final plaintext = await PacketBuilder.build(header, frames);
       final packetNumber = 7;
 
       final protected = await codec.protectAndEncrypt(plaintext, packetNumber);
@@ -138,7 +138,7 @@ void main() {
         token: const [],
       );
 
-      final plaintext = PacketBuilder.build(header, frames);
+      final plaintext = await PacketBuilder.build(header, frames);
       final protected = await codec.protectAndEncrypt(plaintext, 1);
 
       // Corrupt a byte in the ciphertext well past the header-protection

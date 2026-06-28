@@ -7,8 +7,8 @@ import 'package:dart_quic/src/wire/frame.dart';
 
 void main() {
   group('CoalescedPacket.split', () {
-    test('splits Initial + Handshake coalesced datagram', () {
-      final initial = PacketBuilder.build(
+    test('splits Initial + Handshake coalesced datagram', () async {
+      final initial = await PacketBuilder.build(
         LongHeader(
           version: 0x00000001,
           packetType: LongHeader.typeInitial,
@@ -19,7 +19,7 @@ void main() {
         ),
         [CryptoFrame(offset: 0, data: [0x01])],
       );
-      final handshake = PacketBuilder.build(
+      final handshake = await PacketBuilder.build(
         LongHeader(
           version: 0x00000001,
           packetType: LongHeader.typeHandshake,
@@ -40,8 +40,8 @@ void main() {
       expect(packets[1].length, equals(handshake.length));
     });
 
-    test('single long-header packet', () {
-      final initial = PacketBuilder.build(
+    test('single long-header packet', () async {
+      final initial = await PacketBuilder.build(
         LongHeader(
           version: 0x00000001,
           packetType: LongHeader.typeInitial,
@@ -58,8 +58,8 @@ void main() {
       expect(packets[0], equals(initial));
     });
 
-    test('short header consumes remainder', () {
-      final short = PacketBuilder.build(
+    test('short header consumes remainder', () async {
+      final short = await PacketBuilder.build(
         ShortHeader(
           destinationConnectionId: [0x01],
           packetNumber: 0,
@@ -74,8 +74,8 @@ void main() {
   });
 
   group('CoalescedPacket.isCoalesced', () {
-    test('true for multiple packets', () {
-      final initial = PacketBuilder.build(
+    test('true for multiple packets', () async {
+      final initial = await PacketBuilder.build(
         LongHeader(
           version: 0x00000001,
           packetType: LongHeader.typeInitial,
@@ -86,7 +86,7 @@ void main() {
         ),
         [CryptoFrame(offset: 0, data: [0x01])],
       );
-      final handshake = PacketBuilder.build(
+      final handshake = await PacketBuilder.build(
         LongHeader(
           version: 0x00000001,
           packetType: LongHeader.typeHandshake,
@@ -104,8 +104,8 @@ void main() {
       expect(CoalescedPacket.isCoalesced(datagram), isTrue);
     });
 
-    test('false for single packet', () {
-      final initial = PacketBuilder.build(
+    test('false for single packet', () async {
+      final initial = await PacketBuilder.build(
         LongHeader(
           version: 0x00000001,
           packetType: LongHeader.typeInitial,

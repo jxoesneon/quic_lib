@@ -18,6 +18,26 @@ import 'package:test/test.dart';
 
 import '../../helpers/mock_crypto_backend.dart';
 
+/// Builds a raw key_share extension for x25519.
+Uint8List _buildKeyShareExtension(List<int> keyBytes) {
+  final entryLength = 4 + keyBytes.length;
+  final listLength = entryLength;
+  final extDataLength = 2 + listLength;
+  final buffer = BytesBuilder();
+  buffer.addByte(0x00);
+  buffer.addByte(0x33);
+  buffer.addByte((extDataLength >> 8) & 0xFF);
+  buffer.addByte(extDataLength & 0xFF);
+  buffer.addByte((listLength >> 8) & 0xFF);
+  buffer.addByte(listLength & 0xFF);
+  buffer.addByte(0x00);
+  buffer.addByte(0x1d);
+  buffer.addByte((keyBytes.length >> 8) & 0xFF);
+  buffer.addByte(keyBytes.length & 0xFF);
+  buffer.add(keyBytes);
+  return Uint8List.fromList(buffer.toBytes());
+}
+
 /// A [MockCryptoBackend] that returns HKDF-Expand-Label outputs of the
 /// requested length so that [KeyDerivation.deriveKeys] builds valid
 /// [PacketProtector] / [HeaderProtection] instances in tests.
@@ -76,11 +96,12 @@ void main() {
       await coordinator.generateKeys();
 
       final random = Uint8List(32);
+      final keyShareExt = _buildKeyShareExtension(List<int>.filled(32, 0xCD));
       final clientHelloMsg = TlsMessageBuilder.buildClientHello(
         random,
         Uint8List(0),
         [0x1301],
-        [], // no extensions for this scaffold test
+        [keyShareExt],
       );
       final frame = CryptoFrame(offset: 0, data: clientHelloMsg);
 
@@ -94,11 +115,12 @@ void main() {
       await coordinator.generateKeys();
 
       final random = Uint8List(32);
+      final keyShareExt = _buildKeyShareExtension(List<int>.filled(32, 0xCD));
       final clientHelloMsg = TlsMessageBuilder.buildClientHello(
         random,
         Uint8List(0),
         [0x1301],
-        [],
+        [keyShareExt],
       );
       final frame = CryptoFrame(offset: 0, data: clientHelloMsg);
 

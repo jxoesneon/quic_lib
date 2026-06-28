@@ -1,9 +1,11 @@
 # dart_quic Project Roadmap: v0.0.0 → v1.0.0
 
+> **CURRENT STATUS (2026-06-27):** All roadmap phases through v1.0.0 are **COMPLETE**. The project has shipped v1.2.0 with full QUIC, HTTP/3, WebTransport, and libp2p QUIC transport implementations. This document is retained for historical reference and to guide future v2.0.0 planning.
+
 **Version**: 1.0
 **Status**: Finalized
 **Last Updated**: 2026-06-27
-**Constraint**: Pure-Dart implementation per [ADR-001](decisions/ADR-001_Pure_Dart_No_FFI.md). No `dart:ffi`, no native dependencies.
+**Constraint**: Pure-Dart implementation per [ADR-001](doc/decisions/ADR-001_Pure_Dart_No_FFI.md). No `dart:ffi`, no native dependencies.
 
 ---
 
@@ -28,15 +30,15 @@ We follow [Semantic Versioning](https://semver.org/) with pre-release identifier
 
 ### 2.2 Phase-Version Mapping
 
-| Phase | Version Range | Theme |
-|---|---|---|
-| Phase 0 | v0.0.0 | Specification (COMPLETE) |
-| Phase 1 | v0.1.0-alpha → v0.3.0-alpha | Core QUIC transport |
-| Phase 2 | v0.4.0-alpha → v0.5.0-alpha | HTTP/3 & WebTransport |
-| Phase 3 | v0.6.0-alpha | libp2p QUIC & DCUtR |
-| Phase 4 | v0.7.0-beta → v0.9.0-beta | Hardening, fuzzing, performance |
-| Phase 5 | v1.0.0-rc.1 → v1.0.0-rc.2 | Release candidates |
-| Phase 6 | v1.0.0 | Stable production release |
+| Phase | Version Range | Theme | Status |
+|---|---|---|---|
+| Phase 0 | v0.0.0 | Specification | **COMPLETE** |
+| Phase 1 | v0.1.0-alpha → v0.3.0-alpha | Core QUIC transport | **COMPLETE** |
+| Phase 2 | v0.4.0-alpha → v0.5.0-alpha | HTTP/3 & WebTransport | **COMPLETE** |
+| Phase 3 | v0.6.0-alpha | libp2p QUIC & DCUtR | **COMPLETE** |
+| Phase 4 | v0.7.0-beta → v0.9.0-beta | Hardening, fuzzing, performance | **COMPLETE** |
+| Phase 5 | v1.0.0-rc.1 → v1.0.0-rc.2 | Release candidates | **COMPLETE** |
+| Phase 6 | v1.0.0 → v1.2.0 | Stable production release | **COMPLETE** |
 
 ### 2.3 Exit Gates (Universal)
 
@@ -60,8 +62,8 @@ Every release must pass these gates before the version tag is applied:
 
 **Deliverables**:
 - 21 formal specifications in `doc/specs/`
-- 9 research notes in `doc/research/`
-- 6 architecture documents in `doc/architecture/`
+- 1 consolidated research note in `doc/research/RFC_NOTES.md`
+- 5 architecture documents in `doc/architecture/`
 - 7 accepted ADRs in `doc/decisions/`
 - `SECURITY.md`, `CHANGELOG.md`, `INDEX.md`, `EXTENSION_GUIDE.md`
 - CI workflow template (`.github/workflows/ci.yml`)
@@ -81,8 +83,8 @@ Every release must pass these gates before the version tag is applied:
 - `lib/src/wire/` — varint encoder/decoder, packet header parser/serializer.
 - `lib/src/crypto/` — HKDF-Expand-Label, Initial secret derivation, AES-128-GCM packet protection.
 - `lib/src/transport_parameters.dart` — wire encoding/decoding of all RFC 9000 parameters.
-- Unit tests for every encode/decode pair in [QUIC_WIRE_SPEC.md](specs/QUIC_WIRE_SPEC.md) and [QUIC_CRYPTO_SPEC.md](specs/QUIC_CRYPTO_SPEC.md).
-- Test vectors from [TEST_VECTORS.md](specs/TEST_VECTORS.md) passing.
+- Unit tests for every encode/decode pair in [QUIC_WIRE_SPEC.md](doc/specs/QUIC_WIRE_SPEC.md) and [QUIC_CRYPTO_SPEC.md](doc/specs/QUIC_CRYPTO_SPEC.md).
+- Test vectors from [TEST_VECTORS.md](doc/specs/TEST_VECTORS.md) passing.
 
 **API Surface**:
 - Internal-only. No public API exported from `lib/dart_quic.dart`.
@@ -109,9 +111,9 @@ Every release must pass these gates before the version tag is applied:
 **Depends On**: v0.1.0-alpha.1
 
 **Deliverables**:
-- `lib/src/connection.dart` — Connection state machine (idle → handshake → established → closing → closed).
-- `lib/src/handshake/` — TLS 1.3 handshake integration via `dart:io` `SecureSocket` or `package:cryptography` TLS layer.
-- `lib/src/frame/` — All 22 frame types from [QUIC_WIRE_SPEC.md §2.3](specs/QUIC_WIRE_SPEC.md#23-frame-types-rfc-9000-section-19) parsed and serialized.
+- `lib/src/connection/` — Connection state machine, CID management, packet receiver/sender (idle → handshake → established → closing → closed).
+- `lib/src/crypto/tls/` — TLS 1.3 handshake integration and CRYPTO frame handling.
+- `lib/src/wire/frame.dart` — All 22 frame types from [QUIC_WIRE_SPEC.md §2.3](doc/specs/QUIC_WIRE_SPEC.md#23-frame-types-rfc-9000-section-19) parsed and serialized.
 - Retry token generation and validation.
 - Address validation (anti-amplification, PATH_CHALLENGE/PATH_RESPONSE).
 
@@ -123,7 +125,7 @@ Every release must pass these gates before the version tag is applied:
 - [ ] Server can receive Initial, send Retry, accept valid token, complete handshake.
 - [ ] Anti-amplification limit enforced: ≤ 3x bytes sent before validation.
 - [ ] All 22 frame types round-trip through parser/serializer.
-- [ ] Connection state machine transitions match [QUIC_STREAMS_SPEC.md §2.1](specs/QUIC_STREAMS_SPEC.md#21-connection-lifecycle).
+- [ ] Connection state machine transitions match [QUIC_STREAMS_SPEC.md §2.1](doc/specs/QUIC_STREAMS_SPEC.md#21-connection-lifecycle).
 
 **Interop Milestone**:
 - [ ] Handshake completes against `quic-go` echo server (dockerized).
@@ -138,10 +140,10 @@ Every release must pass these gates before the version tag is applied:
 **Depends On**: v0.1.0-alpha.2
 
 **Deliverables**:
-- `lib/src/stream.dart` — Stream state machine, ID allocation, bidirectional and unidirectional streams.
-- `lib/src/flow_control.dart` — MAX_DATA, MAX_STREAM_DATA enforcement; WINDOW_UPDATE generation.
-- `lib/src/early_data.dart` — 0-RTT key derivation, session ticket storage, `isEarlyData` API marking.
-- `lib/src/migration.dart` — Connection ID rotation, NEW_CONNECTION_ID, RETIRE_CONNECTION_ID, path validation.
+- `lib/src/streams/` — Stream state machine, ID allocation, bidirectional and unidirectional streams.
+- `lib/src/streams/flow_controller.dart` — MAX_DATA, MAX_STREAM_DATA enforcement; WINDOW_UPDATE generation.
+- `lib/src/crypto/tls/session_ticket_store.dart` — 0-RTT key derivation, session ticket storage, `isEarlyData` API marking.
+- `lib/src/connection/migration_helper.dart` — Connection ID rotation, NEW_CONNECTION_ID, RETIRE_CONNECTION_ID, path validation.
 
 **API Surface (First Public)**:
 ```dart
@@ -157,7 +159,7 @@ export 'src/quic_configuration.dart' show QuicConfiguration;
 - [ ] Flow control prevents sender from exceeding peer's MAX_STREAM_DATA.
 - [ ] 0-RTT data is marked `isEarlyData == true` and is replayable by design.
 - [ ] Connection migration to new IP/port completes with PATH_CHALLENGE/PATH_RESPONSE.
-- [ ] Stateless reset token generation matches [SECURITY_SPEC.md §2.8.2](specs/SECURITY_SPEC.md#282-stateless-reset).
+- [ ] Stateless reset token generation matches [SECURITY_SPEC.md §2.8.2](doc/specs/SECURITY_SPEC.md#282-stateless-reset).
 
 **Interop Milestone**:
 - [ ] Stream data round-trip against `quic-go` (1 MB transfer).
@@ -172,9 +174,7 @@ export 'src/quic_configuration.dart' show QuicConfiguration;
 **Depends On**: v0.2.0-alpha
 
 **Deliverables**:
-- `lib/src/recovery/` — RTT estimator, loss detection (packet threshold + time threshold), PTO scheduler.
-- `lib/src/congestion/new_reno.dart` — NewReno congestion control (per ADR-002: NewReno before CUBIC).
-- `lib/src/ack.dart` — ACK frame generation with ACK ranges, delayed ACK strategy.
+- `lib/src/recovery/` — RTT estimator, loss detection (packet threshold + time threshold), PTO scheduler, NewReno congestion control (per ADR-002), and ACK frame generation.
 - Packet number spaces (Initial, Handshake, Application Data) tracked independently.
 
 **API Surface**:
@@ -207,7 +207,7 @@ export 'src/quic_configuration.dart' show QuicConfiguration;
 **Depends On**: v0.3.0-alpha
 
 **Deliverables**:
-- `lib/src/http3/` — HTTP/3 frame parser (HEADERS, DATA, SETTINGS, GOAWAY, PRIORITY_UPDATE per [HTTP3_SPEC.md](specs/HTTP3_SPEC.md)).
+- `lib/src/http3/` — HTTP/3 frame parser (HEADERS, DATA, SETTINGS, GOAWAY, PRIORITY_UPDATE per [HTTP3_SPEC.md](doc/specs/HTTP3_SPEC.md)).
 - `lib/src/http3/client.dart` — `Http3Client` with `connect()`, `send()`, `get()`, `post()`.
 - `lib/src/qpack/` — QPACK encoder/decoder with static table (99 entries), dynamic table, encoder/decoder instructions.
 - `lib/src/http3/settings.dart` — SETTINGS frame negotiation.
@@ -301,7 +301,7 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 - [ ] DCUtR cuts over from relayed to direct connection within 5 seconds (simulated NAT).
 - [ ] CUBIC throughput exceeds NewReno by ≥ 10% on high-BDP simulated link.
 - [ ] Multistream-select negotiates `/ipfs/kad/1.0.0` successfully.
-- [ ] Self-signed certificate generation follows [LIBP2P_QUIC_SPEC.md §2.3](specs/LIBP2P_QUIC_SPEC.md#23-tls-13-peer-authentication).
+- [ ] Self-signed certificate generation follows [LIBP2P_QUIC_SPEC.md §2.3](doc/specs/LIBP2P_QUIC_SPEC.md#23-tls-13-peer-authentication).
 
 **Interop Milestone**:
 - [ ] Connect to Kubo (go-ipfs) node via `/quic-v1` multiaddr.
@@ -321,7 +321,7 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 - `dartdoc` generated with 100% public API coverage.
 - Breaking change inventory published in `CHANGELOG.md`.
 - `dart_ipfs` integration contract validated: compile `dart_ipfs` against `dart_quic` v0.7.0-beta with zero breaking changes.
-- Transport parameter validation hardened: all 17 core parameters + extensions validated per [QUIC_TRANSPORT_PARAMETERS_SPEC.md](specs/QUIC_TRANSPORT_PARAMETERS_SPEC.md).
+- Transport parameter validation hardened: all 17 core parameters + extensions validated per [QUIC_TRANSPORT_PARAMETERS_SPEC.md](doc/specs/QUIC_TRANSPORT_PARAMETERS_SPEC.md).
 
 **API Surface**: Frozen. Only non-breaking additions allowed.
 
@@ -343,9 +343,9 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 **Depends On**: v0.7.0-beta
 
 **Deliverables**:
-- `test/fuzz/` — Fuzzing harnesses for all 12 targets in [FUZZING_SPEC.md](specs/FUZZING_SPEC.md).
+- `test/fuzz/` — Fuzzing harnesses for all 12 targets in [FUZZING_SPEC.md](doc/specs/FUZZING_SPEC.md).
 - `test/security/` — STRIDE-mapped penetration tests.
-- External security audit commissioned (per [SECURITY_SPEC.md §2.13](specs/SECURITY_SPEC.md#213-supply-chain-security)).
+- External security audit commissioned (per [SECURITY_SPEC.md §2.13](doc/specs/SECURITY_SPEC.md#213-supply-chain-security)).
 - OSS-Fuzz integration submitted (if accepted by Google).
 - CVE monitoring enabled via Dependabot/OSV-Scanner.
 - All findings from security audit triaged: critical/high fixed, medium/low documented with mitigations.
@@ -371,10 +371,10 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 - `benchmark/` — Micro-benchmarks for varint encode, frame parse, crypto ops, stream throughput.
 - `benchmark/` — Macro-benchmarks: HTTP/3 file download, WebTransport datagram flood, libp2p DHT query.
 - Performance regression CI gate: any PR that regresses benchmarks by > 5% is blocked.
-- Isolate-per-connection architecture tuned per [ADR-007](decisions/ADR-007_Isolate_per_Connection_Architecture.md).
+- Isolate-per-connection architecture tuned per [ADR-007](doc/decisions/ADR-007_Isolate_per_Connection_Architecture.md).
 - Memory profiling: no leaks detected in 24-hour soak test.
 
-**Targets** (from [PERFORMANCE_BENCHMARKING.md](specs/PERFORMANCE_BENCHMARKING.md)):
+**Targets** (from [PERFORMANCE_BENCHMARKING.md](doc/specs/PERFORMANCE_BENCHMARKING.md)):
 | Metric | Target |
 |---|---|
 | VarInt encode/decode | < 50 ns/op |
@@ -559,13 +559,13 @@ After the API freeze:
 
 ## 9. References
 
-- [ROADMAP.md](specs/ROADMAP.md) — Specification-phase deliverables (Phase 0).
-- [VERSIONING_POLICY.md](specs/VERSIONING_POLICY.md) — SemVer rules, promotion criteria, backport policy.
-- [SECURITY_SPEC.md](specs/SECURITY_SPEC.md) — Threat model, STRIDE analysis, security requirements.
-- [PERFORMANCE_BENCHMARKING.md](specs/PERFORMANCE_BENCHMARKING.md) — Benchmark methodology and targets.
-- [FUZZING_SPEC.md](specs/FUZZING_SPEC.md) — Fuzz targets, harness design, CI integration.
-- [DART_API_SPEC.md](specs/DART_API_SPEC.md) — Public API surface definitions.
-- [ADR-001](decisions/ADR-001_Pure_Dart_No_FFI.md) — Pure-Dart constraint.
-- [ADR-002](decisions/ADR-002_NewReno_Before_CUBIC.md) — Congestion control ordering.
-- [ADR-004](decisions/ADR-004_Cryptography_Primary_Crypto_Backend.md) — Crypto backend selection.
-- [ADR-007](decisions/ADR-007_Isolate_per_Connection_Architecture.md) — Isolate architecture.
+- [ROADMAP.md](doc/specs/ROADMAP.md) — Specification-phase deliverables (Phase 0).
+- [VERSIONING_POLICY.md](doc/specs/VERSIONING_POLICY.md) — SemVer rules, promotion criteria, backport policy.
+- [SECURITY_SPEC.md](doc/specs/SECURITY_SPEC.md) — Threat model, STRIDE analysis, security requirements.
+- [PERFORMANCE_BENCHMARKING.md](doc/specs/PERFORMANCE_BENCHMARKING.md) — Benchmark methodology and targets.
+- [FUZZING_SPEC.md](doc/specs/FUZZING_SPEC.md) — Fuzz targets, harness design, CI integration.
+- [DART_API_SPEC.md](doc/specs/DART_API_SPEC.md) — Public API surface definitions.
+- [ADR-001](doc/decisions/ADR-001_Pure_Dart_No_FFI.md) — Pure-Dart constraint.
+- [ADR-002](doc/decisions/ADR-002_NewReno_Before_CUBIC.md) — Congestion control ordering.
+- [ADR-004](doc/decisions/ADR-004_Cryptography_Primary_Crypto_Backend.md) — Crypto backend selection.
+- [ADR-007](doc/decisions/ADR-007_Isolate_per_Connection_Architecture.md) — Isolate architecture.

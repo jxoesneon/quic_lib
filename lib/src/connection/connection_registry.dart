@@ -1,3 +1,5 @@
+import '../utils/hex.dart';
+
 /// A registry that maps destination connection IDs to connection objects.
 ///
 /// Uses hex-encoded keys for fast string-based lookup in a [Map].
@@ -20,7 +22,7 @@ class ConnectionRegistry {
         'CID length must be $minCidLength..$maxCidLength, got ${connectionId.length}',
       );
     }
-    final key = _encodeKey(connectionId);
+    final key = bytesToHex(connectionId);
     if (!_registry.containsKey(key) && _registry.length >= maxConnections) {
       throw StateError('ConnectionRegistry: max connections ($maxConnections) reached');
     }
@@ -31,26 +33,15 @@ class ConnectionRegistry {
   ///
   /// Returns `null` if no mapping exists.
   Object? lookup(List<int> connectionId) {
-    return _registry[_encodeKey(connectionId)];
+    return _registry[bytesToHex(connectionId)];
   }
 
   /// Removes the mapping for [connectionId] if it exists.
   void unregister(List<int> connectionId) {
-    _registry.remove(_encodeKey(connectionId));
+    _registry.remove(bytesToHex(connectionId));
   }
 
   /// Returns the number of registered connection ID mappings.
   int get length => _registry.length;
 
-  // --------------------------------------------------------------------------
-  // Internal helpers
-  // --------------------------------------------------------------------------
-
-  String _encodeKey(List<int> bytes) {
-    final buffer = StringBuffer();
-    for (final b in bytes) {
-      buffer.write(b.toRadixString(16).padLeft(2, '0'));
-    }
-    return buffer.toString();
-  }
 }

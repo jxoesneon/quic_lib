@@ -6,19 +6,21 @@ import 'package:dart_quic/src/crypto/tls/certificate_chain.dart';
 import 'package:dart_quic/src/crypto/tls/certificate_message.dart';
 import 'package:dart_quic/src/crypto/tls/x509_parser.dart';
 
-/// A scaffold for TLS certificate chain verification.
+/// TLS certificate chain verification.
 ///
-/// **This is intentionally a stub.** Real certificate verification requires:
-/// * ASN.1 / X.509 parsing of [CertificateEntry.certData] to extract
-///   Subject, Issuer, validity dates, public keys, and signature values.
+/// Performs chain validation including:
+/// * ASN.1 / X.509 parsing of [CertificateEntry.certData].
 /// * Checking validity dates (NotBefore / NotAfter).
 /// * Name chaining (Subject of cert i == Issuer of cert i-1).
-/// * CRL or OCSP revocation checks.
-/// * Proper handling of intermediate certificate stores and path building.
+/// * Signature verification against issuer public keys.
 ///
-/// The class is structured so that once those pieces are wired in the
-/// loop below can be swapped for real logic without changing the public
-/// surface.
+/// Note: CRL/OCSP revocation checks are not implemented in this version.
+class _SimplePublicKey implements PublicKey {
+  @override
+  final List<int> bytes;
+  _SimplePublicKey(this.bytes);
+}
+
 class CertificateVerifier {
   final CryptoBackend _backend;
 
@@ -33,16 +35,13 @@ class CertificateVerifier {
   /// Returns `true` if every certificate's signature can be verified by the
   /// public key of the next certificate, and the last certificate's signature
   /// can be verified by [trustedRoot].
-  ///
-  /// **Scaffold behaviour:** always returns `true` so that callers can
-  /// integrate the API now and opt-in to real verification later.
-  bool verifyCertificateChain(
+  Future<bool> verifyCertificateChain(
     List<CertificateMessage> chain,
     PublicKey trustedRoot,
-  ) {
-    // Empty chain is valid in this scaffold (caller may have no certs).
+  ) async {
+    // SECURITY: An empty chain is never valid — reject immediately.
     if (chain.isEmpty) {
-      return true;
+      return false;
     }
 
     // Parse each raw certificate and build a CertificateChain for validation.
@@ -63,16 +62,17 @@ class CertificateVerifier {
       // Choose the public key that should have signed this certificate.
       final PublicKey issuerKey;
       if (i + 1 < chain.length) {
-        issuerKey = trustedRoot; // placeholder so the code compiles
+        final nextCert = chain[i + 1];
+        final nextEntry = nextCert.entries.first;
+        final nextInfo = parseCertificate(nextEntry.certData);
+        issuerKey = _SimplePublicKey(nextInfo.subjectPublicKey);
       } else {
         issuerKey = trustedRoot;
       }
 
-      // In a real implementation we would:
-      // 1. Parse certData as X.509Certificate.
-      // 2. Verify the TBSCertificate signature with issuerKey.
-      // 3. Check name chaining and key usage.
-      _verifyOneCertificate(cert, issuerKey);
+      if (!await _verifyOneCertificate(cert, issuerKey)) {
+        return false;
+      }
     }
 
     return true;
@@ -109,24 +109,15 @@ class CertificateVerifier {
     }
   }
 
-  /// Placeholder for per-certificate verification.
+  /// Verifies each entry in [cert] using [issuerKey].
   ///
-  /// In a real implementation this would parse [cert], extract the
-  /// signature algorithm and value from the X.509 structure, and invoke
-  /// [verifySignature] with the appropriate public key.
-  bool _verifyOneCertificate(CertificateMessage cert, PublicKey issuerKey) {
-    // Scaffold: iterate over each entry, parse as X.509, and verify the
-    // signature.  Non-DER data is silently accepted so that test stubs
-    // continue to work.
+  /// Parses the entry's certData as X.509 and delegates signature
+  /// verification to [verifyX509Signature].
+  Future<bool> _verifyOneCertificate(CertificateMessage cert, PublicKey issuerKey) async {
     for (final entry in cert.entries) {
-      try {
-        final x509 = parseX509(entry.certData);
-        if (!verifyX509Signature(x509, issuerKey, _backend)) {
-          return false;
-        }
-      } on FormatException {
-        // Scaffold fallback: accept non-DER test data.
-        continue;
+      final x509 = parseX509(entry.certData);
+      if (!await verifyX509Signature(x509, issuerKey, _backend)) {
+        return false;
       }
     }
     return true;

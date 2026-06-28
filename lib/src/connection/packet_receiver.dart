@@ -104,16 +104,39 @@ class PacketReceiver {
 
   static int _headerLength(PacketHeader header) {
     if (header is LongHeader) {
-      // Version (4) + DCID len (1) + DCID + SCID len (1) + SCID
-      var len = 6 + header.destinationConnectionId.length + header.sourceConnectionId.length;
+      // First byte (1) + Version (4) + DCID len (1) + DCID + SCID len (1) + SCID
+      var len = 7 + header.destinationConnectionId.length + header.sourceConnectionId.length;
       if (header.isInitial) {
-        // Token length + token (simplified: assume no token for now)
+        // Token length varint + token bytes
+        final token = header.token;
+        if (token != null && token.isNotEmpty) {
+          len += _varIntLength(token.length) + token.length;
+        } else {
+          len += 1; // zero-length varint
+        }
       }
-      // Length varint + packet number (simplified)
-      return len + 4;
+      // Length varint (worst case 2 bytes for small packets) + packet number
+      final pnLen = _pnLengthFromValue(header.packetNumber);
+      final payloadLen = pnLen + header.payload.length;
+      len += _varIntLength(payloadLen) + pnLen;
+      return len;
     } else if (header is ShortHeader) {
       return 1 + header.destinationConnectionId.length + header.packetNumberLength;
     }
     return 0;
+  }
+
+  static int _varIntLength(int value) {
+    if (value <= 63) return 1;
+    if (value <= 16383) return 2;
+    if (value <= 1073741823) return 4;
+    return 8;
+  }
+
+  static int _pnLengthFromValue(int packetNumber) {
+    if (packetNumber <= 0xFF) return 1;
+    if (packetNumber <= 0xFFFF) return 2;
+    if (packetNumber <= 0xFFFFFF) return 3;
+    return 4;
   }
 }

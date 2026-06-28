@@ -12,13 +12,13 @@ class PacketSender {
   static const int maxUdpPayloadSize = 1200;
 
   /// Build a packet for a given space.
-  static Uint8List buildPacket({
+  static Future<Uint8List> buildPacket({
     required List<Frame> frames,
     required PacketNumberSpace space,
     required List<int> dcid,
     List<int>? scid,
     required int packetNumber,
-  }) {
+  }) async {
     PacketHeader header;
     switch (space) {
       case PacketNumberSpace.initial:

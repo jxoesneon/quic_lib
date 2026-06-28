@@ -79,6 +79,11 @@ class CoalescedPacket {
       pos += tokenLen;
     }
 
+    // Retry packets do not have a Length field; consume the remainder.
+    if (packetType == 0x03) {
+      return bytes.length;
+    }
+
     // Length field
     if (pos + 1 > bytes.length) return offset;
     final length = _decodeVarInt(bytes, pos);

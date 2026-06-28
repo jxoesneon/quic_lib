@@ -43,7 +43,7 @@ void main() {
         payload: const [],
         token: null,
       );
-      final initialPacket = PacketBuilder.build(initialHeader, [PaddingFrame(length: 4)]);
+      final initialPacket = await PacketBuilder.build(initialHeader, [PaddingFrame(length: 4)]);
       socketA.send(initialPacket, InternetAddress.loopbackIPv4, socketB.localPort);
 
       // ------------------------------------------------------------------
@@ -107,7 +107,7 @@ void main() {
         payload: const [],
         token: retryToken,
       );
-      final resentPacket = PacketBuilder.build(resentHeader, [PaddingFrame(length: 4)]);
+      final resentPacket = await PacketBuilder.build(resentHeader, [PaddingFrame(length: 4)]);
       socketA.send(resentPacket, InternetAddress.loopbackIPv4, socketB.localPort);
 
       // ------------------------------------------------------------------

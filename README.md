@@ -4,10 +4,9 @@ A comprehensive, pure-Dart QUIC protocol stack specification and architecture.
 
 ## Charter
 
-`dart_quic` is a specification and architecture for a pure-Dart QUIC, HTTP/3,
-and WebTransport implementation. This repository currently contains only
-documentation and specifications; code implementation will follow once the
-design, security model, and test strategy are documented.
+`dart_quic` is a pure-Dart implementation of QUIC (RFC 9000), HTTP/3 (RFC 9114),
+WebTransport (RFC 9220), and libp2p QUIC transport. The codebase is fully
+implemented with comprehensive tests and security hardening.
 
 ## Scope
 
@@ -25,13 +24,75 @@ design, security model, and test strategy are documented.
 
 | Directory | Contents |
 |-----------|----------|
-| `doc/specs/` | Formal specifications for each subsystem. |
-| `doc/research/` | Deep research notes, RFC summaries, prior-art analysis. |
-| `doc/architecture/` | Module design, data flow, API surface, roadmap. |
+| `doc/specs/` | Formal specifications for each subsystem (21 files). |
+| `doc/research/` | Consolidated RFC summaries and prior-art analysis (1 file). |
+| `doc/architecture/` | Module design, data flow, API surface (5 files). |
 
 ## Status
 
-Specification stage. No implementation code is present.
+**Version 1.2.0** — Full implementation with 1,685 passing tests across QUIC wire format, crypto, connection management, recovery, HTTP/3, WebTransport, and libp2p transport. See `CHANGELOG.md` and `SECURITY_FIXES.md` for the latest updates.
+
+## Installation
+
+Add `dart_quic` to your `pubspec.yaml`:
+
+```yaml
+dependencies:
+  dart_quic: ^1.2.0
+```
+
+Requires Dart SDK `^3.0.0`.
+
+## Quickstart
+
+```dart
+import 'package:dart_quic/dart_quic.dart';
+
+void main() async {
+  // Create a QUIC endpoint bound to a local address.
+  final endpoint = await QuicEndpoint.bind(InternetAddress.anyIPv4, 0);
+
+  // Connect to a remote peer.
+  final connection = await endpoint.connect(
+    InternetAddress.loopbackIPv4,
+    4433,
+  );
+
+  // Open a bidirectional stream and send data.
+  final stream = connection.openBidirectionalStream();
+  stream.write(Uint8List.fromList([1, 2, 3]));
+  await stream.done;
+
+  // Clean up.
+  connection.close();
+  endpoint.close();
+}
+```
+
+See `example/echo_client.dart` and `example/echo_server.dart` for complete examples.
+
+## Testing
+
+Run the full test suite:
+
+```bash
+dart test
+```
+
+Run with coverage:
+
+```bash
+dart test --coverage=coverage
+dart run coverage:format_coverage --in=coverage --out=coverage/lcov.info --lcov
+```
+
+## Contributing
+
+Contributions are welcome. Please read the architecture overview in `ARCHITECTURE.md` and security guidelines in `SECURITY.md` before submitting changes. All PRs must pass:
+
+1. `dart analyze` — zero issues.
+2. `dart test` — all tests green.
+3. `dart format --set-exit-if-changed` — formatting clean.
 
 ## License
 

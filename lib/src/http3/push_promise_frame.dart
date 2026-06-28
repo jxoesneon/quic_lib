@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:dart_quic/src/http3/frame_types.dart';
+import 'package:dart_quic/src/utils/collections.dart';
 import 'package:dart_quic/src/wire/varint.dart';
 
 /// HTTP/3 PUSH_PROMISE frame payload.
@@ -64,16 +65,9 @@ class Http3PushPromiseFrame {
   bool operator ==(Object other) =>
       other is Http3PushPromiseFrame &&
       other.pushId == pushId &&
-      _listsEqual(other.encodedFieldSection, encodedFieldSection);
+      listEquals(other.encodedFieldSection, encodedFieldSection);
 
   @override
   int get hashCode => Object.hash(pushId, Object.hashAll(encodedFieldSection));
 
-  static bool _listsEqual(List<int> a, List<int> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
 }

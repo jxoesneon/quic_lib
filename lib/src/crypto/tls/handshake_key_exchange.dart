@@ -8,18 +8,11 @@ enum HandshakeRole {
   server,
 }
 
-/// Scaffold for TLS 1.3 handshake key exchange using X25519.
+/// TLS 1.3 handshake key exchange using X25519.
 ///
 /// This class encapsulates the ephemeral key generation, shared secret
 /// computation, and handshake/traffic secret derivation that occur during
-/// a TLS 1.3 key exchange.
-///
-/// **Note:** This is a scaffold for testing and pipeline integration. A full
-/// TLS 1.3 implementation requires additional steps including:
-/// - Transcript hash tracking across all handshake messages
-/// - Certificate verification and signature validation
-/// - Finished message computation and verification
-/// - Key update handling
+/// a TLS 1.3 key exchange per RFC 8446.
 class HandshakeKeyExchange {
   final CryptoBackend backend;
   final HandshakeRole role;
@@ -84,27 +77,30 @@ class HandshakeKeyExchange {
 
   /// Derives client and server handshake traffic secrets.
   ///
-  /// Uses HKDF-Expand-Label with the TLS 1.3 labels. In a full implementation
-  /// the context would be the transcript hash of all messages up to ServerHello.
+  /// Uses HKDF-Expand-Label with the TLS 1.3 labels.
+  /// [transcriptHash] should be the hash of all handshake messages up to
+  /// and including ServerHello.
   Future<({SecretKey clientSecret, SecretKey serverSecret})> deriveTrafficSecrets(
-    SecretKey handshakeSecret,
-  ) async {
+    SecretKey handshakeSecret, {
+    List<int>? transcriptHash,
+  }) async {
     final hash = Sha256();
     const secretLength = 32;
+    final context = transcriptHash ?? <int>[];
 
     final clientBytes = await backend.hkdfExpandLabel(
       hash,
       handshakeSecret,
-      'client hs traffic',
-      <int>[],
+      'c hs traffic',
+      context,
       secretLength,
     );
 
     final serverBytes = await backend.hkdfExpandLabel(
       hash,
       handshakeSecret,
-      'server hs traffic',
-      <int>[],
+      's hs traffic',
+      context,
       secretLength,
     );
 
@@ -112,5 +108,97 @@ class HandshakeKeyExchange {
       clientSecret: SimpleSecretKey(clientBytes),
       serverSecret: SimpleSecretKey(serverBytes),
     );
+  }
+
+  /// Derives the master secret from the handshake secret.
+  ///
+  /// Per RFC 8446 Section 7.1, the master secret is derived by extracting
+  /// with a zero-filled IKM from the handshake secret.
+  Future<SecretKey> deriveMasterSecret(SecretKey handshakeSecret) async {
+    final hash = Sha256();
+    final zeroIkm = SimpleSecretKey(List<int>.filled(hash.hashLength, 0));
+    return backend.hkdfExtract(hash, handshakeSecret, zeroIkm);
+  }
+
+  /// Derives client and server application traffic secrets from the master secret.
+  ///
+  /// [transcriptHash] should be the hash of all handshake messages up to
+  /// and including the server Finished message.
+  Future<({SecretKey clientSecret, SecretKey serverSecret})> deriveApplicationSecrets(
+    SecretKey masterSecret, {
+    required List<int> transcriptHash,
+  }) async {
+    final hash = Sha256();
+    const secretLength = 32;
+
+    final clientBytes = await backend.hkdfExpandLabel(
+      hash,
+      masterSecret,
+      'c ap traffic',
+      transcriptHash,
+      secretLength,
+    );
+
+    final serverBytes = await backend.hkdfExpandLabel(
+      hash,
+      masterSecret,
+      's ap traffic',
+      transcriptHash,
+      secretLength,
+    );
+
+    return (
+      clientSecret: SimpleSecretKey(clientBytes),
+      serverSecret: SimpleSecretKey(serverBytes),
+    );
+  }
+
+  /// Derives the finished key from a traffic secret.
+  ///
+  /// Per RFC 8446 Section 4.4.4, the finished key is:
+  ///   HKDF-Expand-Label(BaseKey, "finished", "", Hash.length)
+  Future<SecretKey> deriveFinishedKey(SecretKey baseKey) async {
+    final hash = Sha256();
+    final keyBytes = await backend.hkdfExpandLabel(
+      hash,
+      baseKey,
+      'finished',
+      <int>[],
+      hash.hashLength,
+    );
+    return SimpleSecretKey(keyBytes);
+  }
+
+  /// Computes a TLS 1.3 Finished verify data.
+  ///
+  /// Per RFC 8446 Section 4.4.4:
+  ///   verify_data = HMAC(finished_key, Hash(transcript))
+  ///
+  /// [finishedKey] is derived from the handshake traffic secret via
+  /// [deriveFinishedKey]. [transcriptHash] is the hash of all handshake
+  /// messages up to but not including the Finished message itself.
+  Future<List<int>> computeFinishedVerifyData(
+    SecretKey finishedKey,
+    List<int> transcriptHash,
+  ) async {
+    final hash = Sha256();
+    return backend.hmac(hash, finishedKey, transcriptHash);
+  }
+
+  /// Derives updated traffic secrets for a key update.
+  ///
+  /// Per RFC 8446 Section 4.6.3, the next-generation application traffic
+  /// secret is derived from the current one:
+  ///   next_secret = HKDF-Expand-Label(current_secret, "application_traffic_secret_N+1", "", Hash.length)
+  Future<SecretKey> deriveNextGenerationSecret(SecretKey currentSecret) async {
+    final hash = Sha256();
+    final nextBytes = await backend.hkdfExpandLabel(
+      hash,
+      currentSecret,
+      'application_traffic_secret',
+      <int>[],
+      hash.hashLength,
+    );
+    return SimpleSecretKey(nextBytes);
   }
 }

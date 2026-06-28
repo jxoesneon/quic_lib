@@ -41,7 +41,9 @@ class HeaderProtection {
     }
 
     // Short header: packet-number length is masked in the first byte,
-    // so we try all four possibilities and verify by re-applying.
+    // so we try all four possibilities.  Per RFC 9001 Section 5.4.2, the
+    // correct pnLen is the one where the lower 2 bits of the unprotected
+    // first byte match the guessed pnLen.
     Uint8List? bestCandidate;
     for (var pnLen = 1; pnLen <= 4; pnLen++) {
       final pnOffset = header.length - pnLen;
@@ -50,12 +52,9 @@ class HeaderProtection {
         continue;
       }
       final candidate = _applyMask(header, payload, pnOffset, pnLen, isLong);
-      // Verify round-trip.
-      final reprotected = apply(candidate, payload);
-      if (_listEquals(reprotected, header)) {
+      final actualPnLen = (candidate[0] & 0x03) + 1;
+      if (actualPnLen == pnLen) {
         bestCandidate = candidate;
-        // Prefer the smallest valid pnLen in the astronomically unlikely
-        // case of multiple matches.
         break;
       }
     }
@@ -64,6 +63,16 @@ class HeaderProtection {
       throw StateError('Unable to remove short header protection');
     }
     return bestCandidate;
+  }
+
+  /// Remove header protection from a short header using a specific [pnLen].
+  ///
+  /// Unlike [remove], this does not try all four pnLen possibilities.
+  /// The caller is responsible for verifying that the unprotected header's
+  /// lower 2 bits match [pnLen].
+  Uint8List removeShortHeader(Uint8List header, Uint8List payload, int pnLen) {
+    final pnOffset = header.length - pnLen;
+    return _applyMask(header, payload, pnOffset, pnLen, false);
   }
 
   Uint8List _applyMask(
@@ -196,11 +205,4 @@ class HeaderProtection {
 
   static int _varIntLength(int firstByte) => 1 << (firstByte >> 6);
 
-  static bool _listEquals(List<int> a, List<int> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
 }

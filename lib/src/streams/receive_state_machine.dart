@@ -1,10 +1,21 @@
 /// QUIC receive-side stream states per RFC 9000 Section 3.2.
 enum ReceiveStreamState {
+  /// Receiving data; final size not yet known.
   recv,
+
+  /// FIN received or RESET_STREAM received; final size is now known.
   sizeKnown,
+
+  /// All data up to final size has been received.
   dataReceived,
+
+  /// Application has read all data up to final size.
   dataRead,
+
+  /// RESET_STREAM frame received from peer.
   resetReceived,
+
+  /// Application has read the reset indication.
   resetRead,
 }
 

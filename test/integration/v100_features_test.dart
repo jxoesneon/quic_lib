@@ -152,6 +152,7 @@ void main() {
 
       final dcid = List<int>.filled(8, 0xAB);
       final future = conn.probeNewPath(dcid);
+      await Future<void>.delayed(Duration.zero);
 
       // The future should be pending until a PATH_RESPONSE is received.
       expect(conn.isProbingPath, isTrue);
@@ -161,7 +162,7 @@ void main() {
   });
 
   group('PacketReceiver v2 scaffold', () {
-    test('processes a v2 Initial packet the same way as v1', () {
+    test('processes a v2 Initial packet the same way as v1', () async {
       final header = LongHeader(
         version: QuicVersions.v2,
         packetType: LongHeader.typeInitial,
@@ -171,7 +172,7 @@ void main() {
         token: const [],
       );
       final frames = <Frame>[PingFrame(), CryptoFrame(offset: 0, data: [0x01])];
-      final packet = PacketBuilder.build(header, frames);
+      final packet = await PacketBuilder.build(header, frames);
 
       final result = PacketReceiver.processPacket(packet);
       expect(result, isNotNull);

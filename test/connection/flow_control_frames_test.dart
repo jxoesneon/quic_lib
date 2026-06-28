@@ -27,7 +27,7 @@ QuicConnection _createConnection() {
   );
 }
 
-Uint8List _buildDatagram(List<Frame> frames) {
+Future<Uint8List> _buildDatagram(List<Frame> frames) async {
   final payload = Uint8List.fromList(frames.expand((f) => f.serialize()).toList());
   final header = ShortHeader(
     destinationConnectionId: Uint8List(8),
@@ -35,27 +35,27 @@ Uint8List _buildDatagram(List<Frame> frames) {
     packetNumberLength: 1,
     payload: payload,
   );
-  return header.serialize();
+  return await header.serialize();
 }
 
 void main() {
   group('Flow control frame dispatch', () {
-    test('MAX_DATA updates connection flow controller limit', () {
+    test('MAX_DATA updates connection flow controller limit', () async {
       final conn = _createConnection();
       expect(conn.connectionFlowController.availableWindow, equals(65536));
 
-      final datagram = _buildDatagram([MaxDataFrame(maxData: 100000)]);
+      final datagram = await _buildDatagram([MaxDataFrame(maxData: 100000)]);
       conn.processIncomingDatagram(datagram);
 
       expect(conn.connectionFlowController.availableWindow, equals(100000));
     });
 
-    test('MAX_STREAM_DATA updates stream flow controller via StreamManager', () {
+    test('MAX_STREAM_DATA updates stream flow controller via StreamManager', () async {
       final conn = _createConnection();
       const streamId = 0;
 
       // Create the stream by delivering a STREAM frame.
-      final createDatagram = _buildDatagram([
+      final createDatagram = await _buildDatagram([
         StreamFrame(streamId: streamId, data: Uint8List(0), hasExplicitLength: true),
       ]);
       conn.processIncomingDatagram(createDatagram);
@@ -63,7 +63,7 @@ void main() {
       final initialWindow = conn.streamManager.getSendFlowController(streamId)!.availableWindow;
       expect(initialWindow, equals(65536));
 
-      final updateDatagram = _buildDatagram([
+      final updateDatagram = await _buildDatagram([
         MaxStreamDataFrame(streamId: streamId, maxStreamData: 200000),
       ]);
       conn.processIncomingDatagram(updateDatagram);
@@ -78,19 +78,19 @@ void main() {
       expect(conn.connectionFlowController, isA<FlowController>());
     });
 
-    test('multiple MAX_DATA frames compound the limit', () {
+    test('multiple MAX_DATA frames compound the limit', () async {
       final conn = _createConnection();
       expect(conn.connectionFlowController.availableWindow, equals(65536));
 
-      conn.processIncomingDatagram(_buildDatagram([MaxDataFrame(maxData: 100000)]));
+      conn.processIncomingDatagram(await _buildDatagram([MaxDataFrame(maxData: 100000)]));
       expect(conn.connectionFlowController.availableWindow, equals(100000));
 
       // Lower limit should be ignored.
-      conn.processIncomingDatagram(_buildDatagram([MaxDataFrame(maxData: 50000)]));
+      conn.processIncomingDatagram(await _buildDatagram([MaxDataFrame(maxData: 50000)]));
       expect(conn.connectionFlowController.availableWindow, equals(100000));
 
       // Higher limit should update.
-      conn.processIncomingDatagram(_buildDatagram([MaxDataFrame(maxData: 150000)]));
+      conn.processIncomingDatagram(await _buildDatagram([MaxDataFrame(maxData: 150000)]));
       expect(conn.connectionFlowController.availableWindow, equals(150000));
     });
   });

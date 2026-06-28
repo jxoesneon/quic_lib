@@ -9,7 +9,7 @@ rfc_basis:
   - "RFC 9001 Section 9"
   - "RFC 8446"
 dependencies:
-  - "ROADMAP.md"
+  - "../../ROADMAP.md"
 ---
 
 # Security Specification
@@ -398,7 +398,7 @@ The following maps QUIC/HTTP3/WebTransport-specific threats to the STRIDE catego
 
 ## Used By
 
-- [ROADMAP.md](ROADMAP.md) — Lists SECURITY_SPEC as a formal specification deliverable.
+- [ROADMAP.md](../../ROADMAP.md) — Lists SECURITY_SPEC as a formal specification deliverable.
 ## 5. Testing Strategy
 
 - **Negative tests**: Verify rejection of invalid certificates, expired certs, wrong SNI.

@@ -50,7 +50,7 @@ void main() {
       expect(conn.activeConnectionIdCount, equals(initialCount + 2));
     });
 
-    test('NewConnectionIdFrame reception is wired in _dispatchFrames', () {
+    test('NewConnectionIdFrame reception is wired in _dispatchFrames', () async {
       final conn = _createConnection();
       final cid = List<int>.filled(8, 0xAB);
       final token = List<int>.filled(16, 0xCD);
@@ -61,7 +61,7 @@ void main() {
         statelessResetToken: token,
       );
 
-      final packet = PacketSender.buildPacket(
+      final packet = await PacketSender.buildPacket(
         frames: [frame],
         space: PacketNumberSpace.application,
         dcid: List<int>.filled(8, 0x00),

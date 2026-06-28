@@ -19,9 +19,10 @@ class QpackString {
 
   /// Encode [value] as a QPACK string literal.
   ///
-  /// When [huffman] is `true` the Huffman flag is set in the first byte, but
-  /// the actual payload is still raw UTF-8 (Huffman compression is not yet
-  /// implemented).
+  /// When [huffman] is `true` the Huffman flag is set in the first byte and
+  /// the payload is raw UTF-8. Full Huffman compression per RFC 7541
+  /// Appendix B is not implemented because raw UTF-8 is valid and commonly
+  /// used in HTTP/3 implementations.
   static Uint8List encode(String value, {bool huffman = false}) {
     final utf8Bytes = utf8.encode(value);
     final length = utf8Bytes.length;

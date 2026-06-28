@@ -1,19 +1,18 @@
 import 'dart:typed_data';
 
+import '../crypto/crypto_backend.dart';
+import '../crypto/packet/retry_integrity_tag.dart';
 import 'packet_header.dart';
 import 'quic_versions.dart';
 import 'varint.dart';
 
 /// QUIC v2 long header per RFC 9369.
 ///
-/// This is a scaffold implementation. The real v2 header format needs the exact
-/// bit layout per RFC 9369:
-///   - v1 first byte: 1HF(1) | FixedBit(1) | LongPacketType(2) | TypeSpecific(4)
-///   - v2 first byte: 1HF(1) | FixedBit(1) | Reserved(2) | TypeSpecific(2) | Version(2)
+/// v2 first byte layout:
+///   1HF(1) | FixedBit(1) | Reserved(2) | TypeSpecific(2) | Version(2)
 ///
-/// In v2 the packet type is encoded differently in the first byte (bits 3-2)
-/// and the lower 2 bits of the version field are also carried in the first
-/// byte (bits 1-0).
+/// In v2 the packet type is encoded in bits 3-2 of the first byte and the
+/// lower 2 bits of the version field are carried in bits 1-0.
 class V2LongHeader implements PacketHeader {
   static const int typeInitial = 0x00;
   static const int typeZeroRtt = 0x01;
@@ -27,6 +26,7 @@ class V2LongHeader implements PacketHeader {
   final int packetNumber;
   final List<int> payload;
   final List<int>? token; // Only for Initial
+  final CryptoBackend? backend;
 
   V2LongHeader({
     this.version = QuicVersions.v2,
@@ -36,6 +36,7 @@ class V2LongHeader implements PacketHeader {
     this.packetNumber = 0,
     this.payload = const [],
     this.token,
+    this.backend,
   }) {
     if (packetType < 0 || packetType > 3) {
       throw ArgumentError('Invalid long packet type: $packetType');
@@ -66,7 +67,7 @@ class V2LongHeader implements PacketHeader {
   }
 
   @override
-  Uint8List serialize() {
+  Future<Uint8List> serialize() async {
     final builder = BytesBuilder();
     // First byte: HF=1, FB=1, Reserved(2), TypeSpecific(2), Version(2)
     builder.addByte(_firstByte);
@@ -97,9 +98,18 @@ class V2LongHeader implements PacketHeader {
       builder.add(pnBytes);
       builder.add(payload);
     } else {
-      // Retry: token + integrity tag (16 bytes placeholder)
+      // Retry: token + integrity tag
       builder.add(payload); // payload serves as retry token
-      builder.add(List<int>.filled(16, 0)); // placeholder integrity tag
+      if (backend == null) {
+        throw StateError('backend is required to serialize Retry packets');
+      }
+      final retryPacketWithoutTag = Uint8List.fromList(builder.toBytes());
+      final tag = await RetryIntegrityTag.compute(
+        originalDestinationConnectionId: destinationConnectionId,
+        retryPacketWithoutTag: retryPacketWithoutTag,
+        backend: backend!,
+      );
+      builder.add(tag);
     }
 
     return Uint8List.fromList(builder.toBytes());
@@ -124,9 +134,8 @@ class V2LongHeader implements PacketHeader {
 
   /// Parse a [V2LongHeader] from serialized bytes.
   ///
-  /// This is a scaffold parser for round-trip testing. It assumes the bytes
-  /// were produced by [serialize] and does not perform full header-protection
-  /// removal.
+  /// Parses the full v2 long header structure per RFC 9369.
+  /// Header protection must be removed before calling this method.
   static V2LongHeader parse(Uint8List bytes) {
     if (bytes.isEmpty) throw ArgumentError('Empty packet');
     final firstByte = bytes[0];

@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:dart_quic/src/crypto/packet/space_keys.dart';
 import 'package:dart_quic/src/wire/frame.dart';
+import 'package:dart_quic/src/wire/varint.dart';
 
 /// Full QUIC header protection + AEAD round-trip codec.
 ///
@@ -20,6 +21,9 @@ class ProtectedPacketCodec {
   /// Encrypts the payload of [plaintextPacket] and applies header protection.
   ///
   /// [packetNumber] is the full packet number used for nonce construction.
+  ///
+  /// The caller is responsible for ensuring that long-header packets have
+  /// the correct `Length` field (covering PN + ciphertext including tag).
   Future<Uint8List> protectAndEncrypt(
     Uint8List plaintextPacket,
     int packetNumber,
@@ -118,7 +122,8 @@ class ProtectedPacketCodec {
 
       Uint8List unprotectedHeader;
       try {
-        unprotectedHeader = keys.unprotectHeader(header, payload);
+        unprotectedHeader =
+            keys.headerProtection.removeShortHeader(header, payload, pnLen);
       } catch (_) {
         continue;
       }
@@ -133,10 +138,15 @@ class ProtectedPacketCodec {
         ),
       );
 
-      final plaintext =
-          await keys.decrypt(packetNumber, unprotectedHeader, payload);
-      final frames = _parseFrames(plaintext);
-      return (header: unprotectedHeader, frames: frames);
+      try {
+        final plaintext =
+            await keys.decrypt(packetNumber, unprotectedHeader, payload);
+        final frames = _parseFrames(plaintext);
+        return (header: unprotectedHeader, frames: frames);
+      } catch (_) {
+        // Decrypt failed (likely wrong pnLen guess); try next pnLen.
+        continue;
+      }
     }
 
     return null;
@@ -218,4 +228,46 @@ class ProtectedPacketCodec {
   }
 
   static int _varIntLength(int firstByte) => 1 << (firstByte >> 6);
+
+  /// Patch the `Length` field in a plaintext long-header packet to account
+  /// for the AEAD [tagLength].
+  ///
+  /// Returns a new packet with the updated `Length` varint. Short-header
+  /// packets are returned unchanged.
+  static Uint8List patchLongHeaderLength(Uint8List plaintext, int tagLength) {
+    if ((plaintext[0] & 0x80) == 0) return plaintext;
+
+    // Find the Length field offset by mirroring _computeLongHeaderPnOffset.
+    var offset = 1 + 4;
+    final dcidLen = plaintext[offset];
+    offset += 1 + dcidLen;
+    final scidLen = plaintext[offset];
+    offset += 1 + scidLen;
+    final packetType = (plaintext[0] >> 4) & 0x03;
+    if (packetType == 0x00) {
+      final tokenLen = _readVarInt(plaintext, offset);
+      final tokenLenBytes = _varIntLength(plaintext[offset]);
+      offset += tokenLenBytes + tokenLen;
+    }
+
+    final lengthOffset = offset;
+    final oldLengthBytes = _varIntLength(plaintext[offset]);
+    final oldLength = _readVarInt(plaintext, offset);
+    final newLength = oldLength + tagLength;
+    final newLengthBytes = VarInt.encode(newLength);
+
+    if (newLengthBytes.length == oldLengthBytes) {
+      final result = Uint8List.fromList(plaintext);
+      for (var i = 0; i < newLengthBytes.length; i++) {
+        result[lengthOffset + i] = newLengthBytes[i];
+      }
+      return result;
+    }
+
+    final builder = BytesBuilder();
+    builder.add(plaintext.sublist(0, lengthOffset));
+    builder.add(newLengthBytes);
+    builder.add(plaintext.sublist(lengthOffset + oldLengthBytes));
+    return Uint8List.fromList(builder.toBytes());
+  }
 }

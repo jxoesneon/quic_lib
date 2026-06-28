@@ -39,10 +39,10 @@ void main() {
       );
     });
 
-    test('buildPacket creates and tracks a sent packet', () {
+    test('buildPacket creates and tracks a sent packet', () async {
       conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
       final dcid = conn.cidManager.issueNewId().connectionId;
-      final packet = conn.buildPacket(
+      final packet = await conn.buildPacket(
         space: PacketNumberSpace.initial,
         frames: [CryptoFrame(offset: 0, data: [0x01, 0x00, 0x00, 0x05])],
         dcid: dcid,
@@ -52,14 +52,14 @@ void main() {
       expect(conn.sentPacketTracker.getUnackedPackets(0), isNotEmpty);
     });
 
-    test('processIncomingDatagram dispatches ACK frames to recovery', () {
+    test('processIncomingDatagram dispatches ACK frames to recovery', () async {
       conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
       conn.stateMachine.transitionTo(ConnectionState.established, reason: 'test');
       conn.onBytesReceived(100); // Seed anti-amplification budget
 
       // Build an ACK frame packet in Initial space (long header = explicit DCID len)
       final dcid = conn.cidManager.issueNewId().connectionId;
-      final packet = conn.buildPacket(
+      final packet = await conn.buildPacket(
         space: PacketNumberSpace.initial,
         frames: [AckFrame(largestAcknowledged: 5, ackRanges: [])],
         dcid: dcid,
@@ -70,13 +70,13 @@ void main() {
       expect(processed, equals(1));
     });
 
-    test('processIncomingDatagram dispatches CRYPTO frames to assembler', () {
+    test('processIncomingDatagram dispatches CRYPTO frames to assembler', () async {
       conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
       conn.onBytesReceived(100);
 
       final dcid = conn.cidManager.issueNewId().connectionId;
       final cryptoData = Uint8List.fromList([0x01, 0x00, 0x00, 0x05]);
-      final packet = conn.buildPacket(
+      final packet = await conn.buildPacket(
         space: PacketNumberSpace.initial,
         frames: [CryptoFrame(offset: 0, data: cryptoData)],
         dcid: dcid,
@@ -88,7 +88,7 @@ void main() {
       expect(cryptoAssembler.nextOffset, equals(cryptoData.length));
     });
 
-    test('processIncomingDatagram dispatches STREAM frames to StreamManager', () {
+    test('processIncomingDatagram dispatches STREAM frames to StreamManager', () async {
       conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
       conn.stateMachine.transitionTo(ConnectionState.established, reason: 'test');
       conn.onBytesReceived(100);
@@ -96,7 +96,7 @@ void main() {
       // Use a fixed 8-byte DCID so short-header detection works.
       final dcid = List<int>.filled(8, 0xAB);
       final streamData = Uint8List.fromList([0x48, 0x65, 0x6C, 0x6C, 0x6F]); // "Hello"
-      final packet = conn.buildPacket(
+      final packet = await conn.buildPacket(
         space: PacketNumberSpace.application,
         frames: [
           StreamFrame(
@@ -115,14 +115,14 @@ void main() {
       expect(stream is QuicReceiveStream, isTrue);
     });
 
-    test('processIncomingDatagram transitions to draining on CONNECTION_CLOSE', () {
+    test('processIncomingDatagram transitions to draining on CONNECTION_CLOSE', () async {
       conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
       conn.stateMachine.transitionTo(ConnectionState.established, reason: 'test');
       conn.onBytesReceived(100);
 
       // Use a fixed 8-byte DCID for reliable short-header parsing.
       final dcid = List<int>.filled(8, 0xAB);
-      final packet = conn.buildPacket(
+      final packet = await conn.buildPacket(
         space: PacketNumberSpace.application,
         frames: [ConnectionCloseFrame(errorCode: 0x0100, offendingFrameType: 0x00, reasonPhrase: 'test close')],
         dcid: dcid,
@@ -133,18 +133,18 @@ void main() {
       expect(conn.state, equals(ConnectionState.draining));
     });
 
-    test('processIncomingDatagram coalesced packets are processed separately', () {
+    test('processIncomingDatagram coalesced packets are processed separately', () async {
       conn.stateMachine.transitionTo(ConnectionState.handshaking, reason: 'test');
       conn.onBytesReceived(100);
 
       // Build two separate packets
       final dcid = conn.cidManager.issueNewId().connectionId;
-      final packet1 = conn.buildPacket(
+      final packet1 = await conn.buildPacket(
         space: PacketNumberSpace.initial,
         frames: [CryptoFrame(offset: 0, data: [0x01])],
         dcid: dcid,
       );
-      final packet2 = conn.buildPacket(
+      final packet2 = await conn.buildPacket(
         space: PacketNumberSpace.initial,
         frames: [CryptoFrame(offset: 1, data: [0x02])],
         dcid: dcid,

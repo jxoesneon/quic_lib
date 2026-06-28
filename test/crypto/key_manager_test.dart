@@ -5,6 +5,7 @@ import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
 import 'package:dart_quic/src/crypto/initial_secrets.dart';
 import 'package:dart_quic/src/crypto/key_manager.dart';
 import 'package:dart_quic/src/crypto/packet/key_derivation.dart';
+import 'package:dart_quic/src/crypto/tls/handshake_key_exchange.dart';
 import 'package:dart_quic/src/recovery/packet_number_space.dart';
 import 'package:test/test.dart';
 
@@ -112,6 +113,91 @@ void main() {
       expect(aes256Keys.key.length, equals(32));
       expect(aes256Keys.iv.length, equals(12));
       expect(aes256Keys.hpKey.length, equals(16));
+    });
+
+    test('keysFor returns null for missing space', () async {
+      final manager = KeyManager.forTest();
+      expect(manager.keysFor(PacketNumberSpace.initial), isNull);
+    });
+
+    test('peerKeysFor returns null for missing space', () async {
+      final manager = KeyManager.forTest();
+      expect(manager.peerKeysFor(PacketNumberSpace.initial), isNull);
+    });
+
+    test('keysFor selects correct keys for client role', () async {
+      final dcid = [0x83, 0x94, 0xc8, 0xf0, 0x3e, 0x51, 0x57, 0x08];
+      final manager = await KeyManager.deriveInitial(dcid, backend, role: HandshakeRole.client);
+      final keys = manager.keysFor(PacketNumberSpace.initial);
+      final peerKeys = manager.peerKeysFor(PacketNumberSpace.initial);
+      expect(keys, isNotNull);
+      expect(peerKeys, isNotNull);
+      expect(identical(keys, peerKeys), isFalse);
+    });
+
+    test('keysFor selects correct keys for server role', () async {
+      final dcid = [0x83, 0x94, 0xc8, 0xf0, 0x3e, 0x51, 0x57, 0x08];
+      final manager = await KeyManager.deriveInitial(dcid, backend, role: HandshakeRole.server);
+      final keys = manager.keysFor(PacketNumberSpace.initial);
+      final peerKeys = manager.peerKeysFor(PacketNumberSpace.initial);
+      expect(keys, isNotNull);
+      expect(peerKeys, isNotNull);
+      expect(identical(keys, peerKeys), isFalse);
+    });
+
+    test('installKeys with peerKeys', () async {
+      final dcid = [0x83, 0x94, 0xc8, 0xf0, 0x3e, 0x51, 0x57, 0x08];
+      final manager = await KeyManager.deriveInitial(dcid, backend, role: HandshakeRole.client);
+      final clientKeys = manager.keysFor(PacketNumberSpace.initial)!;
+      final serverKeys = manager.peerKeysFor(PacketNumberSpace.initial)!;
+
+      final testManager = KeyManager.forTest();
+      testManager.installKeys(
+        PacketNumberSpace.initial,
+        clientKeys,
+        peerKeys: serverKeys,
+      );
+
+      expect(testManager.keysFor(PacketNumberSpace.initial), isNotNull);
+      expect(testManager.peerKeysFor(PacketNumberSpace.initial), isNotNull);
+    });
+
+    test('deriveZeroRtt produces keys', () async {
+      final secret = SimpleSecretKey(Uint8List(32));
+      final manager = await KeyManager.deriveZeroRtt(secret, backend);
+      expect(manager.hasKeysFor(PacketNumberSpace.zeroRtt), isTrue);
+    });
+
+    test('deriveInitial with server role', () async {
+      final dcid = [0x83, 0x94, 0xc8, 0xf0, 0x3e, 0x51, 0x57, 0x08];
+      final manager = await KeyManager.deriveInitial(
+        dcid,
+        backend,
+        role: HandshakeRole.server,
+      );
+      expect(manager.hasKeysFor(PacketNumberSpace.initial), isTrue);
+    });
+
+    test('deriveHandshake with server role', () async {
+      final secret = SimpleSecretKey(Uint8List(32));
+      final manager = await KeyManager.deriveHandshake(
+        secret,
+        secret,
+        backend,
+        role: HandshakeRole.server,
+      );
+      expect(manager.hasKeysFor(PacketNumberSpace.handshake), isTrue);
+    });
+
+    test('deriveApplication with server role', () async {
+      final secret = SimpleSecretKey(Uint8List(32));
+      final manager = await KeyManager.deriveApplication(
+        secret,
+        secret,
+        backend,
+        role: HandshakeRole.server,
+      );
+      expect(manager.hasKeysFor(PacketNumberSpace.application), isTrue);
     });
   });
 }

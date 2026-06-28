@@ -2,29 +2,60 @@ import 'tls_handshake_types.dart';
 import 'package:dart_quic/src/security/rate_limiter.dart';
 
 enum HandshakeState {
+  /// No handshake in progress.
   idle,
 
   // Client path
+  /// Client has sent ClientHello.
   clientStart,
+
+  /// Client waiting for ServerHello from the server.
   clientWaitServerHello,
+
+  /// Client waiting for EncryptedExtensions from the server.
   clientWaitEncryptedExtensions,
+
+  /// Client waiting for Certificate from the server.
   clientWaitCertificate,
+
+  /// Client waiting for CertificateVerify from the server.
   clientWaitCertVerify,
+
+  /// Client waiting for Finished from the server.
   clientWaitFinished,
+
+  /// Client handshake complete.
   clientConnected,
 
   // Server path
+  /// Server waiting for ClientHello from the client.
   serverStart,
+
+  /// Server waiting for ClientHello key_share / full message.
   serverWaitClientHello,
+
+  /// Server waiting for Finished from the client.
   serverWaitFinished,
+
+  /// Server handshake complete.
   serverConnected,
 
   // Terminal
+  /// Handshake failed (e.g., bad certificate, timeout).
   handshakeFailed,
+
+  /// Handshake completed successfully.
   handshakeComplete,
 }
 
-enum HandshakeRole { client, server }
+/// Role of the endpoint in the TLS handshake.
+enum HandshakeRole {
+  /// This endpoint is acting as the TLS client.
+  client,
+
+  /// This endpoint is acting as the TLS server.
+  server,
+}
 
 class HandshakeStateMachine {
   // SECURITY: Rate limit transitions to prevent CPU exhaustion.

@@ -6,7 +6,7 @@ status: "Specification"
 subsystem: "Performance"
 rfc_basis: []
 dependencies:
-  - "ROADMAP.md"
+  - "../../ROADMAP.md"
   - "TESTING_SPEC.md"
 ---
 

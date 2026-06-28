@@ -13,8 +13,7 @@ import 'sent_packet_tracker.dart';
 /// 4. Reset PTO scheduler (clear exponential backoff).
 /// 5. Update sent packet tracker (remove acked packets).
 ///
-/// **Status:** Scaffold — coordinates the subsystems but full ACK frame
-/// parsing and per-packet RTT sampling are not yet wired.
+/// Coordinates all recovery-related subsystems per RFC 9002.
 class RecoveryManager {
   final CongestionController _congestionController;
   final LossDetector _lossDetector;
@@ -47,6 +46,11 @@ class RecoveryManager {
     int ackedBytes, {
     List<({int gap, int length})> ranges = const [],
   }) {
+    // Compute acked bytes from the tracker before removing packets.
+    final acked = _sentPacketTracker.onAck(space, largestAcked, ranges);
+    final computedAckedBytes = acked.fold<int>(0, (sum, info) => sum + info.sizeInBytes);
+    final effectiveAckedBytes = ackedBytes > 0 ? ackedBytes : computedAckedBytes;
+
     // 1. Detect lost packets (using previous largest acked).
     final lost = _lossDetector.onAckReceived(
       largestAcked,
@@ -55,16 +59,13 @@ class RecoveryManager {
     );
 
     // 2. Update congestion controller: remove acked bytes, then apply loss.
-    _congestionController.onAckReceived(ackedBytes);
+    _congestionController.onAckReceived(effectiveAckedBytes);
     for (final _ in lost) {
       _congestionController.onCongestionEvent(ackReceiveTimeUs);
     }
 
     // 3. Reset PTO since we got an ACK.
     _ptoScheduler.onAckReceived();
-
-    // 4. Remove acked packets from tracking.
-    _sentPacketTracker.onAck(space, largestAcked, ranges);
   }
 
   /// Register a packet as sent with all relevant subsystems.

@@ -30,8 +30,8 @@ void main() {
       );
     }
 
-    Uint8List _buildPacket(List<Frame> frames) {
-      return PacketBuilder.build(
+    Future<Uint8List> _buildPacket(List<Frame> frames) async {
+      return await PacketBuilder.build(
         ShortHeader(
           destinationConnectionId: [
             0x01,
@@ -51,10 +51,10 @@ void main() {
 
     test(
         'processIncomingDatagram with PATH_CHALLENGE generates a pending challenge',
-        () {
+        () async {
       final conn = _createConnection();
       final challengeData = [1, 2, 3, 4, 5, 6, 7, 8];
-      final packet = _buildPacket([PathChallengeFrame(data: challengeData)]);
+      final packet = await _buildPacket([PathChallengeFrame(data: challengeData)]);
 
       expect(conn.getPendingChallenge(), isNull);
       conn.processIncomingDatagram(packet);
@@ -64,10 +64,10 @@ void main() {
 
     test(
         'processIncomingDatagram with PATH_RESPONSE validates the path',
-        () {
+        () async {
       final conn = _createConnection();
       final challenge = conn.migrationHelper.generateChallenge(currentTimeUs: 0);
-      final responsePacket = _buildPacket([
+      final responsePacket = await _buildPacket([
         PathResponseFrame(data: challenge.data),
       ]);
 
@@ -76,10 +76,10 @@ void main() {
       expect(conn.isPathValidated(challenge.data), isTrue);
     });
 
-    test('isPathValidated returns true after response', () {
+    test('isPathValidated returns true after response', () async {
       final conn = _createConnection();
       final challenge = conn.migrationHelper.generateChallenge(currentTimeUs: 0);
-      final responsePacket = _buildPacket([
+      final responsePacket = await _buildPacket([
         PathResponseFrame(data: challenge.data),
       ]);
 
@@ -88,12 +88,12 @@ void main() {
       expect(conn.isPathValidated(challenge.data), isTrue);
     });
 
-    test('onAddressValidated is called when path is validated', () {
+    test('onAddressValidated is called when path is validated', () async {
       final sm = ConnectionStateMachine();
       sm.transitionTo(ConnectionState.handshaking);
       final conn = _createConnection(stateMachine: sm);
       final challenge = conn.migrationHelper.generateChallenge(currentTimeUs: 0);
-      final responsePacket = _buildPacket([
+      final responsePacket = await _buildPacket([
         PathResponseFrame(data: challenge.data),
       ]);
 

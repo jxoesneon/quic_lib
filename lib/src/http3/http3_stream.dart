@@ -1,8 +1,15 @@
 /// HTTP/3 stream types per RFC 9114 Section 4.1.
 enum Http3StreamType {
+  /// QUIC stream carrying HTTP/3 control frames.
   control,
+
+  /// Server push stream (server-initiated unidirectional).
   push,
+
+  /// Client-initiated bidirectional stream carrying a single request/response.
   request,
+
+  /// Reserved stream type for future use.
   reserved,
 }
 

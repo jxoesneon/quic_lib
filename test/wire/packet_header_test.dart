@@ -1,10 +1,11 @@
 import 'dart:typed_data';
 import 'package:test/test.dart';
+import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
 import 'package:dart_quic/src/wire/packet_header.dart';
 
 void main() {
   group('LongHeader', () {
-    test('Initial serialize/parse round-trip', () {
+    test('Initial serialize/parse round-trip', () async {
       final header = LongHeader(
         version: 0x00000001,
         packetType: LongHeader.typeInitial,
@@ -14,7 +15,7 @@ void main() {
         payload: [0xAA, 0xBB],
         token: [0x99],
       );
-      final bytes = header.serialize();
+      final bytes = await header.serialize();
       final parsed = PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 3) as LongHeader;
       expect(parsed.version, equals(header.version));
       expect(parsed.packetType, equals(header.packetType));
@@ -23,7 +24,7 @@ void main() {
       expect(parsed.token, equals(header.token));
     });
 
-    test('0-RTT serialize/parse round-trip', () {
+    test('0-RTT serialize/parse round-trip', () async {
       final header = LongHeader(
         version: 0x00000001,
         packetType: LongHeader.typeZeroRtt,
@@ -32,13 +33,13 @@ void main() {
         packetNumber: 100,
         payload: [0xCC],
       );
-      final bytes = header.serialize();
+      final bytes = await header.serialize();
       final parsed = PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 1) as LongHeader;
       expect(parsed.version, equals(header.version));
       expect(parsed.packetType, equals(header.packetType));
     });
 
-    test('Handshake serialize/parse round-trip', () {
+    test('Handshake serialize/parse round-trip', () async {
       final header = LongHeader(
         version: 0x00000001,
         packetType: LongHeader.typeHandshake,
@@ -46,20 +47,21 @@ void main() {
         sourceConnectionId: [0xCD],
         payload: [0xDE, 0xAD, 0xBE, 0xEF],
       );
-      final bytes = header.serialize();
+      final bytes = await header.serialize();
       final parsed = PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 1) as LongHeader;
       expect(parsed.packetType, equals(LongHeader.typeHandshake));
     });
 
-    test('Retry serialize/parse round-trip', () {
+    test('Retry serialize/parse round-trip', () async {
       final header = LongHeader(
         version: 0x00000001,
         packetType: LongHeader.typeRetry,
         destinationConnectionId: [0x01],
         sourceConnectionId: [0x02],
         payload: [0xEE, 0xFF],
+        backend: DefaultCryptoBackend(),
       );
-      final bytes = header.serialize();
+      final bytes = await header.serialize();
       final parsed = PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 1) as LongHeader;
       expect(parsed.packetType, equals(LongHeader.typeRetry));
       expect(parsed.payload, equals(header.payload));
@@ -77,7 +79,7 @@ void main() {
       );
     });
 
-    test('byteLength matches serialized length', () {
+    test('byteLength matches serialized length', () async {
       final header = LongHeader(
         version: 1,
         packetType: LongHeader.typeInitial,
@@ -87,12 +89,12 @@ void main() {
         payload: [0xAA, 0xBB],
         token: [0x99],
       );
-      expect(header.byteLength, equals(header.serialize().length));
+      expect(header.byteLength, equals((await header.serialize()).length));
     });
   });
 
   group('ShortHeader', () {
-    test('serialize/parse round-trip', () {
+    test('serialize/parse round-trip', () async {
       final header = ShortHeader(
         destinationConnectionId: [0x01, 0x02, 0x03, 0x04],
         packetNumber: 0x1234,
@@ -101,7 +103,7 @@ void main() {
         packetNumberLength: 2,
         payload: [0xFF],
       );
-      final bytes = header.serialize();
+      final bytes = await header.serialize();
       final parsed = PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 4) as ShortHeader;
       expect(parsed.destinationConnectionId, equals(header.destinationConnectionId));
       expect(parsed.packetNumber, equals(header.packetNumber));
@@ -111,13 +113,13 @@ void main() {
       expect(parsed.payload, equals(header.payload));
     });
 
-    test('minimal short header', () {
+    test('minimal short header', () async {
       final header = ShortHeader(
         destinationConnectionId: [0x01],
         packetNumber: 0,
         payload: const [],
       );
-      final bytes = header.serialize();
+      final bytes = await header.serialize();
       expect(bytes.length, equals(1 + 1 + 1)); // first byte + 1-byte DCID + 1-byte PN
     });
 
@@ -128,25 +130,25 @@ void main() {
       );
     });
 
-    test('byteLength matches serialized length', () {
+    test('byteLength matches serialized length', () async {
       final header = ShortHeader(
         destinationConnectionId: [1, 2, 3, 4],
         packetNumber: 0x123456,
         packetNumberLength: 3,
         payload: [0xAA, 0xBB],
       );
-      expect(header.byteLength, equals(header.serialize().length));
+      expect(header.byteLength, equals((await header.serialize()).length));
     });
   });
 
   group('VersionNegotiationPacket', () {
-    test('serialize/parse round-trip', () {
+    test('serialize/parse round-trip', () async {
       final packet = VersionNegotiationPacket(
         destinationConnectionId: [0x01],
         sourceConnectionId: [0x02],
         supportedVersions: [0x00000001, 0x00000002],
       );
-      final bytes = packet.serialize();
+      final bytes = await packet.serialize();
       final parsed = PacketHeaderParser.parse(bytes, destinationConnectionIdLength: 1)
           as VersionNegotiationPacket;
       expect(parsed.destinationConnectionId, equals(packet.destinationConnectionId));
@@ -154,13 +156,13 @@ void main() {
       expect(parsed.supportedVersions, equals(packet.supportedVersions));
     });
 
-    test('byteLength matches serialized length', () {
+    test('byteLength matches serialized length', () async {
       final packet = VersionNegotiationPacket(
         destinationConnectionId: [1, 2],
         sourceConnectionId: [3, 4],
         supportedVersions: [1, 2, 3],
       );
-      expect(packet.byteLength, equals(packet.serialize().length));
+      expect(packet.byteLength, equals((await packet.serialize()).length));
     });
   });
 

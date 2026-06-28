@@ -125,5 +125,124 @@ void main() {
       expect(coordinator.isConnected, isTrue);
       expect(sm.state, equals(DCUtRState.connected));
     });
+
+    test('sendSync sends message and transitions state machine', () async {
+      final socketA = await UdpSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final socketB = await UdpSocket.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(() {
+        socketA.close();
+        socketB.close();
+      });
+
+      final sm = DCUtRStateMachine();
+      final coordinator = DCUtRUdpCoordinator(socketA, sm);
+
+      // First send CONNECT to move out of idle
+      await coordinator.sendConnect(
+        InternetAddress.loopbackIPv4,
+        socketB.localPort,
+        [192, 168, 1, 1],
+      );
+      expect(sm.state, equals(DCUtRState.connectSent));
+
+      final received = socketB.incoming.skip(1).first;
+      final result = await coordinator.sendSync(
+        InternetAddress.loopbackIPv4,
+        socketB.localPort,
+        [192, 168, 1, 1, 0, 80],
+      );
+      expect(result, isTrue);
+      expect(sm.state, equals(DCUtRState.syncReceived));
+
+      final datagram = await received;
+      expect(datagram.data.sublist(0, 4), equals([0x44, 0x43, 0x54, 0x52]));
+      final message = DCUtRMessage.parse(datagram.data.sublist(4));
+      expect(message.type, equals(DCUtRMessage.typeSync));
+    });
+
+    test('ignores short datagrams', () async {
+      final socketA = await UdpSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final socketB = await UdpSocket.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(() {
+        socketA.close();
+        socketB.close();
+      });
+
+      final sm = DCUtRStateMachine();
+      final coordinator = DCUtRUdpCoordinator(socketA, sm);
+      coordinator.startListening();
+
+      socketB.send(Uint8List.fromList([0x01, 0x02]), InternetAddress.loopbackIPv4, socketA.localPort);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      // Should not crash
+    });
+
+    test('ignores datagrams with wrong magic', () async {
+      final socketA = await UdpSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final socketB = await UdpSocket.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(() {
+        socketA.close();
+        socketB.close();
+      });
+
+      final sm = DCUtRStateMachine();
+      final coordinator = DCUtRUdpCoordinator(socketA, sm);
+      coordinator.startListening();
+
+      socketB.send(Uint8List.fromList([0xFF, 0xFF, 0xFF, 0xFF]), InternetAddress.loopbackIPv4, socketA.localPort);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      // Should not crash
+    });
+
+    test('ignores malformed DCUtR messages', () async {
+      final socketA = await UdpSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final socketB = await UdpSocket.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(() {
+        socketA.close();
+        socketB.close();
+      });
+
+      final sm = DCUtRStateMachine();
+      final coordinator = DCUtRUdpCoordinator(socketA, sm);
+      coordinator.startListening();
+
+      socketB.send(
+        Uint8List.fromList([0x44, 0x43, 0x54, 0x52, 0xFF]), // magic + invalid message
+        InternetAddress.loopbackIPv4,
+        socketA.localPort,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      // Should not crash
+    });
+
+    test('ignores invalid DCUtR messages', () async {
+      final socketA = await UdpSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final socketB = await UdpSocket.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(() {
+        socketA.close();
+        socketB.close();
+      });
+
+      final sm = DCUtRStateMachine();
+      final coordinator = DCUtRUdpCoordinator(socketA, sm);
+      coordinator.startListening();
+
+      // Build a message with unknown type that fails isValid
+      final msg = DCUtRMessage(type: 0x99, observedAddr: [1, 2, 3]);
+      final bytes = Uint8List.fromList([0x44, 0x43, 0x54, 0x52, ...msg.serialize()]);
+      socketB.send(bytes, InternetAddress.loopbackIPv4, socketA.localPort);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      // Should not crash
+    });
+
+    test('stopListening cancels subscription', () async {
+      final socketA = await UdpSocket.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(() => socketA.close());
+      final sm = DCUtRStateMachine();
+      final coordinator = DCUtRUdpCoordinator(socketA, sm);
+      coordinator.startListening();
+      coordinator.stopListening();
+      // Should not throw
+    });
   });
 }

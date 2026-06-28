@@ -9,7 +9,7 @@ rfc_basis:
   - "RFC 9204 (QPACK)"
 dependencies:
   - "ERROR_REGISTRY.md"
-  - "ROADMAP.md"
+  - "../../ROADMAP.md"
   - "WEBTRANSPORT_SPEC.md"
 ---
 
@@ -355,7 +355,7 @@ The HTTP/3 Dart API is defined in [DART_API_SPEC.md §2.6](DART_API_SPEC.md#26-h
 ## Used By
 
 - [ERROR_REGISTRY.md](ERROR_REGISTRY.md) — References HTTP/3 frame usage and stream mapping.
-- [ROADMAP.md](ROADMAP.md) — Lists HTTP3_SPEC as a formal specification deliverable.
+- [ROADMAP.md](../../ROADMAP.md) — Lists HTTP3_SPEC as a formal specification deliverable.
 - [WEBTRANSPORT_SPEC.md](WEBTRANSPORT_SPEC.md) — WebTransport builds on HTTP/3 layer.
 ## 6. Testing Strategy
 

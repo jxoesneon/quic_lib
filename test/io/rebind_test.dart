@@ -19,6 +19,7 @@ void main() {
 
       // Start rebind; it will block until PATH_RESPONSE is injected.
       final rebindFuture = endpoint.rebindToAddress(conn, newAddr, newPort);
+      await Future<void>.delayed(Duration.zero);
 
       // The probe packet was built with an empty DCID and 1-byte packet number,
       // so the PathChallengeFrame starts at byte offset 3.
@@ -26,7 +27,7 @@ void main() {
       final challengeData = probePacket.sublist(3, 11);
 
       // Build a PATH_RESPONSE packet to complete validation.
-      final responsePacket = PacketBuilder.build(
+      final responsePacket = await PacketBuilder.build(
         ShortHeader(
           destinationConnectionId: [0, 0, 0, 0, 0, 0, 0, 0],
           packetNumber: 1,

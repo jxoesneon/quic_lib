@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:dart_quic/src/utils/collections.dart';
 import 'package:dart_quic/src/wire/varint.dart';
 
 /// Capsule types for WebTransport over HTTP/3 (RFC 9220).
@@ -106,7 +107,7 @@ class Capsule {
       other is Capsule &&
           runtimeType == other.runtimeType &&
           type == other.type &&
-          _listEquals(payload, other.payload);
+          listEquals(payload, other.payload);
 
   @override
   int get hashCode => Object.hash(type, Object.hashAll(payload));
@@ -116,10 +117,4 @@ class Capsule {
       'Capsule(type: ${type.name}, payload: ${payload.length} bytes)';
 }
 
-bool _listEquals(List<int> a, List<int> b) {
-  if (a.length != b.length) return false;
-  for (var i = 0; i < a.length; i++) {
-    if (a[i] != b[i]) return false;
-  }
-  return true;
-}
+

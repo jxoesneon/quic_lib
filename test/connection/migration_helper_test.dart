@@ -74,5 +74,31 @@ void main() {
       );
       expect(expired.isEmpty, isTrue);
     });
+
+    test('evicts oldest pending challenge when at capacity', () {
+      // Generate 8 challenges with non-monotonic timestamps so the
+      // first-inserted key is not the oldest (covers the loop body).
+      helper.generateChallenge(currentTimeUs: 10);
+      for (var i = 0; i < 6; i++) {
+        helper.generateChallenge(currentTimeUs: i + 1);
+      }
+      final oldest = helper.generateChallenge(currentTimeUs: 0);
+      // 8 challenges now. Generate one more to trigger eviction.
+      helper.generateChallenge(currentTimeUs: 8);
+      // The challenge with timestamp 0 should have been evicted.
+      expect(helper.onResponseReceived(PathResponseFrame(data: oldest.data)), isFalse);
+    });
+
+    test('evicts oldest validated path when at capacity', () {
+      // Validate 16 paths one at a time to stay under pending limit.
+      for (var i = 0; i < 16; i++) {
+        final c = helper.generateChallenge(currentTimeUs: i);
+        helper.onResponseReceived(PathResponseFrame(data: c.data));
+      }
+      // Add one more validated path to trigger eviction.
+      final extra = helper.generateChallenge(currentTimeUs: 16);
+      helper.onResponseReceived(PathResponseFrame(data: extra.data));
+      expect(helper.isPathValidated(extra.data), isTrue);
+    });
   });
 }

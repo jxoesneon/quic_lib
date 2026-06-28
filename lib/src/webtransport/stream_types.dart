@@ -8,7 +8,10 @@
 ///
 /// See RFC 9000 Section 2.1 and the WebTransport over HTTP/3 specification.
 enum WebTransportStreamType {
+  /// Bidirectional QUIC stream for WebTransport (both read and write).
   bidirectional,
+
+  /// Unidirectional QUIC stream for WebTransport (write-only from initiator).
   unidirectional,
 }
 

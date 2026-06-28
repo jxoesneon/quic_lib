@@ -95,13 +95,14 @@ void main() {
   });
 
   group('Certificate chain', () {
-    test('verifyCertificateChain returns true for empty chain', () {
+    test('verifyCertificateChain returns false for empty chain', () async {
       final backend = DefaultCryptoBackend();
       final verifier = CertificateVerifier(backend);
       final trustedRoot = _SimplePublicKey([0xAA]);
 
-      final result = verifier.verifyCertificateChain([], trustedRoot);
-      expect(result, isTrue);
+      // SECURITY: Empty chains are never valid.
+      final result = await verifier.verifyCertificateChain([], trustedRoot);
+      expect(result, isFalse);
     });
   });
 }

@@ -3,8 +3,8 @@ import 'dart:typed_data';
 import 'package:dart_quic/src/crypto/default_crypto_backend.dart';
 import 'package:dart_quic/src/crypto/packet/retry_integrity_tag.dart';
 import 'package:dart_quic/src/crypto/retry_token_generator.dart';
-import 'package:dart_quic/src/crypto/tls/session_ticket_store.dart';
-import 'package:dart_quic/src/http3/http3_body_streaming.dart';
+import 'package:dart_quic/src/crypto/session_ticket_store.dart';
+import 'package:dart_quic/src/crypto/initial_secrets.dart';
 import 'package:dart_quic/src/http3/http3_connection.dart';
 import 'package:dart_quic/src/wire/retry_packet_builder.dart';
 import 'package:test/test.dart';
@@ -102,17 +102,14 @@ void main() {
     test('SessionTicketStore stores and retrieves tickets', () {
       final store = SessionTicketStore();
       const identifier = 'test-session-1';
-      final ticket = Uint8List.fromList([0xAA, 0xBB, 0xCC, 0xDD]);
+      final psk = SimpleSecretKey(Uint8List.fromList([0xAA, 0xBB, 0xCC, 0xDD]));
+      final expiry = DateTime.now().add(const Duration(hours: 1));
 
-      store.store(identifier, ticket);
+      store.store(identifier, psk, expiry);
       final retrieved = store.retrieve(identifier);
 
       expect(retrieved, isNotNull);
-      expect(retrieved, equals(ticket));
-
-      // Verify the returned ticket is a defensive copy.
-      ticket[0] = 0xFF;
-      expect(retrieved![0], equals(0xAA));
+      expect(retrieved!.extractSync(), equals(psk.extractSync()));
     });
   });
 }

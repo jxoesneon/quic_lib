@@ -4,6 +4,7 @@ import '../wire/frame.dart';
 import 'flow_controller.dart';
 import 'quic_stream.dart';
 import 'receive_state_machine.dart';
+import 'stream_scheduler.dart';
 
 /// Routes incoming STREAM frames to the correct [QuicStream] instance.
 ///
@@ -12,14 +13,10 @@ import 'receive_state_machine.dart';
 /// - Server bidirectional: 1, 5, 9, ...
 /// - Client unidirectional: 2, 6, 10, ...
 /// - Server unidirectional: 3, 7, 11, ...
-///
-/// **Status:** Scaffold — stores and routes frames but full stream lifecycle
-/// (flow control, state machine integration) is not yet wired.
 class StreamManager {
   final Map<int, QuicStream> _streams = {};
   final Map<int, FlowController> _sendFlowControllers = {};
   final Map<int, FlowController> _receiveFlowControllers = {};
-
   /// Deliver a STREAM frame to the appropriate stream.
   /// Creates the stream if it does not exist.
   void onStreamFrame(StreamFrame frame) {
@@ -64,6 +61,26 @@ class StreamManager {
 
   /// All active streams.
   Iterable<QuicStream> get streams => _streams.values;
+
+  /// All active stream IDs.
+  Iterable<int> get streamIds => _streams.keys;
+
+  /// The current stream scheduler, or null if none is set.
+  StreamScheduler? scheduler;
+
+  /// Select the next stream for processing using the configured scheduler.
+  ///
+  /// Returns the first active stream if no scheduler is set. Returns `null`
+  /// when no streams are active.
+  QuicStream? selectNextStream() {
+    final ids = _streams.keys.toList();
+    if (ids.isEmpty) return null;
+    if (scheduler != null) {
+      final nextId = scheduler!.selectNextStream(ids);
+      return _streams[nextId];
+    }
+    return _streams.values.first;
+  }
 
   /// Remove a closed stream.
   void removeStream(int streamId) {

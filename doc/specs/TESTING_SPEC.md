@@ -6,7 +6,7 @@ status: "Specification"
 subsystem: "Quality Assurance & Conformance"
 rfc_basis: []
 dependencies:
-  - "ROADMAP.md"
+  - "../../ROADMAP.md"
 ---
 
 # Testing Specification
@@ -375,7 +375,7 @@ Run h3spec (https://github.com/kazu-yamamoto/h3spec) test suite:
 
 ## Used By
 
-- [ROADMAP.md](ROADMAP.md) — Lists TESTING_SPEC as a formal specification deliverable.
+- [ROADMAP.md](../../ROADMAP.md) — Lists TESTING_SPEC as a formal specification deliverable.
 ## 6. References
 
 - QUIC Interop Runner: https://interop.seemann.io/

@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:dart_quic/src/http3/frame_types.dart';
+import 'package:dart_quic/src/utils/collections.dart';
 
 /// HTTP/3 DATA frame payload.
 ///
@@ -35,16 +36,9 @@ class Http3DataFrame {
 
   @override
   bool operator ==(Object other) =>
-      other is Http3DataFrame && _listsEqual(other.data, data);
+      other is Http3DataFrame && listEquals(other.data, data);
 
   @override
   int get hashCode => Object.hashAll(data);
 
-  static bool _listsEqual(List<int> a, List<int> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
 }

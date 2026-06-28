@@ -107,5 +107,38 @@ void main() {
       stream.addFrame(Http3DataFrame(data: [0xFF]));
       expect(stream.isComplete, isTrue);
     });
+
+    test('getBody returns null when empty', () {
+      final stream = Http3BodyStream();
+      expect(stream.getBody(), isNull);
+    });
+
+    test('getBody returns concatenated data', () {
+      final stream = Http3BodyStream();
+      stream.addFrame(Http3DataFrame(data: [0x01, 0x02]));
+      stream.addFrame(Http3DataFrame(data: [0x03]));
+      final body = stream.getBody();
+      expect(body, equals(Uint8List.fromList([0x01, 0x02, 0x03])));
+    });
+
+    test('fullBody returns immediately when already complete', () async {
+      final stream = Http3BodyStream();
+      stream.addFrame(Http3DataFrame(data: [0x01, 0x02]));
+      stream.addFrame(Http3DataFrame.empty());
+      final body = await stream.fullBody;
+      expect(body, equals(Uint8List.fromList([0x01, 0x02])));
+    });
+
+    test('sendBody convenience wrapper works', () {
+      final stream = Http3BodyStream();
+      stream.sendBody(Uint8List.fromList([0xAB, 0xCD]));
+      expect(stream.getBody(), equals(Uint8List.fromList([0xAB, 0xCD])));
+    });
+
+    test('sendBody with empty chunk marks EOF', () {
+      final stream = Http3BodyStream();
+      stream.sendBody(Uint8List(0));
+      expect(stream.isComplete, isTrue);
+    });
   });
 }

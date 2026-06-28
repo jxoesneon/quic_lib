@@ -1,4 +1,7 @@
 import 'dart:typed_data';
+
+import '../crypto/crypto_backend.dart';
+import '../crypto/packet/retry_integrity_tag.dart';
 import 'varint.dart';
 
 /// Base class for all QUIC packet headers.
@@ -10,7 +13,7 @@ abstract class PacketHeader {
   List<int> get destinationConnectionId;
 
   /// Serialize this header to bytes.
-  Uint8List serialize();
+  Future<Uint8List> serialize();
 
   /// Total serialized byte length.
   int get byteLength;
@@ -30,6 +33,7 @@ class LongHeader implements PacketHeader {
   final int packetNumber;
   final List<int> payload;
   final List<int>? token; // Only for Initial
+  final CryptoBackend? backend;
 
   LongHeader({
     required this.version,
@@ -39,6 +43,7 @@ class LongHeader implements PacketHeader {
     this.packetNumber = 0,
     this.payload = const [],
     this.token,
+    this.backend,
   }) {
     if (packetType < 0 || packetType > 3) {
       throw ArgumentError('Invalid long packet type: $packetType');
@@ -61,7 +66,7 @@ class LongHeader implements PacketHeader {
   int get headerForm => 1;
 
   @override
-  Uint8List serialize() {
+  Future<Uint8List> serialize() async {
     final builder = BytesBuilder();
     // First byte: HF=1, FB=1, LongPacketType(2), TypeSpecific(4)
     builder.addByte(0x80 | 0x40 | (packetType << 4));
@@ -92,9 +97,18 @@ class LongHeader implements PacketHeader {
       builder.add(pnBytes);
       builder.add(payload);
     } else {
-      // Retry: token + integrity tag (16 bytes placeholder)
+      // Retry: token + integrity tag
       builder.add(payload); // payload serves as retry token
-      builder.add(List<int>.filled(16, 0)); // placeholder integrity tag
+      if (backend == null) {
+        throw StateError('backend is required to serialize Retry packets');
+      }
+      final retryPacketWithoutTag = Uint8List.fromList(builder.toBytes());
+      final tag = await RetryIntegrityTag.compute(
+        originalDestinationConnectionId: destinationConnectionId,
+        retryPacketWithoutTag: retryPacketWithoutTag,
+        backend: backend!,
+      );
+      builder.add(tag);
     }
 
     return Uint8List.fromList(builder.toBytes());
@@ -147,7 +161,7 @@ class ShortHeader implements PacketHeader {
   int get headerForm => 0;
 
   @override
-  Uint8List serialize() {
+  Future<Uint8List> serialize() async {
     final builder = BytesBuilder();
     // First byte: HF=0, FB=1, SpinBit, Reserved(0), KeyPhase, PN Length - 1
     var firstByte = 0x40;
@@ -185,7 +199,7 @@ class VersionNegotiationPacket implements PacketHeader {
   int get headerForm => 1;
 
   @override
-  Uint8List serialize() {
+  Future<Uint8List> serialize() async {
     final builder = BytesBuilder();
     builder.addByte(0x80 | 0x40); // Long header, version negotiation type bits
     builder.addByte(0);
@@ -233,16 +247,19 @@ class PacketHeaderParser {
       // Version negotiation
       if (bytes.length < offset + 1) throw ArgumentError('Packet too short for DCID length');
       final dcidLen = bytes[offset++];
+      if (dcidLen > 20) throw ArgumentError('DCID too long (max 20 bytes)');
       if (bytes.length < offset + dcidLen) throw ArgumentError('Packet too short for DCID');
       final dcid = bytes.sublist(offset, offset + dcidLen);
       offset += dcidLen;
       if (bytes.length < offset + 1) throw ArgumentError('Packet too short for SCID length');
       final scidLen = bytes[offset++];
+      if (scidLen > 20) throw ArgumentError('SCID too long (max 20 bytes)');
       if (bytes.length < offset + scidLen) throw ArgumentError('Packet too short for SCID');
       final scid = bytes.sublist(offset, offset + scidLen);
       offset += scidLen;
       final versions = <int>[];
-      while (offset + 4 <= bytes.length) {
+      const maxVersions = 32;
+      while (offset + 4 <= bytes.length && versions.length < maxVersions) {
         final v = (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3];
         versions.add(v);
         offset += 4;
@@ -257,11 +274,13 @@ class PacketHeaderParser {
     final packetType = (bytes[0] >> 4) & 0x03;
     if (bytes.length < offset + 1) throw ArgumentError('Packet too short for DCID length');
     final dcidLen = bytes[offset++];
+    if (dcidLen > 20) throw ArgumentError('DCID too long (max 20 bytes)');
     if (bytes.length < offset + dcidLen) throw ArgumentError('Packet too short for DCID');
     final dcid = bytes.sublist(offset, offset + dcidLen);
     offset += dcidLen;
     if (bytes.length < offset + 1) throw ArgumentError('Packet too short for SCID length');
     final scidLen = bytes[offset++];
+    if (scidLen > 20) throw ArgumentError('SCID too long (max 20 bytes)');
     if (bytes.length < offset + scidLen) throw ArgumentError('Packet too short for SCID');
     final scid = bytes.sublist(offset, offset + scidLen);
     offset += scidLen;

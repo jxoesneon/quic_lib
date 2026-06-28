@@ -1,8 +1,12 @@
 import 'dart:typed_data';
 
-/// A simplified DCUtR message scaffold.
+import '../utils/collections.dart';
+
+/// DCUtR (Direct Connection Upgrade through Relay) message.
 ///
 /// Serialize format: uint8 type + uint16 addr_length (big-endian) + addr_bytes
+///
+/// Per libp2p DCUtR spec, used for NAT hole punching coordination.
 class DCUtRMessage {
   static const int typeConnect = 0x01;
   static const int typeSync = 0x02;
@@ -50,18 +54,11 @@ class DCUtRMessage {
   bool operator ==(Object other) =>
       other is DCUtRMessage &&
       other.type == type &&
-      _listEquals(other.observedAddr, observedAddr);
+      listEquals(other.observedAddr, observedAddr);
 
   @override
   int get hashCode => Object.hash(type, Object.hashAll(observedAddr));
 
-  static bool _listEquals(List<int> a, List<int> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
 }
 
 /// Handler for producing and validating DCUtR messages.

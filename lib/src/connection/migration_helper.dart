@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:dart_quic/src/utils/hex.dart';
 import 'package:dart_quic/src/wire/frame.dart';
 
 /// Helper for QUIC connection path validation via PATH_CHALLENGE / PATH_RESPONSE.
@@ -50,7 +51,7 @@ class MigrationHelper {
     if (_validatedPaths.length >= maxValidatedPaths) {
       _validatedPaths.remove(_validatedPaths.first);
     }
-    _validatedPaths.add(_bytesToHex(data));
+    _validatedPaths.add(bytesToHex(data));
     return true;
   }
 
@@ -78,7 +79,7 @@ class MigrationHelper {
   /// A path is considered validated if its challenge data has received
   /// a matching PATH_RESPONSE.
   bool isPathValidated(List<int> pathId) {
-    return _validatedPaths.contains(_bytesToHex(pathId));
+    return _validatedPaths.contains(bytesToHex(pathId));
   }
 
   /// Reset all state.
@@ -106,13 +107,5 @@ class MigrationHelper {
 
   static int _nowUs() {
     return DateTime.now().microsecondsSinceEpoch;
-  }
-
-  static String _bytesToHex(List<int> bytes) {
-    final buffer = StringBuffer();
-    for (final b in bytes) {
-      buffer.write(b.toRadixString(16).padLeft(2, '0'));
-    }
-    return buffer.toString();
   }
 }

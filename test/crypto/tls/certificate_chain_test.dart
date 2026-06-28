@@ -2,17 +2,18 @@ import 'package:dart_quic/src/crypto/tls/certificate_chain.dart';
 import 'package:dart_quic/src/crypto/tls/certificate_message.dart';
 import 'package:test/test.dart';
 
+import '../../helpers/minimal_cert.dart';
+
 void main() {
   group('CertificateInfo', () {
     test('parseCertificate returns a CertificateInfo', () {
-      final info = parseCertificate([0x01, 0x02, 0x03]);
-      expect(info.rawBytes, equals([0x01, 0x02, 0x03]));
-      expect(info.notBefore, equals(DateTime(2020, 1, 1)));
-      expect(info.notAfter, equals(DateTime(2030, 1, 1)));
+      final raw = buildMinimalCert();
+      final info = parseCertificate(raw);
+      expect(info.rawBytes, equals(raw));
     });
 
     test('isExpired detects expired certificate', () {
-      final info = parseCertificate([]);
+      final info = parseCertificate(buildMinimalCert());
       expect(isExpired(info, DateTime(2035, 1, 1)), isTrue);
       expect(isExpired(info, DateTime(2025, 1, 1)), isFalse);
     });
@@ -34,15 +35,15 @@ void main() {
   group('CertificateChain', () {
     test('validateChain with valid chain returns true', () {
       final chain = CertificateChain([
-        parseCertificate([0x01]),
-        parseCertificate([0x02]),
+        parseCertificate(buildMinimalCert()),
+        parseCertificate(buildMinimalCert()),
       ]);
       expect(chain.validateChain(DateTime(2025, 1, 1)), isTrue);
     });
 
     test('validateChain with expired cert returns false', () {
       final chain = CertificateChain([
-        parseCertificate([0x01]),
+        parseCertificate(buildMinimalCert()),
       ]);
       expect(chain.validateChain(DateTime(2035, 1, 1)), isFalse);
     });
@@ -63,9 +64,10 @@ void main() {
   });
 
   group('CertificateVerifier integration', () {
-    test('verifyCertificateChain with empty chain returns true', () {
+    test('verifyCertificateChain with empty chain returns false', () {
       final verifier = _MockVerifier();
-      expect(verifier.verifyCertificateChain([]), isTrue);
+      // SECURITY: Empty chains are never valid.
+      expect(verifier.verifyCertificateChain([]), isFalse);
     });
 
     test('verifyCertificateChain with valid entries returns true', () {
@@ -73,7 +75,7 @@ void main() {
       final cert = CertificateMessage(
         requestContext: [],
         entries: [
-          CertificateEntry(certData: [0x01], extensions: []),
+          CertificateEntry(certData: buildMinimalCert(), extensions: []),
         ],
       );
       expect(verifier.verifyCertificateChain([cert]), isTrue);
@@ -83,7 +85,8 @@ void main() {
 
 class _MockVerifier {
   bool verifyCertificateChain(List<CertificateMessage> chain) {
-    if (chain.isEmpty) return true;
+    // SECURITY: Empty chains are never valid.
+    if (chain.isEmpty) return false;
     final infos = <CertificateInfo>[];
     for (final cert in chain) {
       for (final entry in cert.entries) {

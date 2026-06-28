@@ -31,6 +31,9 @@ class PacketNumberSpaceKeys {
   Uint8List protectHeader(Uint8List header, Uint8List payload) =>
       headerProtection.apply(header, payload);
 
+  /// AEAD authentication tag length in bytes.
+  int get tagLength => protector.tagLength;
+
   /// Remove header protection.
   Uint8List unprotectHeader(Uint8List header, Uint8List payload) =>
       headerProtection.remove(header, payload);

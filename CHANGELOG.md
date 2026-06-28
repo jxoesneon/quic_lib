@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] — 2026-06-27
+
+### Security (Security Hardening)
+- **Fixed certificate chain verification bug** — `CertificateVerifier` now uses `chain[i+1].publicKey` as issuer key for intermediate certificates instead of always using `trustedRoot`
+- **Removed dummy key fallback** — `HandshakeCoordinator._extractX25519PublicKey` throws `StateError` on parse failure instead of falling back to predictable all-zero keys
+- **Implemented real X.509 signature verification** — `verifyX509Signature()` delegates to `CryptoBackend` (ed25519/ecdsa/rsa) instead of returning `true`
+- **Wired RetryIntegrityTag** — `LongHeader.serialize()` and `V2LongHeader.serialize()` compute real integrity tags for Retry packets using `RetryIntegrityTag.compute()`
+- **Real transcript hash in handshake** — `HandshakeCoordinator` uses `_transcriptHash.currentHash` instead of `List<int>.filled(32, 0)` for handshake secret derivation
+- **Removed malformed certificate fallback** — `CertificateChain.parseCertificate()` propagates `FormatException` instead of silently accepting synthetic data
+- Security tests: `test/crypto/tls/cert_chain_security_test.dart` (4 tests), `test/crypto/tls/handshake_security_test.dart` (3 tests)
+
+### Efficiency (Code Quality)
+- **Deleted dead code** — `lib/src/wire/packet_number_reconstructor.dart` (42 lines), `lib/src/crypto/tls/session_ticket_store.dart` (29 lines, duplicate)
+- **Extracted shared hex utility** — `lib/src/utils/hex.dart` replaces 4 duplicated `_bytesToHex`/`_encodeKey` implementations
+- **Extracted shared list equality** — `lib/src/utils/collections.dart` replaces duplicated `_listEquals`/`_listsEqual` helpers
+- **Archived 7 security audit files** — moved to `doc/archive/security_audits/`
+- **Consolidated 9 RFC research notes** — merged into `doc/research/RFC_NOTES.md`
+- **Consolidated 3 roadmap files** — single `ROADMAP.md` in root
+- **Deleted 9 meta-test/coverage-gap test files** — removed meta-tests and coverage gap tests
+
+### Coherence (Architecture)
+- **Standardized imports** — `quic_connection.dart` and `quic_endpoint.dart` now use package imports consistently
+- **Implemented GOAWAY sending** — `Http3Connection.close()` now calls `_sendGoawayFrame()` instead of leaving a TODO
+- **Added frame class docs** — 19 frame classes in `frame.dart` now have RFC 9000 section references
+- **Completed public API exports** — `lib/quic.dart`, `lib/http3.dart`, `lib/libp2p.dart`, `lib/webtransport.dart` now export stable public APIs
+- **Exported V2LongHeader** — added to `lib/dart_quic.dart` barrel file
+- **Completed example scaffolds** — `echo_client.dart` and `echo_server.dart` now demonstrate real API usage
+- **Created `doc/README.md`** — explains documentation hierarchy
+
+### Capability (Features)
+- **StreamScheduler interface (ADR-006)** — `StreamScheduler` abstract class + `RoundRobinScheduler` implementation; injected into `StreamManager`
+- **Isolate-per-connection skeleton (ADR-007)** — `ConnectionIsolate` and `IsolateSupervisor` scaffolds
+- **Consolidated body streaming** — merged `http3_body_streaming.dart` into `Http3BodyStream`
+- **Version sync** — `pubspec.yaml` updated to `1.2.0` to match CHANGELOG
+
+### Changed
+- `PacketHeader.serialize()` returns `Future<Uint8List>` (was `Uint8List`) to support async Retry integrity tag computation
+- `PacketBuilder.build()` returns `Future<Uint8List>` (cascade from serialize change)
+- `PacketSender.buildPacket()` returns `Future<Uint8List>` (cascade from serialize change)
+- `QuicConnection.buildPacket()` and `probeNewPath()` are now `async`
+- 23 test files updated to `await` async serialize/build calls
+
+---
+
 ## [1.1.0] — 2026-06-27
 
 ### Added

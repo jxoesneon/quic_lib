@@ -10,8 +10,10 @@ import 'http3_request.dart';
 import 'http3_response.dart';
 import 'push_promise_frame.dart';
 import 'settings_frame.dart';
+import 'package:dart_quic/src/recovery/packet_number_space.dart';
+import 'package:dart_quic/src/wire/frame.dart';
 
-/// Placeholder for an HTTP/3 request stream.
+/// Represents a single HTTP/3 request/response stream mapped to a QUIC stream ID.
 class Http3Stream {
   final int streamId;
   Http3Stream(this.streamId);
@@ -24,9 +26,6 @@ typedef DataFrame = Http3DataFrame;
 ///
 /// Per RFC 9114, an HTTP/3 connection operates on a QUIC connection and
 /// exchanges frames on QUIC streams. Stream 0 is the control stream.
-///
-/// **Status:** Scaffold — control stream handling and request/response
-/// routing are not yet implemented.
 class Http3Connection {
   final Object _quicConnection; // Will be QuicConnection once fully wired.
 
@@ -41,6 +40,7 @@ class Http3Connection {
   final Map<int, HeadersFrame> _pendingHeaders = {};
   final Map<int, List<DataFrame>> _pendingData = {};
   final Map<int, Http3PushPromiseFrame> _pushPromises = {};
+  final List<Uint8List> _pendingQuicPackets = [];
 
   Http3Connection({
     required Object quicConnection,
@@ -238,6 +238,37 @@ class Http3Connection {
     _isClosing = true;
     final goaway = Http3GoawayFrame(lastStreamIdOrPushId: _lastAcceptedStreamId);
     _sentGoawayFrames.add(goaway);
-    // TODO: Actually send the GOAWAY frame over the QUIC control stream
+    unawaited(_sendGoawayFrame(goaway.toFrame().serialize()));
+  }
+
+  /// QUIC packets built by HTTP/3 operations (e.g., GOAWAY) that are
+  /// waiting to be sent by the transport layer.
+  List<Uint8List> get pendingQuicPackets => List.unmodifiable(_pendingQuicPackets);
+
+  /// Send a GOAWAY frame by building a QUIC packet containing the frame
+  /// as a STREAM frame on the HTTP/3 control stream.
+  Future<void> _sendGoawayFrame(Uint8List bytes) async {
+    final quic = _quicConnection as dynamic;
+    try {
+      final controlStreamId = quic.openUnidirectionalStream() as int;
+      final dcid = (quic.connectionId as List<int>?) ?? [];
+      final packet = await quic.buildEncryptedPacket(
+        space: PacketNumberSpace.application,
+        frames: [
+          StreamFrame(
+            streamId: controlStreamId,
+            data: bytes,
+            fin: false,
+            offset: 0,
+          ),
+        ],
+        dcid: dcid,
+      );
+      _pendingQuicPackets.add(packet as Uint8List);
+    } catch (_) {
+      // If the underlying connection doesn't support packet building,
+      // store the raw frame bytes for later transmission.
+      _pendingQuicPackets.add(bytes);
+    }
   }
 }

@@ -10,7 +10,7 @@ rfc_basis:
 dependencies:
   - "DART_IPFS_INTEGRATION.md"
   - "ERROR_REGISTRY.md"
-  - "ROADMAP.md"
+  - "../../ROADMAP.md"
   - "VERSIONING_POLICY.md"
 ---
 
@@ -345,7 +345,7 @@ The libp2p QUIC transport Dart API is defined in [DART_API_SPEC.md §2.8](DART_A
 
 - [DART_IPFS_INTEGRATION.md](../architecture/DART_IPFS_INTEGRATION.md) — Defines wire and handshake details consumed by dart_ipfs.
 - [ERROR_REGISTRY.md](ERROR_REGISTRY.md) — Defines libp2p multistream-select integration over QUIC.
-- [ROADMAP.md](ROADMAP.md) — Lists LIBP2P_QUIC_SPEC as a formal specification deliverable.
+- [ROADMAP.md](../../ROADMAP.md) — Lists LIBP2P_QUIC_SPEC as a formal specification deliverable.
 - [VERSIONING_POLICY.md](VERSIONING_POLICY.md) — Mentions LIBP2P_QUIC_SPEC as downstream integration contract.
 ## 6. Testing Strategy
 

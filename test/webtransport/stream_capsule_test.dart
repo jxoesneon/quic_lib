@@ -33,6 +33,90 @@ void main() {
       expect(parsed.streamId, equals(100));
       expect(parsed.type, equals(CapsuleType.registerUnidirectionalStream));
     });
+
+    test('toString includes streamId and type', () {
+      final capsule = StreamCapsule(
+        streamId: 42,
+        type: CapsuleType.registerBidirectionalStream,
+      );
+      expect(capsule.toString(), contains('42'));
+      expect(capsule.toString(), contains('registerBidirectionalStream'));
+    });
+
+    test('hashCode is consistent', () {
+      final a = StreamCapsule(streamId: 42, type: CapsuleType.registerBidirectionalStream);
+      final b = StreamCapsule(streamId: 42, type: CapsuleType.registerBidirectionalStream);
+      expect(a.hashCode, equals(b.hashCode));
+    });
+
+    test('equals returns false for non-StreamCapsule', () {
+      final capsule = StreamCapsule(streamId: 42, type: CapsuleType.registerBidirectionalStream);
+      expect(capsule == 'not a capsule', isFalse);
+    });
+
+    test('equals returns false for different streamId', () {
+      final a = StreamCapsule(streamId: 1, type: CapsuleType.registerBidirectionalStream);
+      final b = StreamCapsule(streamId: 2, type: CapsuleType.registerBidirectionalStream);
+      expect(a == b, isFalse);
+    });
+
+    test('equals returns false for different type', () {
+      final a = StreamCapsule(streamId: 42, type: CapsuleType.registerBidirectionalStream);
+      final b = StreamCapsule(streamId: 42, type: CapsuleType.registerUnidirectionalStream);
+      expect(a == b, isFalse);
+    });
+
+    test('equals returns true for identical instance', () {
+      final capsule = StreamCapsule(streamId: 42, type: CapsuleType.registerBidirectionalStream);
+      expect(capsule == capsule, isTrue);
+    });
+
+    test('serialize/parse with large streamId', () {
+      final original = StreamCapsule(
+        streamId: 1000,
+        type: CapsuleType.registerBidirectionalStream,
+      );
+      final bytes = original.serialize();
+      // Type (0x41 = 65, which is a 2-byte varint) + streamId (1000 = 2 bytes) = 4 bytes total.
+      expect(bytes.length, equals(4));
+      final parsed = StreamCapsule.parse(bytes);
+      expect(parsed, equals(original));
+    });
+
+    test('serialize/parse with multi-byte type', () {
+      final original = StreamCapsule(
+        streamId: 42,
+        type: CapsuleType.closeWebTransportSession, // value 0x1a4 = 420 (2-byte varint)
+      );
+      final bytes = original.serialize();
+      // Type (420 = 2 bytes) + streamId (42 = 1 byte) = 3 bytes total.
+      expect(bytes.length, equals(3));
+      final parsed = StreamCapsule.parse(bytes);
+      expect(parsed, equals(original));
+    });
+  });
+
+  group('StreamCapsuleRegistry', () {
+    test('register and get', () {
+      final registry = StreamCapsuleRegistry();
+      final capsule = Capsule(type: CapsuleType.registerBidirectionalStream, payload: Uint8List(0));
+      registry.register(8, capsule);
+      expect(registry.get(8), isNotNull);
+      expect(registry.get(8)!.streamId, equals(8));
+    });
+
+    test('get returns null for unregistered stream', () {
+      final registry = StreamCapsuleRegistry();
+      expect(registry.get(99), isNull);
+    });
+
+    test('isRegistered returns correct boolean', () {
+      final registry = StreamCapsuleRegistry();
+      final capsule = Capsule(type: CapsuleType.registerUnidirectionalStream, payload: Uint8List(0));
+      registry.register(12, capsule);
+      expect(registry.isRegistered(12), isTrue);
+      expect(registry.isRegistered(99), isFalse);
+    });
   });
 
   group('WebTransportSession stream tracking', () {

@@ -14,7 +14,7 @@ class _UnknownHeader implements PacketHeader {
   int get headerForm => 2;
 
   @override
-  Uint8List serialize() => Uint8List(0);
+  Future<Uint8List> serialize() async => Uint8List(0);
 
   @override
   int get byteLength => 0;
@@ -38,7 +38,7 @@ void main() {
       expect(() => PacketBuilder.build(header, []), throwsUnsupportedError);
     });
 
-    test('LongHeader with packet number 0x100 uses 2-byte PN', () {
+    test('LongHeader with packet number 0x100 uses 2-byte PN', () async {
       final header = LongHeader(
         version: 0x00000001,
         packetType: LongHeader.typeHandshake,
@@ -46,11 +46,11 @@ void main() {
         sourceConnectionId: const [0x02],
         packetNumber: 0x100,
       );
-      final packet = PacketBuilder.build(header, []);
+      final packet = await PacketBuilder.build(header, []);
       expect(packet.isNotEmpty, isTrue);
     });
 
-    test('LongHeader with packet number 0x10000 uses 3-byte PN', () {
+    test('LongHeader with packet number 0x10000 uses 3-byte PN', () async {
       final header = LongHeader(
         version: 0x00000001,
         packetType: LongHeader.typeHandshake,
@@ -58,11 +58,11 @@ void main() {
         sourceConnectionId: const [0x02],
         packetNumber: 0x10000,
       );
-      final packet = PacketBuilder.build(header, []);
+      final packet = await PacketBuilder.build(header, []);
       expect(packet.isNotEmpty, isTrue);
     });
 
-    test('Initial with 100-byte token hits 2-byte varint', () {
+    test('Initial with 100-byte token hits 2-byte varint', () async {
       final token = List<int>.generate(100, (i) => i & 0xFF);
       final header = LongHeader(
         version: 0x00000001,
@@ -72,11 +72,11 @@ void main() {
         packetNumber: 0,
         token: token,
       );
-      final packet = PacketBuilder.build(header, []);
+      final packet = await PacketBuilder.build(header, []);
       expect(packet.isNotEmpty, isTrue);
     });
 
-    test('LongHeader with huge payload hits 4-byte varint', () {
+    test('LongHeader with huge payload hits 4-byte varint', () async {
       final header = LongHeader(
         version: 0x00000001,
         packetType: LongHeader.typeHandshake,
@@ -85,7 +85,7 @@ void main() {
         packetNumber: 0,
       );
       final frames = [_HugeFrame(20000)];
-      final packet = PacketBuilder.build(header, frames);
+      final packet = await PacketBuilder.build(header, frames);
       expect(packet.isNotEmpty, isTrue);
     });
 

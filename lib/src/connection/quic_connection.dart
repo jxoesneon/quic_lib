@@ -354,7 +354,8 @@ class QuicConnection {
     // stateless_reset_token (0x02)
     final srt = statelessResetToken;
     if (srt != null && srt.length == 16) {
-      builder.add(VarInt.encode(QuicTransportParameterId.statelessResetToken.value));
+      builder.add(
+          VarInt.encode(QuicTransportParameterId.statelessResetToken.value));
       builder.add(VarInt.encode(16));
       builder.add(srt);
     }
@@ -559,20 +560,17 @@ class QuicConnection {
       } else if (id ==
           QuicTransportParameterId.originalDestinationConnectionId.value) {
         originalDestinationConnectionId = Uint8List.fromList(value);
-      } else if (id ==
-          QuicTransportParameterId.statelessResetToken.value) {
+      } else if (id == QuicTransportParameterId.statelessResetToken.value) {
         statelessResetToken = Uint8List.fromList(value);
       } else if (id ==
           QuicTransportParameterId.initialSourceConnectionId.value) {
         initialSourceConnectionId = Uint8List.fromList(value);
-      } else if (id ==
-          QuicTransportParameterId.retrySourceConnectionId.value) {
+      } else if (id == QuicTransportParameterId.retrySourceConnectionId.value) {
         retrySourceConnectionId = Uint8List.fromList(value);
       } else if (id == QuicTransportParameterId.preferredAddress.value) {
         // Parse 4-byte IPv4 + 2-byte port (simplified; full support needs IPv6).
         if (value.length >= 6) {
-          final addrStr =
-              '${value[0]}.${value[1]}.${value[2]}.${value[3]}';
+          final addrStr = '${value[0]}.${value[1]}.${value[2]}.${value[3]}';
           preferredAddress = InternetAddress(addrStr);
           preferredAddressPort = (value[4] << 8) | value[5];
         }

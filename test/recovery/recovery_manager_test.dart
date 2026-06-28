@@ -108,8 +108,7 @@ void main() {
           isFalse);
 
       // Just over the threshold.
-      expect(
-          manager.checkPersistentCongestion(1000 + persistentDuration + 1),
+      expect(manager.checkPersistentCongestion(1000 + persistentDuration + 1),
           isTrue);
 
       // cwnd should be reset to initial window.

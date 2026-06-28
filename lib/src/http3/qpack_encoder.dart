@@ -95,7 +95,7 @@ class QpackEncoder {
   }
 
   /// Find a static table index for an exact name+value match.
-  /// Returns the 1-based index or null.
+  /// Returns the 0-based index or null.
   static int? findStaticIndex(String name, String value) {
     return QpackStaticTable.findIndex(name, value);
   }

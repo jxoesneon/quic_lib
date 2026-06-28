@@ -38,17 +38,19 @@ A comprehensive, pure-Dart QUIC protocol stack specification and architecture.
 
 | Platform | Support | Notes |
 |----------|---------|-------|
-| Android  | ✅ Full | Native UDP, isolates |
-| iOS      | ✅ Full | Native UDP, isolates |
-| Linux    | ✅ Full | Native UDP, isolates |
-| macOS    | ✅ Full | Native UDP, isolates |
-| Windows  | ✅ Full | Native UDP, isolates |
-| Web      | 🚧 Compile-only | Code compiles via conditional imports; UDP is unavailable in browsers (use WebTransport/WebRTC instead) |
-| WASM     | 🚧 Compile-only | Same limitations as Web |
+| Android  | ✅ Full | Native UDP sockets, isolates, full QUIC stack |
+| iOS      | ✅ Full | Native UDP sockets, isolates, full QUIC stack |
+| Linux    | ✅ Full | Native UDP sockets, isolates, full QUIC stack |
+| macOS    | ✅ Full | Native UDP sockets, isolates, full QUIC stack |
+| Windows  | ✅ Full | Native UDP sockets, isolates, full QUIC stack |
 
 Requires Dart SDK `^3.0.0`.
 
-**Web/WASM caveat:** The QUIC protocol requires raw UDP sockets, which browsers do not expose. The package code is now structured with conditional imports so it compiles for web/WASM targets, but `QuicEndpoint.bind()` and `UdpSocket.bind()` will throw `UnsupportedError` at runtime on web. For browser networking, use the WebTransport or HTTP/3 layers with a browser-native transport, or use WebRTC data channels.
+> **Why no Web / WASM?**
+>
+> `quic_lib` is a *wire-format* QUIC implementation — it encodes packets, manages connection IDs, runs the handshake state machine, and handles UDP I/O directly. Browsers intentionally do **not** expose raw UDP sockets to web applications because of fundamental security risks: UDP can be used for DDoS amplification attacks, port scanning, DNS cache poisoning, and firewall bypassing. The web security model requires the browser to own the network stack.
+>
+> If you need QUIC-like functionality in a browser, use the **WebTransport API** (built into Chrome, Firefox, and Safari). The browser handles the QUIC wire protocol internally and exposes a high-level API. See [doc/WEB_AND_WASM.md](doc/WEB_AND_WASM.md) for a full explanation of the limitation and recommended alternatives.
 
 ## Installation
 

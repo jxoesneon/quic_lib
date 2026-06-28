@@ -10,13 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.3] — 2026-06-28
 
 ### Platform Support
-- **WASM compatibility** — Added conditional imports for `dart:isolate` and `dart:io` usage
-  - `ConnectionIsolate` / `IsolateSupervisor` now use platform-specific implementations via `dart.library.io` conditional exports
-  - `UdpSocket` uses conditional exports with stub fallback for web/WASM
-  - `InternetAddress` abstracted through `platform_address.dart` conditional export
+- **Honest platform declaration** — Removed `web:` from `pubspec.yaml` platforms. `quic_lib` is a native-only package; QUIC requires raw UDP sockets which browsers intentionally block for security reasons (DDoS amplification, port scanning, DNS poisoning).
+- **Conditional imports** — Refactored `dart:isolate` and `dart:io` usage to use conditional exports via `dart.library.io`:
+  - `ConnectionIsolate` / `IsolateSupervisor` — native implementation + stub for web compilation
+  - `UdpSocket` — native `RawDatagramSocket` implementation + web stub
+  - `InternetAddress` — abstracted through `platform_address.dart` conditional export
   - `libp2p_quic_transport.dart` and `dcutr_udp_coordinator.dart` updated to use platform address abstraction
-  - Code now compiles for web/WASM; UDP functionality throws `UnsupportedError` on web (browsers do not support raw UDP sockets)
-- Added `wasm:` to `pubspec.yaml` platforms
+- **Documentation** — Added `doc/WEB_AND_WASM.md` explaining why web is unsupported, the browser security model, and recommended alternatives (WebTransport API, WebRTC data channels)
 
 ## [1.2.2] — 2026-06-28
 

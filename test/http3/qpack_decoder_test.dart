@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:quic_lib/src/http3/qpack_decoder.dart';
 import 'package:quic_lib/src/http3/qpack_encoder.dart';
 import 'package:quic_lib/src/http3/qpack_integer.dart';
+import 'package:quic_lib/src/http3/qpack_static_table.dart';
+import 'package:quic_lib/src/http3/qpack_string.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -111,6 +113,99 @@ void main() {
     test('QpackFieldLine toString', () {
       const line = QpackFieldLine(':method', 'GET');
       expect(line.toString(), equals('QpackFieldLine(:method: GET)'));
+    });
+
+    test('decode rejects out-of-bounds offset', () {
+      final decoder = QpackDecoder();
+      expect(() => decoder.decode(Uint8List.fromList([0x80]), 2),
+          throwsArgumentError);
+      expect(() => decoder.decode(Uint8List.fromList([0x80]), -1),
+          throwsArgumentError);
+    });
+
+    test('decode rejects unknown encoding', () {
+      final decoder = QpackDecoder();
+      // 0x50 does not match any QPACK field-line prefix.
+      expect(() => decoder.decode(Uint8List.fromList([0x50]), 0),
+          throwsArgumentError);
+    });
+
+    test('decodeLinesWithBase sets and restores base', () {
+      final decoder = QpackDecoder();
+      decoder.base = 5;
+      final bytes = Uint8List(0);
+      final lines = decoder.decodeLinesWithBase(bytes, 10);
+      expect(lines, isEmpty);
+      expect(decoder.base, equals(5));
+    });
+
+    test('decode indexed with dynamic table entry', () {
+      final decoder = QpackDecoder();
+      decoder.dynamicTable.setCapacity(4096);
+      decoder.dynamicTable.insert(':custom', 'dynamic-value');
+      final index = QpackStaticTable.length;
+      final bytes = QpackInteger.encode(index, 6);
+      bytes[0] |= 0x80;
+      final (line, _) = decoder.decode(bytes, 0);
+      expect(line.name, equals(':custom'));
+      expect(line.value, equals('dynamic-value'));
+    });
+
+    test('decode indexed with missing dynamic table entry throws', () {
+      final decoder = QpackDecoder();
+      final index = QpackStaticTable.length + 10;
+      final bytes = QpackInteger.encode(index, 6);
+      bytes[0] |= 0x80;
+      expect(() => decoder.decode(bytes, 0), throwsArgumentError);
+    });
+
+    test('decode literal with name ref from dynamic table', () {
+      final decoder = QpackDecoder();
+      decoder.dynamicTable.setCapacity(4096);
+      decoder.dynamicTable.insert(':dynamic-name', 'dynamic-value');
+      final index = QpackStaticTable.length;
+      final indexBytes = QpackInteger.encode(index, 5);
+      indexBytes[0] |= 0x40;
+      final valueBytes = QpackString.encode('literal-value');
+      final bytes = Uint8List.fromList([...indexBytes, ...valueBytes]);
+      final (line, _) = decoder.decode(bytes, 0);
+      expect(line.name, equals(':dynamic-name'));
+      expect(line.value, equals('literal-value'));
+    });
+
+    test('decode literal with name ref missing dynamic entry throws', () {
+      final decoder = QpackDecoder();
+      final index = QpackStaticTable.length + 10;
+      final indexBytes = QpackInteger.encode(index, 5);
+      indexBytes[0] |= 0x40;
+      final valueBytes = QpackString.encode('value');
+      final bytes = Uint8List.fromList([...indexBytes, ...valueBytes]);
+      expect(() => decoder.decode(bytes, 0), throwsArgumentError);
+    });
+
+    test('decode post-base literal with name reference', () {
+      final decoder = QpackDecoder();
+      decoder.base = 0;
+      decoder.dynamicTable.setCapacity(4096);
+      decoder.dynamicTable.insert(':post-base', 'pb');
+      // 0001 prefix + 4-bit encoded post-base index 0.
+      final nameIndexBytes = QpackInteger.encode(0, 4);
+      nameIndexBytes[0] |= 0x10;
+      final valueBytes = QpackString.encode('val');
+      final bytes = Uint8List.fromList([...nameIndexBytes, ...valueBytes]);
+      final (line, _) = decoder.decode(bytes, 0);
+      expect(line.name, equals(':post-base'));
+      expect(line.value, equals('val'));
+    });
+
+    test('decode post-base literal with missing entry throws', () {
+      final decoder = QpackDecoder();
+      decoder.base = 0;
+      final nameIndexBytes = QpackInteger.encode(0, 4);
+      nameIndexBytes[0] |= 0x10;
+      final valueBytes = QpackString.encode('val');
+      final bytes = Uint8List.fromList([...nameIndexBytes, ...valueBytes]);
+      expect(() => decoder.decode(bytes, 0), throwsArgumentError);
     });
   });
 }

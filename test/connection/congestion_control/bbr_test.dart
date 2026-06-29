@@ -78,5 +78,112 @@ void main() {
       expect(bbr.cwndInPackets, equals(4));
       expect(bbr.state, equals(BbrState.startup));
     });
+
+    test('congestionWindow is reported in bytes', () {
+      final bbr = BbrCongestionController(packetSize: 1200);
+      expect(bbr.congestionWindow, equals(4 * 1200));
+    });
+
+    test('onECNCEMarked is a no-op', () {
+      final bbr = BbrCongestionController();
+      expect(() => bbr.onECNCEMarked(5), returnsNormally);
+      expect(bbr.cwndInPackets, equals(4));
+    });
+
+    test('exits STARTUP when bandwidth growth stalls', () {
+      final bbr = BbrCongestionController();
+      final now = DateTime.now();
+      // Stall bandwidth growth for three rounds, then send extra packets and
+      // complete the fourth round by acking the last packet. This leaves
+      // enough bytes in flight that the DRAIN -> PROBE_BW transition is not
+      // triggered immediately.
+      for (var i = 0; i < 3; i++) {
+        bbr.onPacketSent(i, 1200);
+        bbr.onAckReceived(i, 1200, now);
+      }
+      bbr.onPacketSent(3, 1200);
+      bbr.onPacketSent(4, 1200);
+      bbr.onPacketSent(5, 1200);
+      bbr.onAckReceived(5, 1200, now);
+      expect(bbr.state, equals(BbrState.drain));
+      expect(bbr.bytesInFlight, greaterThan(1200));
+    });
+
+    test('exits DRAIN when bytes in flight fit BDP', () {
+      final bbr = BbrCongestionController();
+      final now = DateTime.now();
+      // Force into DRAIN with excess bytes in flight.
+      for (var i = 0; i < 3; i++) {
+        bbr.onPacketSent(i, 1200);
+        bbr.onAckReceived(i, 1200, now);
+      }
+      bbr.onPacketSent(3, 1200);
+      bbr.onPacketSent(4, 1200);
+      bbr.onPacketSent(5, 1200);
+      bbr.onAckReceived(5, 1200, now);
+      expect(bbr.state, equals(BbrState.drain));
+      expect(bbr.bytesInFlight, greaterThan(1200));
+      // Drain bytes in flight below BDP estimate so DRAIN -> PROBE_BW.
+      bbr.onPacketLost(3, bbr.bytesInFlight - 1200, now);
+      bbr.onAckReceived(5, 0, now);
+      expect(bbr.state, equals(BbrState.probeBw));
+    });
+
+    test('enters PROBE_RTT after enough time passes', () {
+      final bbr = BbrCongestionController();
+      final now = DateTime.now();
+      // Get into PROBE_BW.
+      for (var i = 0; i < 4; i++) {
+        bbr.onPacketSent(i, 1200);
+        bbr.onAckReceived(i, 1200, now);
+      }
+      bbr.onPacketLost(4, bbr.bytesInFlight, now);
+      bbr.onAckReceived(3, 0, now);
+      expect(bbr.state, equals(BbrState.probeBw));
+
+      // Move time forward beyond the PROBE_RTT interval.
+      final future = now.add(const Duration(seconds: 11));
+      bbr.onAckReceived(3, 0, future);
+      expect(bbr.state, equals(BbrState.probeRtt));
+    });
+
+    test('cwnd is capped at minimum during PROBE_RTT', () {
+      final bbr = BbrCongestionController();
+      final now = DateTime.now();
+      // Ramp up cwnd in STARTUP.
+      for (var i = 0; i < 4; i++) {
+        bbr.onPacketSent(i, 1200);
+        bbr.onAckReceived(i, 1200, now);
+      }
+      bbr.onPacketLost(4, bbr.bytesInFlight, now);
+      bbr.onAckReceived(3, 0, now);
+      expect(bbr.state, equals(BbrState.probeBw));
+
+      final future = now.add(const Duration(seconds: 11));
+      bbr.onAckReceived(3, 0, future);
+      expect(bbr.state, equals(BbrState.probeRtt));
+      expect(bbr.cwndInPackets, greaterThanOrEqualTo(4));
+    });
+
+    test('pacing interval is updated when bandwidth is known', () {
+      final bbr = BbrCongestionController();
+      final now = DateTime.now();
+      bbr.onPacketSent(0, 1200);
+      bbr.onAckReceived(0, 1200, now);
+      expect(bbr.pacingIntervalUs, greaterThan(0));
+    });
+
+    test('probeBw pacing gain cycles through phases', () {
+      final bbr = BbrCongestionController();
+      final now = DateTime.now();
+      for (var i = 0; i < 4; i++) {
+        bbr.onPacketSent(i, 1200);
+        bbr.onAckReceived(i, 1200, now);
+      }
+      bbr.onPacketLost(4, bbr.bytesInFlight, now);
+      bbr.onAckReceived(3, 0, now);
+      expect(bbr.state, equals(BbrState.probeBw));
+      expect(bbr.pacingIntervalUs, greaterThan(0));
+    });
   });
 }

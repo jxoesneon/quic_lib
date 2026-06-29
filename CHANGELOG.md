@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.11.0] — 2026-06-29
+
+### Added
+- **121 new tests** for fuzzing, error paths, and coverage gaps:
+  - `test/wire/varint_fuzz_test.dart` — truncated varints, invalid offsets, overflow attempts.
+  - `test/wire/frame_fuzz_test.dart` — unknown frame types, truncated length-prefixed frames, malformed ACK ranges.
+  - `test/http3/qpack_fuzz_test.dart` — malformed QPACK integers, invalid instructions, truncated header blocks.
+  - `test/crypto/tls/x509_fuzz_test.dart` — malformed DER, missing extensions, invalid lengths.
+  - `test/connection/packet_receiver_fuzz_test.dart` — truncated packets, oversized DCID, unsupported versions.
+  - `test/http3/http3_frame_fuzz_test.dart` — truncated HTTP/3 frame headers and payloads.
+
+### Improved
+- **Test coverage** for low-covered files:
+  - `transport_error_codes.dart` → 100%
+  - `qpack_decoder.dart` and `qpack_decoder_stream.dart` → 100%
+  - `bbr.dart` → 94.5%
+  - `protected_packet_codec.dart` → 96.4%
+  - `http3/webtransport_session.dart` → 97.6%
+  - `libp2p_quic_transport.dart` → 82.8%
+  - `quic_connection.dart` → 88.0%
+
+### Fixed
+- `QpackInteger.decode` now throws `ArgumentError` when a continuation would exceed the 62-bit QPACK limit instead of returning an out-of-range value.
+- `PacketReceiver.processPacket` now catches malformed header parsing and drops the packet instead of propagating the exception.
+
+### Documentation
+- Added `example/http3_client.dart` and improved `example/echo_client.dart` / `example/echo_server.dart`.
+- Added/expanded dartdoc comments on `QuicConnection`, `Http3Connection`, and `Libp2pQuicTransport` public members.
+- Updated README to reflect that the WebTransport `Capsule` rename already happened in v1.10.0.
+
+---
+
 ## [1.10.0] — 2026-06-29
 
 ### Changed

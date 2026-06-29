@@ -115,19 +115,31 @@ class QuicConnection {
   Completer<void>? _probeCompleter;
   StreamScheduler? _streamScheduler;
 
-  // RFC 9221 datagram support.
+  /// Maximum DATAGRAM frame payload size in bytes (RFC 9221).
+  ///
+  /// A value of `0` disables the DATAGRAM extension. The default of 1200 bytes
+  /// is a reasonable conservative limit for typical UDP paths.
   int maxDatagramFrameSize = 1200;
   final _datagramController = StreamController<Uint8List>.broadcast();
 
-  // RFC 9287 QUIC bit greasing.
+  /// Whether to randomize the reserved QUIC header bits (RFC 9287).
+  ///
+  /// Greasing helps ensure the protocol can be extended in the future without
+  /// breaking endpoints that conservatively check reserved bits.
   bool greaseQuicBit = true;
 
-  // RFC 9368 compatible version negotiation.
+  /// Version information used for compatible version negotiation (RFC 9368).
+  ///
+  /// Set when the endpoint supports or negotiates a non-default QUIC version.
   VersionInformation? versionInformation;
 
-  // RFC 9000 Section 13.4 ECN counters.
+  /// Count of incoming packets marked with ECT(0) (RFC 9000 Section 13.4).
   int ect0Counter = 0;
+
+  /// Count of incoming packets marked with ECT(1) (RFC 9000 Section 13.4).
   int ect1Counter = 0;
+
+  /// Count of incoming packets marked with CE (RFC 9000 Section 13.4).
   int ceCounter = 0;
 
   /// Whether ECN capability is enabled for this connection.
@@ -141,16 +153,45 @@ class QuicConnection {
   int _lastAckCeCount = 0;
 
   // RFC 9000 Section 18.2 transport parameters.
+  /// Maximum idle timeout in milliseconds (RFC 9000 Section 18.2).
+  ///
+  /// The connection is silently closed if no packets are received within
+  /// this period. Defaults to 30000 ms.
   int maxIdleTimeout = 30000;
+
+  /// Maximum UDP payload size the endpoint is willing to receive (RFC 9000 Section 18.2).
+  ///
+  /// Defaults to 65527 bytes, the largest UDP payload that fits in an IPv6
+  /// packet without fragmentation.
   int maxUdpPayloadSize = 65527;
+
+  /// Initial connection-level flow-control limit in bytes (RFC 9000 Section 18.2).
   int initialMaxData = 0;
+
+  /// Initial flow-control limit for locally-initiated bidirectional streams (RFC 9000 Section 18.2).
   int initialMaxStreamDataBidiLocal = 0;
+
+  /// Initial flow-control limit for peer-initiated bidirectional streams (RFC 9000 Section 18.2).
   int initialMaxStreamDataBidiRemote = 0;
+
+  /// Initial flow-control limit for unidirectional streams (RFC 9000 Section 18.2).
   int initialMaxStreamDataUni = 0;
+
+  /// Initial maximum number of bidirectional streams (RFC 9000 Section 18.2).
   int initialMaxStreamsBidi = 0;
+
+  /// Initial maximum number of unidirectional streams (RFC 9000 Section 18.2).
   int initialMaxStreamsUni = 0;
+
+  /// ACK delay exponent used in ACK frames (RFC 9000 Section 18.2).
+  ///
+  /// The actual delay is `ackDelay * 2^ackDelayExponent` microseconds.
   int ackDelayExponent = 3;
+
+  /// Maximum ACK delay in milliseconds (RFC 9000 Section 18.2).
   int maxAckDelay = 25;
+
+  /// Maximum number of connection IDs the peer can use (RFC 9000 Section 18.2).
   int activeConnectionIdLimit = 2;
 
   /// Whether the peer is allowed to migrate (RFC 9000 Section 9).
@@ -176,8 +217,13 @@ class QuicConnection {
   List<int>? retrySourceConnectionId;
 
   // PSK / 0-RTT session resumption (RFC 8446 + RFC 9001).
+  /// Pre-shared key ticket for 0-RTT session resumption (RFC 8446).
   Uint8List? pskTicket;
+
+  /// Obfuscated ticket age for the PSK ticket (RFC 8446).
   int? pskTicketAgeAdd;
+
+  /// Whether to attempt 0-RTT (early data) on this connection (RFC 9001).
   bool attempt0Rtt = false;
 
   /// Maximum amount of early data the server is willing to accept (bytes).
@@ -590,14 +636,27 @@ class QuicConnection {
     return local.isZeroRttCompatible(peerInfo);
   }
 
+  /// Tracker for packets sent on this connection.
+  ///
+  /// Used by the recovery manager to match ACKs and detect loss.
   SentPacketTracker get sentPacketTracker => _sentPacketTracker;
 
-  // Expose subsystems for integration and monitoring.
+  /// Connection ID manager for this connection.
   ConnectionIdManager get cidManager => _cidManager;
+
+  /// RTT estimator for this connection.
   RttEstimator get rttEstimator => _rttEstimator;
+
+  /// Loss detector for this connection.
   LossDetector get lossDetector => _lossDetector;
+
+  /// PTO scheduler for this connection.
   PtoScheduler get ptoScheduler => _ptoScheduler;
+
+  /// Congestion controller for this connection.
   CongestionController get congestionController => _congestionController;
+
+  /// Pacing calculator for this connection.
   PacingCalculator get pacingCalculator => _pacingCalculator;
 
   /// The current pacing delay in microseconds, or null if pacing is not

@@ -123,5 +123,23 @@ void main() {
         throwsArgumentError,
       );
     });
+
+    test('toString includes fields', () {
+      expect(
+        InsertWithNameReference(isStatic: true, nameIndex: 1, value: 'v')
+            .toString(),
+        equals(
+            'InsertWithNameReference(isStatic: true, nameIndex: 1, value: v)'),
+      );
+      expect(
+        InsertWithoutNameReference(name: 'n', value: 'v').toString(),
+        equals('InsertWithoutNameReference(name: n, value: v)'),
+      );
+      expect(Duplicate(index: 3).toString(), equals('Duplicate(index: 3)'));
+      expect(
+        SetDynamicTableCapacity(capacity: 4096).toString(),
+        equals('SetDynamicTableCapacity(capacity: 4096)'),
+      );
+    });
   });
 }

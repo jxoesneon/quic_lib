@@ -1,7 +1,13 @@
+import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/libp2p/libp2p_certificate_generator.dart';
 import 'package:quic_lib/src/libp2p/libp2p_quic_transport.dart';
 import 'package:quic_lib/src/libp2p/multiaddr.dart';
+import 'package:quic_lib/src/libp2p/multistream_select.dart';
+import 'package:quic_lib/src/libp2p/peer_id.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -224,6 +230,99 @@ void main() {
       expect(conn.isAlpnValid, isTrue);
       expect(() => conn.validateAlpn(), returnsNormally);
     });
+
+    test('negotiatedAlpn falls back to dynamic access', () {
+      final fakeConn = _FakeQuicConnectionWithAlpn('fallback');
+      final conn = Libp2pQuicConnection(fakeConn);
+      expect(conn.negotiatedAlpn, equals('fallback'));
+    });
+
+    test('negotiatedAlpn returns null when unsupported', () {
+      final conn = Libp2pQuicConnection(Object());
+      expect(conn.negotiatedAlpn, isNull);
+    });
+
+    test('negotiateProtocol uses direct write and read methods', () async {
+      final response = MultistreamSelect.encodeLengthPrefixed(
+        MultistreamSelect.encodeProtocol('/ipfs/1.0.0'),
+      );
+      final fakeConn = _FakeQuicConnectionForReadWrite(response);
+      final conn = Libp2pQuicConnection(fakeConn);
+      final selected = await conn.negotiateProtocol(['/ipfs/1.0.0']);
+      expect(selected, equals('/ipfs/1.0.0'));
+      expect(fakeConn.writeCalled, isTrue);
+    });
+
+    test('readRaw returns null when direct read returns null', () async {
+      final fakeConn = _FakeQuicConnectionForReadWrite(null);
+      final conn = Libp2pQuicConnection(fakeConn);
+      final selected = await conn.negotiateProtocol(['/ipfs/1.0.0']);
+      expect(selected, isNull);
+    });
+
+    test('negotiateProtocol returns null on empty list', () async {
+      final conn = Libp2pQuicConnection(_FakeQuicConnectionWithAlpn(null));
+      expect(await conn.negotiateProtocol([]), isNull);
+    });
+
+    test('negotiateProtocol handles na response and tries next protocol',
+        () async {
+      final na = MultistreamSelect.encodeLengthPrefixed(
+        MultistreamSelect.encodeProtocol('na'),
+      );
+      final ok = MultistreamSelect.encodeLengthPrefixed(
+        MultistreamSelect.encodeProtocol('/b/2'),
+      );
+      final fakeConn = _FakeQuicConnectionForReadSequence([na, ok]);
+      final conn = Libp2pQuicConnection(fakeConn);
+      final selected = await conn.negotiateProtocol(['/a/1', '/b/2']);
+      expect(selected, equals('/b/2'));
+    });
+
+    test('verifyPeerCertificate validates a generated libp2p cert', () async {
+      final backend = DefaultCryptoBackend();
+      final hostKeyPair = await backend.ed25519GenerateKeyPair();
+      final hostPublicKey = await hostKeyPair.publicKey;
+      final expectedPeerId = await PeerId.fromPublicKey(hostPublicKey.bytes);
+
+      final generator = Libp2pCertificateGenerator(backend);
+      final chain = await generator.generate(
+        hostIdentityPrivateKey: await hostKeyPair.secretKey,
+        hostPublicKeyBytes: hostPublicKey.bytes,
+      );
+
+      final conn = Libp2pQuicConnection('test');
+      final valid = await conn.verifyPeerCertificate(
+        chain.certs.first.rawBytes,
+        backend: backend,
+      );
+      expect(valid, isTrue);
+      expect(conn.peerId, equals(expectedPeerId));
+    });
+
+    test('verifyPeerCertificate fails with mismatched expected PeerId',
+        () async {
+      final backend = DefaultCryptoBackend();
+      final hostKeyPair = await backend.ed25519GenerateKeyPair();
+      final hostPublicKey = await hostKeyPair.publicKey;
+      final wrongPeerId = await PeerId.fromPublicKey(
+        List<int>.generate(32, (i) => 0xFF),
+      );
+
+      final generator = Libp2pCertificateGenerator(backend);
+      final chain = await generator.generate(
+        hostIdentityPrivateKey: await hostKeyPair.secretKey,
+        hostPublicKeyBytes: hostPublicKey.bytes,
+      );
+
+      final conn = Libp2pQuicConnection('test');
+      final valid = await conn.verifyPeerCertificate(
+        chain.certs.first.rawBytes,
+        expectedPeerId: wrongPeerId,
+        backend: backend,
+      );
+      expect(valid, isFalse);
+    });
   });
 }
 
@@ -237,4 +336,25 @@ class _FakeQuicConnection {
 class _FakeQuicConnectionWithAlpn {
   final String? negotiatedAlpn;
   _FakeQuicConnectionWithAlpn(this.negotiatedAlpn);
+}
+
+class _FakeQuicConnectionForReadWrite {
+  final Uint8List? _response;
+  bool writeCalled = false;
+  _FakeQuicConnectionForReadWrite(this._response);
+
+  void write(Uint8List data) => writeCalled = true;
+  Future<Uint8List?> read() async => _response;
+}
+
+class _FakeQuicConnectionForReadSequence {
+  final List<Uint8List> _responses;
+  int _index = 0;
+  _FakeQuicConnectionForReadSequence(this._responses);
+
+  void write(Uint8List data) {}
+  Future<Uint8List?> read() async {
+    if (_index >= _responses.length) return null;
+    return _responses[_index++];
+  }
 }

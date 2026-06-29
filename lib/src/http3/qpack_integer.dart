@@ -19,6 +19,9 @@ class QpackInteger {
   /// Maximum value representable by QPACK's 62-bit unsigned integer.
   static const int _maxValue = (1 << 62) - 1;
 
+  /// Maximum value representable by a QPACK integer: 2^62 - 1.
+  static int get maxValue => _maxValue;
+
   /// Encode [value] using a [prefixBits]-bit prefix (1..8).
   ///
   /// Returns a new [Uint8List] whose first byte contains the integer value in
@@ -110,6 +113,10 @@ class QpackInteger {
           throw ArgumentError('QPACK integer too large');
         }
       }
+    }
+
+    if (value > _maxValue) {
+      throw ArgumentError('QPACK integer exceeds maximum value $_maxValue');
     }
 
     return (value, newOffset);

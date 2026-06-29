@@ -5,8 +5,9 @@ import 'package:quic_lib/quic_lib.dart';
 
 /// Minimal QUIC echo server example.
 ///
-/// Demonstrates binding an endpoint, polling active connections, and
-/// registering each connection as an isolate (ADR-007).
+/// Demonstrates binding an endpoint, polling active connections,
+/// registering each connection as an isolate (ADR-007), and listening for
+/// incoming data on the receive side of each stream.
 /// The full handshake-driven accept loop uses endpoint.connections
 /// once wired end-to-end.
 Future<void> main() async {
@@ -43,7 +44,18 @@ Future<void> main() async {
       }
       print('Active connection: state=${conn.state}');
       for (final stream in conn.streamManager.streams) {
-        print('  Stream ${stream.streamId} — echo scaffold would reply here');
+        if (stream is QuicReceiveStream) {
+          // Subscribe to incoming data on the receive side of the stream.
+          stream.incomingData.listen((data) {
+            print('  Stream ${stream.streamId} received ${data.length} bytes');
+            // In a full implementation, the server would echo the data back.
+            // For a bidirectional stream, that means writing to the matching
+            // send stream; for a unidirectional stream, the response would be
+            // sent on a new server-initiated unidirectional stream.
+          });
+        } else {
+          print('  Stream ${stream.streamId} — echo scaffold would reply here');
+        }
       }
     }
   }

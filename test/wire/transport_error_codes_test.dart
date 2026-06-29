@@ -37,4 +37,11 @@ void main() {
       expect(QuicTransportErrorCode.fromValue(0x11), isNull);
     });
   });
+
+  group('FrameEncodingError', () {
+    test('toString includes the message', () {
+      final error = FrameEncodingError('bad frame');
+      expect(error.toString(), equals('FrameEncodingError: bad frame'));
+    });
+  });
 }

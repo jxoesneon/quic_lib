@@ -5,8 +5,12 @@ import 'package:test/test.dart';
 import 'package:quic_lib/src/connection/quic_connection.dart';
 import 'package:quic_lib/src/connection/connection_state_machine.dart';
 import 'package:quic_lib/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/connection/congestion_control/cubic.dart';
 import 'package:quic_lib/src/connection/version_information.dart';
+import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/tls/client_hello.dart';
 import 'package:quic_lib/src/crypto/tls/crypto_frame_assembler.dart';
+import 'package:quic_lib/src/io/platform_address.dart';
 import 'package:quic_lib/src/wire/varint.dart';
 import 'package:quic_lib/src/streams/stream_id.dart';
 import 'package:quic_lib/src/streams/stream_scheduler.dart';
@@ -614,6 +618,120 @@ void main() {
       final conn = _createConnection();
       conn.updateConnectionFlowControl(131072);
       expect(conn.connectionFlowController.availableWindow, equals(131072));
+    });
+
+    test('useCubic flag selects cubic congestion controller', () {
+      final conn = QuicConnection(
+        stateMachine: ConnectionStateMachine(),
+        cidManager: ConnectionIdManager(),
+        pnSpaceManager: PacketNumberSpaceManager(),
+        rttEstimator: RttEstimator(),
+        lossDetector: LossDetector(),
+        ptoScheduler: PtoScheduler(RttEstimator()),
+        streamIdAllocator: StreamIdAllocator(),
+        useCubic: true,
+      );
+      expect(conn.congestionController, isA<CubicCongestionController>());
+    });
+
+    test('sendDatagram throws when payload exceeds maxDatagramFrameSize', () {
+      final conn = _createConnection();
+      conn.maxDatagramFrameSize = 10;
+      expect(
+        () => conn.sendDatagram(Uint8List.fromList(List.filled(11, 0))),
+        throwsArgumentError,
+      );
+    });
+
+    test('onDatagramReceived stream delivers datagrams', () async {
+      final conn = _createConnection();
+      final data = Uint8List.fromList([1, 2, 3]);
+      final future = conn.onDatagramReceived.first;
+      conn.processIncomingDatagram(await LongHeader(
+        version: QuicVersions.v1,
+        packetType: LongHeader.typeInitial,
+        destinationConnectionId: [0x01, 0x02, 0x03, 0x04],
+        sourceConnectionId: [0x05, 0x06, 0x07, 0x08],
+        payload: DatagramFrame(data: data, hasLength: true).serialize(),
+      ).serialize());
+      final received = await future;
+      expect(received, equals(data));
+    });
+
+    test('buildClientHelloExtensions includes 0-RTT and ALPN', () {
+      final conn = _createConnection();
+      conn.attempt0Rtt = true;
+      conn.pskTicket = Uint8List.fromList([0xAB]);
+      conn.alpnProtocols = ['libp2p'];
+      final extensions = conn.buildClientHelloExtensions();
+      expect(extensions.length, equals(2));
+      expect(extensions[0].type, equals(0x002a)); // early_data
+      expect(extensions[1].type, equals(0x0010)); // ALPN
+    });
+
+    test('buildClientHelloExtensions is empty when no options set', () {
+      final conn = _createConnection();
+      conn.attempt0Rtt = false;
+      conn.alpnProtocols = [];
+      expect(conn.buildClientHelloExtensions(), isEmpty);
+    });
+
+    test('buildTransportParameters includes optional IDs and address', () {
+      final conn = QuicConnection(
+        stateMachine: ConnectionStateMachine(),
+        cidManager: ConnectionIdManager(),
+        pnSpaceManager: PacketNumberSpaceManager(),
+        rttEstimator: RttEstimator(),
+        lossDetector: LossDetector(),
+        ptoScheduler: PtoScheduler(RttEstimator()),
+        congestionController: CongestionController(),
+        streamIdAllocator: StreamIdAllocator(),
+        originalDestinationConnectionId: [0x01, 0x02],
+        statelessResetToken: Uint8List.fromList(List.filled(16, 0xAA)),
+        initialSourceConnectionId: [0x03, 0x04],
+        retrySourceConnectionId: [0x05, 0x06],
+        preferredAddress: InternetAddress('127.0.0.1'),
+        preferredAddressPort: 4321,
+        allowMigration: false,
+      );
+      final tp = conn.buildTransportParameters();
+      expect(tp.length, greaterThan(0));
+      // The bytes should include the optional parameter IDs.
+      expect(tp, contains(0x00)); // original_destination_connection_id
+      expect(tp, contains(0x02)); // stateless_reset_token
+      expect(tp, contains(0x0f)); // initial_source_connection_id
+      expect(tp, contains(0x10)); // retry_source_connection_id
+      expect(tp, contains(0x0d)); // preferred_address
+      expect(tp, contains(0x0c)); // disable_active_migration
+    });
+
+    test('processEncryptedDatagram ignores Retry long header', () async {
+      final conn = _createConnection();
+      final packet = await LongHeader(
+        version: QuicVersions.v1,
+        packetType: LongHeader.typeRetry,
+        destinationConnectionId: [0x01, 0x02, 0x03, 0x04],
+        sourceConnectionId: [0x05, 0x06, 0x07, 0x08],
+        payload: PingFrame().serialize(),
+        backend: DefaultCryptoBackend(),
+      ).serialize();
+      expect(await conn.processEncryptedDatagram(packet), equals(0));
+    });
+
+    test('dispatch handles AckFrequencyFrame', () async {
+      final conn = _createConnection();
+      final packet = await LongHeader(
+        version: QuicVersions.v1,
+        packetType: LongHeader.typeInitial,
+        destinationConnectionId: [0x01, 0x02, 0x03, 0x04],
+        sourceConnectionId: [0x05, 0x06, 0x07, 0x08],
+        payload: AckFrequencyFrame(
+          sequenceNumber: 1,
+          requestedAckElicitingThreshold: 2,
+          requestedMaxAckDelay: 10,
+        ).serialize(),
+      ).serialize();
+      expect(conn.processIncomingDatagram(packet), equals(1));
     });
 
     group('version_information (RFC 9368)', () {

@@ -65,6 +65,9 @@ class Libp2pQuicTransport {
   /// Once true, [listen] and [dial] will throw [StateError].
   bool get isClosed => _closed;
 
+  /// Creates a libp2p QUIC transport.
+  ///
+  /// [alpnProtocols] defaults to `['libp2p']` per the libp2p QUIC spec.
   Libp2pQuicTransport({this.alpnProtocols = const ['libp2p']});
 
   /// Extract an [InternetAddress] and port from [multiaddr].

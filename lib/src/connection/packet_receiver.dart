@@ -35,8 +35,15 @@ class PacketReceiver {
   /// Returns null if the packet is a Retry or Version Negotiation (special handling needed).
   static ({PacketHeader header, List<Frame> frames, PacketNumberSpace? space})?
       processPacket(Uint8List packet) {
-    final header = PacketHeaderParser.parse(packet,
-        destinationConnectionIdLength: _detectDcidLength(packet));
+    final PacketHeader header;
+    try {
+      header = PacketHeaderParser.parse(packet,
+          destinationConnectionIdLength: _detectDcidLength(packet));
+    } catch (_) {
+      // SECURITY: Drop malformed or truncated packets instead of letting
+      // parser exceptions propagate.
+      return null;
+    }
     final space = spaceFromHeader(header);
 
     if (space == null) {

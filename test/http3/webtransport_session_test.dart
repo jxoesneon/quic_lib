@@ -161,5 +161,43 @@ void main() {
       // Stream 0 should have pending data (first bidi stream).
       expect(conn.hasBody(0), isTrue);
     });
+
+    test('session getters and flags', () {
+      final conn = Http3Connection(quicConnection: FakeQuicConnection());
+      final session = WebTransportSession(conn, 7);
+      expect(session.sessionId, equals(7));
+      expect(session.isClosed, isFalse);
+      expect(session.isDraining, isFalse);
+      expect(session.isActive, isTrue);
+      expect(session.receivedGoaway, isFalse);
+      expect(session.receivedDatagrams, isEmpty);
+      expect(session.registeredBidirectionalStreams, isEmpty);
+      expect(session.registeredUnidirectionalStreams, isEmpty);
+    });
+
+    test('sendDatagram and sendStream throw when session is closed', () {
+      final conn = Http3Connection(quicConnection: FakeQuicConnection());
+      final session = WebTransportSession(conn, 0);
+      session.close();
+      expect(() => session.sendDatagram(Uint8List(1)), throwsStateError);
+      expect(() => session.sendStream(Uint8List(1)), throwsStateError);
+    });
+
+    test('close is idempotent', () {
+      final conn = Http3Connection(quicConnection: FakeQuicConnection());
+      final session = WebTransportSession(conn, 0);
+      session.close(errorCode: 1);
+      expect(session.isClosed, isTrue);
+      session.close(errorCode: 2);
+      expect(session.isClosed, isTrue);
+    });
+
+    test('onCapsule with unknown type is ignored', () {
+      final conn = Http3Connection(quicConnection: FakeQuicConnection());
+      final session = WebTransportSession(conn, 0);
+      expect(session.isClosed, isFalse);
+      session.onCapsule(UnknownCapsule(0xFF, Uint8List(1)));
+      expect(session.isClosed, isFalse);
+    });
   });
 }

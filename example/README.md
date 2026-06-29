@@ -4,8 +4,9 @@ This directory contains minimal example applications demonstrating how to use th
 
 ## Examples
 
-- **`echo_client.dart`** — Demonstrates creating a [QuicEndpoint], connecting to a server, opening a bidirectional stream, and preparing a STREAM frame for sending.
-- **`echo_server.dart`** — Demonstrates binding a [QuicEndpoint] to a local address, polling active connections, and registering each connection in its own isolate.
+- **`echo_client.dart`** — Demonstrates creating a [QuicEndpoint], connecting to a server, opening a bidirectional stream, and staging data through the `QuicSendStream` API.
+- **`echo_server.dart`** — Demonstrates binding a [QuicEndpoint] to a local address, polling active connections, registering each connection in its own isolate, and printing incoming stream data.
+- **`http3_client.dart`** — Demonstrates wrapping a [QuicConnection] in an [Http3Connection], exchanging SETTINGS, sending an HTTP/3 request, and reading the staged response.
 
 ## Running the examples
 
@@ -25,7 +26,15 @@ In a separate terminal, run:
 dart run echo_client.dart
 ```
 
-The client will bind to an ephemeral port, connect to `127.0.0.1:4433`, open a bidirectional stream, and prepare a packet containing a simple "Hello, QUIC!" message.
+The client will bind to an ephemeral port, connect to `127.0.0.1:4433`, open a bidirectional stream, and stage a "Hello, QUIC!" message via the stream API.
+
+### HTTP/3 client
+
+```bash
+dart run http3_client.dart
+```
+
+The client will bind to an ephemeral port, connect to `127.0.0.1:4433`, and stage an HTTP/3 GET request over a new bidirectional stream.
 
 ## Note
 

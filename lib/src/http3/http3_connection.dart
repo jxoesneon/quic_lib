@@ -29,7 +29,13 @@ import 'package:quic_lib/src/wire/varint.dart';
 
 /// Represents a single HTTP/3 request/response stream mapped to a QUIC stream ID.
 class Http3Stream {
+  /// The QUIC stream ID for this request/response exchange.
+  ///
+  /// Per RFC 9114, client-initiated bidirectional streams carry HTTP/3
+  /// requests and responses.
   final int streamId;
+
+  /// Creates an [Http3Stream] for [streamId].
   Http3Stream(this.streamId);
 }
 
@@ -802,9 +808,13 @@ class Http3Connection {
 
 /// Lightweight wrapper around a QUIC stream ID for sending data.
 class Http3QuicStream {
+  /// The QUIC stream ID this wrapper writes to.
   final int streamId;
+
   final Http3Connection _connection;
 
+  /// Creates an [Http3QuicStream] that sends DATA frames on [streamId]
+  /// through [connection].
   Http3QuicStream(this.streamId, this._connection);
 
   /// Send [data] as a DATA frame on this stream.

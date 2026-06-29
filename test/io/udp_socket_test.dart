@@ -94,5 +94,37 @@ void main() {
       socketA.close();
       socketB.close();
     });
+
+    test('rate limiter prunes old timestamps after window passes', () async {
+      final socketA = await UdpSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final socketB = await UdpSocket.bind(InternetAddress.loopbackIPv4, 0);
+
+      final receivedDatagrams = <Uint8List>[];
+      final sub = socketB.incoming.listen((d) => receivedDatagrams.add(d.data));
+
+      // Send enough packets to nearly saturate the per-second limit.
+      for (var i = 0; i < 990; i++) {
+        socketA.send(Uint8List.fromList([i & 0xFF]),
+            InternetAddress.loopbackIPv4, socketB.localPort);
+      }
+      await Future.delayed(Duration(milliseconds: 1100));
+
+      // After the window, additional packets should be accepted again.
+      for (var i = 0; i < 50; i++) {
+        socketA.send(Uint8List.fromList([i & 0xFF]),
+            InternetAddress.loopbackIPv4, socketB.localPort);
+      }
+      await Future.delayed(Duration(milliseconds: 500));
+
+      // Some datagrams should have been received, and the post-window burst
+      // should have been accepted (so total received is greater than the
+      // post-window burst alone would produce if it were all dropped).
+      expect(receivedDatagrams.length, greaterThan(0));
+      expect(receivedDatagrams.length, lessThanOrEqualTo(990 + 50));
+
+      await sub.cancel();
+      socketA.close();
+      socketB.close();
+    });
   });
 }

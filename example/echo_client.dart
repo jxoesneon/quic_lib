@@ -7,8 +7,11 @@ import 'package:quic_lib/quic_lib.dart';
 /// Minimal QUIC echo client example.
 ///
 /// Demonstrates binding an endpoint, connecting to a server, opening a
-/// bidirectional stream, and preparing a STREAM frame for sending.
-/// Also demonstrates custom stream scheduling (ADR-006).
+/// bidirectional stream, and writing data through the stream API. The raw
+/// packet path is also shown for callers that need low-level control.
+///
+/// This example uses the public QUIC API to stage data; a real end-to-end
+/// exchange requires the UDP send/recv path and TLS handshake to be wired.
 Future<void> main() async {
   // 1. Create a QuicEndpoint bound to an ephemeral port.
   final endpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
@@ -30,15 +33,23 @@ Future<void> main() async {
     final streamId = connection.openBidirectionalStream();
     print('Opened bidirectional stream $streamId');
 
-    // 4. Prepare a simple message as a STREAM frame.
-    final message = utf8.encode('Hello, QUIC!');
+    // 4. Write the message through the stream API.
+    final message = Uint8List.fromList(utf8.encode('Hello, QUIC!'));
+    final sendStream = connection.streamManager.getStream(streamId);
+    if (sendStream is QuicSendStream) {
+      sendStream.write(message);
+      sendStream.close();
+      print('Staged ${message.length} bytes on stream $streamId');
+    } else {
+      print('Could not obtain send stream for stream $streamId');
+    }
+
+    // 5. Alternatively, build an Application-space packet containing the frame.
     final frame = StreamFrame(
       streamId: streamId,
-      data: Uint8List.fromList(message),
+      data: message,
       fin: true,
     );
-
-    // 5. Build an Application-space packet containing the frame.
     final packet = await PacketSender.buildPacket(
       frames: [frame],
       space: PacketNumberSpace.application,
@@ -46,10 +57,10 @@ Future<void> main() async {
       packetNumber:
           connection.allocatePacketNumber(PacketNumberSpace.application),
     );
-
     print('Prepared packet with ${packet.length} bytes');
-    print(
-        'Client scaffold complete — full wire send path not yet wired end-to-end.');
+
+    print('Client scaffold complete — full wire send path not yet wired '
+        'end-to-end.');
   } finally {
     endpoint.close();
   }

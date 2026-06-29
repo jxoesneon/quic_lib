@@ -297,7 +297,7 @@ Contributions are welcome. Please read the architecture overview in `ARCHITECTUR
 
 The following item is tracked for a future release and does not affect typical short-lived connections:
 
-1. **HTTP/3 `Capsule` vs WebTransport `Capsule` naming** — both barrel files export a `Capsule` class, which creates an ambiguity when `quic_lib.dart` and `http3.dart` are imported together. The WebTransport class will be renamed to `WebTransportCapsule` in v2.0.0. Until then, import the specific files you need or use library prefixes to disambiguate.
+1. **HTTP/3 `Capsule` vs WebTransport `Capsule` naming** — as of v1.10.0, the WebTransport class is renamed to `WebTransportCapsule` to avoid ambiguity with the HTTP/3 `Capsule` class. The old `Capsule` name remains available as a deprecated alias for backwards compatibility and will be removed in a future major release.
 
 ## License
 

@@ -11,6 +11,7 @@ import 'package:quic_lib/src/crypto/packet/space_keys.dart';
 import 'package:quic_lib/src/wire/frame.dart';
 import 'package:quic_lib/src/wire/packet_builder.dart';
 import 'package:quic_lib/src/wire/packet_header.dart';
+import 'package:quic_lib/src/wire/varint.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -154,6 +155,142 @@ void main() {
         () => codec.unprotectAndDecrypt(protected),
         throwsA(anything),
       );
+    });
+
+    test('unprotectHeader returns null for empty packet', () async {
+      final keys = await _randomKeys();
+      final codec = ProtectedPacketCodec(keys: keys);
+      expect(codec.unprotectHeader(Uint8List(0), 1), isNull);
+    });
+
+    test('unprotectHeader recovers long-header packet number', () async {
+      final keys = await _randomKeys();
+      final codec = ProtectedPacketCodec(keys: keys);
+
+      final frames = <Frame>[PingFrame()];
+      final header = LongHeader(
+        version: 0x00000001,
+        packetType: LongHeader.typeInitial,
+        destinationConnectionId: [0x01, 0x02, 0x03],
+        sourceConnectionId: [0x04, 0x05],
+        packetNumber: 5,
+        token: const [],
+      );
+      final plaintext = await PacketBuilder.build(header, frames);
+      final protected = await codec.protectAndEncrypt(plaintext, 5);
+
+      final unprotected = codec.unprotectHeader(protected, 1);
+      expect(unprotected, isNotNull);
+      expect(unprotected![0] & 0x03, equals(0)); // pnLen = 1
+    });
+
+    test('unprotectHeader recovers short-header packet number', () async {
+      final keys = await _randomKeys();
+      final codec = ProtectedPacketCodec(
+        keys: keys,
+        destinationConnectionIdLength: 8,
+      );
+
+      // Use a STREAM frame with enough payload bytes to satisfy the header
+      // protection sample requirement (>= 16 bytes after the PN field).
+      final frames = <Frame>[
+        StreamFrame(
+          streamId: 0,
+          data: List<int>.filled(64, 0xBB),
+          fin: false,
+          offset: 0,
+        ),
+      ];
+      final header = ShortHeader(
+        destinationConnectionId: List<int>.filled(8, 0xAB),
+        packetNumber: 9,
+        packetNumberLength: 2,
+      );
+      final plaintext = await PacketBuilder.build(header, frames);
+      final protected = await codec.protectAndEncrypt(plaintext, 9);
+
+      final unprotected = codec.unprotectHeader(protected, 2);
+      expect(unprotected, isNotNull);
+      expect(unprotected![0] & 0x03, equals(1)); // pnLen = 2
+    });
+
+    test('decryptPayload recovers frames from protected payload', () async {
+      final keys = await _randomKeys();
+      final codec = ProtectedPacketCodec(keys: keys);
+
+      final frames = <Frame>[PingFrame()];
+      final header = LongHeader(
+        version: 0x00000001,
+        packetType: LongHeader.typeInitial,
+        destinationConnectionId: [0x01, 0x02, 0x03],
+        sourceConnectionId: [0x04, 0x05],
+        packetNumber: 3,
+        token: const [],
+      );
+      final plaintext = await PacketBuilder.build(header, frames);
+      final protected = await codec.protectAndEncrypt(plaintext, 3);
+
+      final unprotected = codec.unprotectHeader(protected, 1);
+      expect(unprotected, isNotNull);
+      final payload = protected.sublist(unprotected!.length);
+      final decoded = await codec.decryptPayload(unprotected, payload, 3);
+      expect(decoded, isNotNull);
+      expect(decoded!.length, greaterThan(0));
+      expect(decoded[0], isA<PingFrame>());
+    });
+
+    test('decryptPayload returns null on corrupted payload', () async {
+      final keys = await _randomKeys();
+      final codec = ProtectedPacketCodec(keys: keys);
+
+      final header = LongHeader(
+        version: 0x00000001,
+        packetType: LongHeader.typeInitial,
+        destinationConnectionId: [0x01, 0x02, 0x03],
+        sourceConnectionId: [0x04, 0x05],
+        packetNumber: 2,
+        token: const [],
+      );
+      final plaintext = await PacketBuilder.build(header, <Frame>[PingFrame()]);
+      final protected = await codec.protectAndEncrypt(plaintext, 2);
+
+      final unprotected = codec.unprotectHeader(protected, 1);
+      expect(unprotected, isNotNull);
+      final payload = protected.sublist(unprotected!.length);
+      payload[payload.length - 1] ^= 0xFF;
+      final decoded = await codec.decryptPayload(unprotected, payload, 2);
+      expect(decoded, isNull);
+    });
+
+    test('patchLongHeaderLength expands varint when needed', () async {
+      // Build a minimal Initial packet whose Length field fits in 1 byte.
+      final payload =
+          List<int>.filled(62, 0); // 62 payload bytes -> length = 63 = 0x3F.
+      final header = LongHeader(
+        version: 0x00000001,
+        packetType: LongHeader.typeInitial,
+        destinationConnectionId: [0x01],
+        sourceConnectionId: const [],
+        packetNumber: 0,
+        token: const [],
+        payload: payload,
+      );
+      final plaintext = await header.serialize();
+      // Adding 16 bytes for the AEAD tag pushes the length above 0x3F,
+      // so the varint must expand from 1 byte to 2 bytes.
+      final patched = ProtectedPacketCodec.patchLongHeaderLength(plaintext, 16);
+      expect(patched.length, equals(plaintext.length + 1));
+      // Length field starts after: first byte + version + dcid len + dcid + scid len + scid + token len.
+      final lengthOffset = 1 + 4 + 1 + 1 + 1 + 0 + 1;
+      final patchedLength = VarInt.decode(patched.buffer,
+          offset: patched.offsetInBytes + lengthOffset);
+      expect(patchedLength, equals(0x3F + 16));
+    });
+
+    test('patchLongHeaderLength returns short header unchanged', () {
+      final plaintext = Uint8List.fromList([0x00, 0x01, 0x02, 0x03]);
+      final patched = ProtectedPacketCodec.patchLongHeaderLength(plaintext, 16);
+      expect(patched, equals(plaintext));
     });
   });
 }

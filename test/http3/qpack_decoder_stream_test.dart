@@ -119,5 +119,14 @@ void main() {
       final parsed = DecoderInstruction.parse(bytes);
       expect((parsed as InsertCountIncrement).increment, equals(15));
     });
+
+    test('toString includes stream id', () {
+      expect(SectionAcknowledgment(streamId: 7).toString(),
+          equals('SectionAcknowledgment(streamId: 7)'));
+      expect(StreamCancellation(streamId: 8).toString(),
+          equals('StreamCancellation(streamId: 8)'));
+      expect(InsertCountIncrement(increment: 9).toString(),
+          equals('InsertCountIncrement(increment: 9)'));
+    });
   });
 }

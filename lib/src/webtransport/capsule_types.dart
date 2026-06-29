@@ -29,6 +29,11 @@ enum CapsuleType {
 }
 
 /// A WebTransport capsule consisting of a type, length, and payload.
+///
+/// NOTE: This class is distinct from the HTTP/3 `Capsule` class in
+/// `lib/src/http3/capsule_protocol.dart`. The two classes share a name and
+/// are both exported from `quic_lib.dart`, causing a public API ambiguity.
+/// This class will be renamed to `WebTransportCapsule` in v2.0.0.
 class Capsule {
   final CapsuleType type;
   final List<int> payload;

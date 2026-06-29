@@ -401,6 +401,11 @@ class KeyManager {
   ///
   /// Per RFC 9001 §6.1, endpoints MUST NOT initiate a subsequent key update
   /// unless it has received an ACK for a packet sent with the current key phase.
+  ///
+  // TODO(issue): peer-initiated key update detection per RFC 9001 §6.2 is
+  // not yet implemented. This only affects long-lived connections where the
+  // peer initiates a key update before the local endpoint does. Tracked for
+  // v1.5.0.
   void initiateKeyUpdate() {
     if (_keyUpdatePending) {
       throw StateError('Key update already pending');

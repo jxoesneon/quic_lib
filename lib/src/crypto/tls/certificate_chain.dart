@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:quic_lib/src/crypto/crypto_backend.dart';
+import 'package:quic_lib/src/crypto/tls/revocation_parser.dart';
 import 'package:quic_lib/src/crypto/tls/x509_parser.dart';
 import 'package:quic_lib/src/libp2p/libp2p_tls_extension.dart';
 import 'package:quic_lib/src/libp2p/peer_id.dart';
@@ -16,6 +17,12 @@ class CertificateInfo {
   final String subjectName;
   final String issuerName;
 
+  /// Revocation URLs extracted from the certificate's X.509 extensions.
+  ///
+  /// Populated by [parseCertificate]. Full CRL/OCSP validation is not
+  /// performed in Phase 1.
+  final RevocationInfo revocationInfo;
+
   CertificateInfo({
     required this.rawBytes,
     required this.subjectPublicKey,
@@ -24,6 +31,7 @@ class CertificateInfo {
     required this.notAfter,
     required this.subjectName,
     this.issuerName = '',
+    this.revocationInfo = const RevocationInfo(),
   });
 }
 
@@ -41,6 +49,7 @@ CertificateInfo parseCertificate(List<int> rawBytes) {
     notAfter: x509.notAfter,
     subjectName: String.fromCharCodes(x509.subject),
     issuerName: String.fromCharCodes(x509.issuer),
+    revocationInfo: extractRevocationInfo(x509.extensions),
   );
 }
 

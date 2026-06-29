@@ -17,7 +17,7 @@ class UdpSocket {
   final _incomingController = StreamController<
       ({Uint8List data, InternetAddress address, int port})>.broadcast();
 
-  /// Per-source IP rate tracking: ip_string → List<timestamp_ms>.
+  /// Per-source IP rate tracking: ip_string to list of timestamp_ms values.
   final Map<String, List<int>> _ipTimestamps = {};
 
   UdpSocket._(this._socket) {

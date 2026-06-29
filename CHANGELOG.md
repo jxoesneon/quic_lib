@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.10.0] — 2026-06-29
+
+### Changed
+- Renamed the WebTransport `Capsule` class to `WebTransportCapsule` to resolve the public API ambiguity with the HTTP/3 `Capsule` class in `lib/src/http3/capsule_protocol.dart`.
+- The old `Capsule` name remains available as a deprecated `typedef` alias for backwards compatibility; it will be removed in a future major release.
+- Updated all internal WebTransport code and tests to use `WebTransportCapsule`.
+- `lib/webtransport.dart` now exports both `WebTransportCapsule` and the deprecated `Capsule` alias.
+
+---
+
 ## [1.9.0] — 2026-06-29
 
 ### Added

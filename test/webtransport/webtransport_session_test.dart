@@ -15,7 +15,7 @@ void main() {
 
     test('onCapsuleReceived(CLOSE) marks closed', () {
       final session = WebTransportSession(1);
-      session.onCapsuleReceived(Capsule(
+      session.onCapsuleReceived(WebTransportCapsule(
         type: CapsuleType.closeWebTransportSession,
         payload: [],
       ));
@@ -25,7 +25,7 @@ void main() {
 
     test('onCapsuleReceived(DRAIN) marks draining', () {
       final session = WebTransportSession(1);
-      session.onCapsuleReceived(Capsule(
+      session.onCapsuleReceived(WebTransportCapsule(
         type: CapsuleType.drainWebTransportSession,
         payload: [],
       ));
@@ -54,7 +54,7 @@ void main() {
 
     test('unknown capsule is ignored', () {
       final session = WebTransportSession(1);
-      session.onCapsuleReceived(Capsule(
+      session.onCapsuleReceived(WebTransportCapsule(
         type: CapsuleType.grease0,
         payload: [0x01],
       ));
@@ -95,7 +95,7 @@ void main() {
 
     test('onCapsuleReceived(DATAGRAM) stores datagram', () {
       final session = WebTransportSession(1);
-      session.onCapsuleReceived(Capsule(
+      session.onCapsuleReceived(WebTransportCapsule(
         type: CapsuleType.datagram,
         payload: [0xAA, 0xBB],
       ));
@@ -105,7 +105,7 @@ void main() {
 
     test('onCapsuleReceived(REGISTER_BIDIRECTIONAL_STREAM)', () {
       final session = WebTransportSession(1);
-      session.onCapsuleReceived(Capsule(
+      session.onCapsuleReceived(WebTransportCapsule(
         type: CapsuleType.registerBidirectionalStream,
         payload: [0x08],
       ));
@@ -114,7 +114,7 @@ void main() {
 
     test('onCapsuleReceived(REGISTER_UNIDIRECTIONAL_STREAM)', () {
       final session = WebTransportSession(1);
-      session.onCapsuleReceived(Capsule(
+      session.onCapsuleReceived(WebTransportCapsule(
         type: CapsuleType.registerUnidirectionalStream,
         payload: [0x0C],
       ));
@@ -123,7 +123,7 @@ void main() {
 
     test('onCapsuleReceived(GOAWAY) sets receivedGoaway', () {
       final session = WebTransportSession(1);
-      session.onCapsuleReceived(Capsule(
+      session.onCapsuleReceived(WebTransportCapsule(
         type: CapsuleType.goaway,
         payload: [],
       ));

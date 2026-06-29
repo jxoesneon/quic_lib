@@ -13,7 +13,7 @@ class CapsuleRouter {
   ///
   /// If no session exists for [streamId], one is created before forwarding
   /// the capsule.
-  void routeCapsule(int streamId, Capsule capsule) {
+  void routeCapsule(int streamId, WebTransportCapsule capsule) {
     final session = _sessions.putIfAbsent(
       streamId,
       () => WebTransportSession(streamId),

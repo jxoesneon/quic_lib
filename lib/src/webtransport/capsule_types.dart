@@ -30,15 +30,15 @@ enum CapsuleType {
 
 /// A WebTransport capsule consisting of a type, length, and payload.
 ///
-/// NOTE: This class is distinct from the HTTP/3 `Capsule` class in
-/// `lib/src/http3/capsule_protocol.dart`. The two classes share a name and
-/// are both exported from `quic_lib.dart`, causing a public API ambiguity.
-/// This class will be renamed to `WebTransportCapsule` in v2.0.0.
-class Capsule {
+/// This class is distinct from the HTTP/3 `Capsule` class in
+/// `lib/src/http3/capsule_protocol.dart`. The two classes previously shared a
+/// name and were both exported from `quic_lib.dart`, causing a public API
+/// ambiguity. The WebTransport class is now named `WebTransportCapsule`.
+class WebTransportCapsule {
   final CapsuleType type;
   final List<int> payload;
 
-  Capsule({required this.type, required this.payload});
+  WebTransportCapsule({required this.type, required this.payload});
 
   /// Serialize: VarInt(type) + VarInt(length) + payload
   Uint8List serialize() {
@@ -60,8 +60,8 @@ class Capsule {
 
   /// Parse from bytes.
   ///
-  /// Returns the parsed [Capsule] and the number of bytes consumed.
-  static (Capsule, int) parse(Uint8List bytes, {int offset = 0}) {
+  /// Returns the parsed [WebTransportCapsule] and the number of bytes consumed.
+  static (WebTransportCapsule, int) parse(Uint8List bytes, {int offset = 0}) {
     if (offset < 0 || offset > bytes.length) {
       throw ArgumentError('Offset $offset out of bounds');
     }
@@ -105,13 +105,13 @@ class Capsule {
       payloadOffset + lengthValue,
     );
 
-    return (Capsule(type: type, payload: payload), totalLength);
+    return (WebTransportCapsule(type: type, payload: payload), totalLength);
   }
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is Capsule &&
+      other is WebTransportCapsule &&
           runtimeType == other.runtimeType &&
           type == other.type &&
           listEquals(payload, other.payload);
@@ -121,5 +121,13 @@ class Capsule {
 
   @override
   String toString() =>
-      'Capsule(type: ${type.name}, payload: ${payload.length} bytes)';
+      'WebTransportCapsule(type: ${type.name}, payload: ${payload.length} bytes)';
 }
+
+/// Deprecated alias for [WebTransportCapsule].
+///
+/// The old name collided with the HTTP/3 `Capsule` class in
+/// `lib/src/http3/capsule_protocol.dart`. Use [WebTransportCapsule] instead;
+/// this alias will be removed in a future major release.
+@Deprecated('Use WebTransportCapsule instead.')
+typedef Capsule = WebTransportCapsule;

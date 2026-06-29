@@ -31,7 +31,7 @@ void main() {
 
     test('routeCapsule creates session if needed', () {
       final manager = WebTransportSessionManager();
-      final capsule = Capsule(
+      final capsule = WebTransportCapsule(
         type: CapsuleType.datagram,
         payload: [0x01, 0x02],
       );
@@ -53,7 +53,8 @@ void main() {
       final active = manager.createSession(0);
       final closing = manager.createSession(4);
       closing.onCapsuleReceived(
-        Capsule(type: CapsuleType.closeWebTransportSession, payload: []),
+        WebTransportCapsule(
+            type: CapsuleType.closeWebTransportSession, payload: []),
       );
       expect(manager.cleanupInactiveSessions(), equals(1));
       expect(manager.sessionCount, equals(1));

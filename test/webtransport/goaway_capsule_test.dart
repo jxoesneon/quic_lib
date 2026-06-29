@@ -88,7 +88,7 @@ void main() {
 
       // Build a GOAWAY capsule with an optional stream ID.
       final goaway = GoawayCapsule(streamId: 10);
-      final capsule = Capsule(
+      final capsule = WebTransportCapsule(
         type: CapsuleType.goaway,
         payload:
             Uint8List.sublistView(goaway.serialize(), 1), // strip type varint

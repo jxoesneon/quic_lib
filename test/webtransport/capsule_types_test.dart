@@ -25,9 +25,9 @@ void main() {
     });
   });
 
-  group('Capsule', () {
+  group('WebTransportCapsule', () {
     test('serialize produces valid bytes', () {
-      final capsule = Capsule(
+      final capsule = WebTransportCapsule(
         type: CapsuleType.closeWebTransportSession,
         payload: hexDecode('dead beef'),
       );
@@ -39,12 +39,12 @@ void main() {
     });
 
     test('parse round-trip', () {
-      final original = Capsule(
+      final original = WebTransportCapsule(
         type: CapsuleType.drainWebTransportSession,
         payload: hexDecode('01 02 03 04 05'),
       );
       final bytes = original.serialize();
-      final (parsed, consumed) = Capsule.parse(bytes);
+      final (parsed, consumed) = WebTransportCapsule.parse(bytes);
 
       expect(consumed, equals(bytes.length));
       expect(parsed.type, equals(original.type));
@@ -52,11 +52,11 @@ void main() {
     });
 
     test('different capsule types preserved', () {
-      final closeCapsule = Capsule(
+      final closeCapsule = WebTransportCapsule(
         type: CapsuleType.closeWebTransportSession,
         payload: Uint8List(0),
       );
-      final drainCapsule = Capsule(
+      final drainCapsule = WebTransportCapsule(
         type: CapsuleType.drainWebTransportSession,
         payload: Uint8List(0),
       );
@@ -64,8 +64,8 @@ void main() {
       final closeBytes = closeCapsule.serialize();
       final drainBytes = drainCapsule.serialize();
 
-      final (parsedClose, _) = Capsule.parse(closeBytes);
-      final (parsedDrain, _) = Capsule.parse(drainBytes);
+      final (parsedClose, _) = WebTransportCapsule.parse(closeBytes);
+      final (parsedDrain, _) = WebTransportCapsule.parse(drainBytes);
 
       expect(
         parsedClose.type,
@@ -79,7 +79,7 @@ void main() {
     });
 
     test('empty payload works', () {
-      final capsule = Capsule(
+      final capsule = WebTransportCapsule(
         type: CapsuleType.grease0,
         payload: <int>[],
       );
@@ -88,7 +88,7 @@ void main() {
       // length = 0 -> 1-byte varint: 0x00
       expect(bytes, equals(hexDecode('1b 00')));
 
-      final (parsed, consumed) = Capsule.parse(bytes);
+      final (parsed, consumed) = WebTransportCapsule.parse(bytes);
       expect(consumed, equals(2));
       expect(parsed.type, equals(CapsuleType.grease0));
       expect(parsed.payload, isEmpty);
@@ -96,7 +96,7 @@ void main() {
 
     test('parse with offset works', () {
       final prefix = hexDecode('ff ff');
-      final capsule = Capsule(
+      final capsule = WebTransportCapsule(
         type: CapsuleType.grease1,
         payload: hexDecode('aa bb'),
       );
@@ -105,7 +105,7 @@ void main() {
         ...capsule.serialize(),
       ]);
 
-      final (parsed, consumed) = Capsule.parse(bytes, offset: 2);
+      final (parsed, consumed) = WebTransportCapsule.parse(bytes, offset: 2);
       expect(consumed, equals(capsule.serialize().length));
       expect(parsed.type, equals(CapsuleType.grease1));
       expect(parsed.payload, equals(hexDecode('aa bb')));
@@ -116,7 +116,7 @@ void main() {
         '1b 05 01 02',
       ); // claims length 5, only 2 payload bytes
       expect(
-        () => Capsule.parse(Uint8List.fromList(bytes)),
+        () => WebTransportCapsule.parse(Uint8List.fromList(bytes)),
         throwsArgumentError,
       );
     });
@@ -125,7 +125,7 @@ void main() {
       // type 0x3fff (unknown, 2-byte varint), length 0
       final bytes = hexDecode('bf ff 00');
       expect(
-        () => Capsule.parse(Uint8List.fromList(bytes)),
+        () => WebTransportCapsule.parse(Uint8List.fromList(bytes)),
         throwsArgumentError,
       );
     });

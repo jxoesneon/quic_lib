@@ -21,8 +21,8 @@ import 'package:quic_lib/src/wire/varint.dart';
 /// ```dart
 /// final session = WebTransportSession(0);
 ///
-/// // Process an incoming datagram capsule.
-/// session.onCapsuleReceived(Capsule(
+/// // Process an incoming datagram WebTransportCapsule.
+/// session.onCapsuleReceived(WebTransportCapsule(
 ///   type: CapsuleType.datagram,
 ///   payload: Uint8List.fromList([1, 2, 3]),
 /// ));
@@ -38,7 +38,7 @@ import 'package:quic_lib/src/wire/varint.dart';
 ///
 /// See also:
 /// - [Http3Connection] — the HTTP/3 layer that carries WebTransport capsules.
-/// - [Capsule] — a typed capsule exchanged on the session's control stream.
+/// - [WebTransportCapsule] — a typed WebTransportCapsule exchanged on the session's control stream.
 /// - RFC 9220 — WebTransport over HTTP/3.
 class WebTransportSession {
   final int _sessionId;
@@ -56,20 +56,20 @@ class WebTransportSession {
 
   /// Whether the peer has initiated a drain.
   ///
-  /// Set to true when a `DRAIN_WEBTRANSPORT_SESSION` capsule is received.
+  /// Set to true when a `DRAIN_WEBTRANSPORT_SESSION` WebTransportCapsule is received.
   /// A draining session should finish existing streams but not open new ones.
   bool get isDraining => _isDraining;
 
   /// Whether the session is fully closed.
   ///
-  /// True once either a `CLOSE_WEBTRANSPORT_SESSION` capsule has been
+  /// True once either a `CLOSE_WEBTRANSPORT_SESSION` WebTransportCapsule has been
   /// received, or [initiateClose] has been called and acknowledged.
   bool get isClosed => _isClosed;
 
   /// Whether the session is still active (not draining and not closed).
   bool get isActive => !_isDraining && !_isClosed;
 
-  /// Whether a GOAWAY capsule has been received from the peer.
+  /// Whether a GOAWAY WebTransportCapsule has been received from the peer.
   ///
   /// A GOAWAY signals that the server will no longer accept new sessions.
   /// Existing sessions and streams may continue until they complete.
@@ -81,7 +81,7 @@ class WebTransportSession {
 
   /// Datagrams received via [CapsuleType.datagram] capsules.
   ///
-  /// Each entry is a copy of the capsule payload. The list is unmodifiable;
+  /// Each entry is a copy of the WebTransportCapsule payload. The list is unmodifiable;
   /// use [onCapsuleReceived] to append new datagrams.
   List<Uint8List> get receivedDatagrams =>
       List.unmodifiable(_receivedDatagrams);
@@ -100,9 +100,9 @@ class WebTransportSession {
   List<int> get registeredUnidirectionalStreams =>
       List.unmodifiable(_registeredUnidirectionalStreams);
 
-  /// Handle an incoming capsule on the session's control stream.
+  /// Handle an incoming WebTransportCapsule on the session's control stream.
   ///
-  /// Routes the capsule to the appropriate internal state based on its type:
+  /// Routes the WebTransportCapsule to the appropriate internal state based on its type:
   /// - [CapsuleType.datagram] — appends payload to [receivedDatagrams].
   /// - [CapsuleType.closeWebTransportSession] — marks [isClosed] true.
   /// - [CapsuleType.drainWebTransportSession] — marks [isDraining] true.
@@ -113,7 +113,7 @@ class WebTransportSession {
   /// - [CapsuleType.goaway] — sets [receivedGoaway] true.
   ///
   /// Unknown or extension capsules are silently ignored per RFC 9220.
-  void onCapsuleReceived(Capsule capsule) {
+  void onCapsuleReceived(WebTransportCapsule capsule) {
     switch (capsule.type) {
       case CapsuleType.datagram:
         _receivedDatagrams.add(Uint8List.fromList(capsule.payload));
@@ -140,7 +140,7 @@ class WebTransportSession {
 
   /// Initiate a graceful close of this session.
   ///
-  /// Builds a [Capsule] of type [CapsuleType.closeWebTransportSession] whose
+  /// Builds a [WebTransportCapsule] of type [CapsuleType.closeWebTransportSession] whose
   /// payload is a varint [errorCode] followed by an optional reason phrase
   /// encoded per RFC 9220 Section 4.2:
   ///
@@ -148,10 +148,10 @@ class WebTransportSession {
   /// Error Code (i), [Error Phrase Length (i), Error Phrase (..)]
   /// ```
   ///
-  /// The caller must send the returned capsule on the session's control
+  /// The caller must send the returned WebTransportCapsule on the session's control
   /// stream. [isClosed] is not set to true until [onCloseAcknowledged] is
-  /// called (or the peer sends its own close capsule).
-  Capsule initiateClose({int errorCode = 0, String? reasonPhrase}) {
+  /// called (or the peer sends its own close WebTransportCapsule).
+  WebTransportCapsule initiateClose({int errorCode = 0, String? reasonPhrase}) {
     final builder = BytesBuilder();
 
     // Error Code
@@ -164,7 +164,7 @@ class WebTransportSession {
       builder.add(phraseBytes);
     }
 
-    return Capsule(
+    return WebTransportCapsule(
       type: CapsuleType.closeWebTransportSession,
       payload: builder.toBytes(),
     );
@@ -172,26 +172,26 @@ class WebTransportSession {
 
   /// Initiate a drain of this session.
   ///
-  /// Returns a [Capsule] of type [CapsuleType.drainWebTransportSession] with
+  /// Returns a [WebTransportCapsule] of type [CapsuleType.drainWebTransportSession] with
   /// an empty payload, per RFC 9220 Section 4.3.
-  Capsule initiateDrain() {
-    return Capsule(
+  WebTransportCapsule initiateDrain() {
+    return WebTransportCapsule(
       type: CapsuleType.drainWebTransportSession,
       payload: Uint8List(0),
     );
   }
 
-  /// Send a datagram via a [Capsule] of type [CapsuleType.datagram].
+  /// Send a datagram via a [WebTransportCapsule] of type [CapsuleType.datagram].
   ///
-  /// Per RFC 9220 Section 5, the capsule payload carries the datagram.
-  Capsule sendDatagram(Uint8List data) {
-    return Capsule(
+  /// Per RFC 9220 Section 5, the WebTransportCapsule payload carries the datagram.
+  WebTransportCapsule sendDatagram(Uint8List data) {
+    return WebTransportCapsule(
       type: CapsuleType.datagram,
       payload: data,
     );
   }
 
-  /// Send a GOAWAY capsule to signal that no new sessions will be accepted.
+  /// Send a GOAWAY WebTransportCapsule to signal that no new sessions will be accepted.
   ///
   /// Optionally includes the last stream ID that will be processed.
   GoawayCapsule sendGoaway({int? streamId}) {

@@ -8,8 +8,9 @@
 /// Exports include:
 /// * [WebTransportSession] — per-session state, datagrams, and graceful close.
 /// * [WebTransportSessionManager] — creates, routes, and cleans up sessions.
-/// * [CapsuleType] / [Capsule] — WebTransport control capsules (CLOSE, DRAIN,
-///   GOAWAY, REGISTER_STREAM, DATAGRAM).
+/// * [CapsuleType] / [WebTransportCapsule] — WebTransport control capsules
+///   (CLOSE, DRAIN, GOAWAY, REGISTER_STREAM, DATAGRAM). The deprecated [Capsule]
+///   alias is also exported for backwards compatibility.
 /// * [WebTransportStreamId] / [WebTransportStreamType] — stream identifiers.
 ///
 /// Use this library when you need WebTransport semantics (unreliable datagrams
@@ -26,7 +27,8 @@ library;
 export 'src/webtransport/webtransport_session.dart' show WebTransportSession;
 export 'src/webtransport/webtransport_session_manager.dart'
     show WebTransportSessionManager;
-export 'src/webtransport/capsule_types.dart' show CapsuleType, Capsule;
+export 'src/webtransport/capsule_types.dart'
+    show CapsuleType, Capsule, WebTransportCapsule;
 export 'src/webtransport/capsule_router.dart' show CapsuleRouter;
 export 'src/webtransport/goaway_capsule.dart' show GoawayCapsule;
 export 'src/webtransport/stream_capsule.dart' show StreamCapsule;

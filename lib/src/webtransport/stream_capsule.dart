@@ -55,7 +55,7 @@ class StreamCapsuleRegistry {
   final Map<int, StreamCapsule> _capsules = {};
 
   /// Register a capsule for the given [streamId].
-  void register(int streamId, Capsule capsule) {
+  void register(int streamId, WebTransportCapsule capsule) {
     _capsules[streamId] = StreamCapsule(streamId: streamId, type: capsule.type);
   }
 

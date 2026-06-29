@@ -16,7 +16,7 @@ void main() {
 
       router.routeCapsule(
         streamId,
-        Capsule(type: CapsuleType.grease0, payload: [0x01]),
+        WebTransportCapsule(type: CapsuleType.grease0, payload: [0x01]),
       );
 
       final session = router.getSession(streamId);
@@ -29,12 +29,13 @@ void main() {
       const streamId = 8;
       router.routeCapsule(
         streamId,
-        Capsule(type: CapsuleType.grease0, payload: [0x01]),
+        WebTransportCapsule(type: CapsuleType.grease0, payload: [0x01]),
       );
 
       router.routeCapsule(
         streamId,
-        Capsule(type: CapsuleType.closeWebTransportSession, payload: []),
+        WebTransportCapsule(
+            type: CapsuleType.closeWebTransportSession, payload: []),
       );
 
       final session = router.getSession(streamId);
@@ -50,7 +51,7 @@ void main() {
       const streamId = 12;
       router.routeCapsule(
         streamId,
-        Capsule(type: CapsuleType.grease1, payload: [0x02]),
+        WebTransportCapsule(type: CapsuleType.grease1, payload: [0x02]),
       );
       expect(router.getSession(streamId), isNotNull);
 
@@ -64,11 +65,13 @@ void main() {
 
       router.routeCapsule(
         streamIdA,
-        Capsule(type: CapsuleType.closeWebTransportSession, payload: []),
+        WebTransportCapsule(
+            type: CapsuleType.closeWebTransportSession, payload: []),
       );
       router.routeCapsule(
         streamIdB,
-        Capsule(type: CapsuleType.drainWebTransportSession, payload: []),
+        WebTransportCapsule(
+            type: CapsuleType.drainWebTransportSession, payload: []),
       );
 
       final sessionA = router.getSession(streamIdA);

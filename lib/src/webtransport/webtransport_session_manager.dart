@@ -32,7 +32,7 @@ class WebTransportSessionManager {
   /// Route a [capsule] to the session identified by [streamId].
   ///
   /// If no session exists for [streamId], a new one is created automatically.
-  void routeCapsule(int streamId, Capsule capsule) {
+  void routeCapsule(int streamId, WebTransportCapsule capsule) {
     final session =
         _sessions.putIfAbsent(streamId, () => WebTransportSession(streamId));
     session.onCapsuleReceived(capsule);

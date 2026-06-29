@@ -20,7 +20,7 @@ void main() {
     test('receives datagram capsules', () {
       final session = WebTransportSession(1);
       final payload = Uint8List.fromList([0x0a, 0x0b, 0x0c]);
-      session.onCapsuleReceived(Capsule(
+      session.onCapsuleReceived(WebTransportCapsule(
         type: CapsuleType.datagram,
         payload: payload,
       ));

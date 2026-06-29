@@ -108,7 +108,7 @@ void main() {
   group('StreamCapsuleRegistry', () {
     test('register and get', () {
       final registry = StreamCapsuleRegistry();
-      final capsule = Capsule(
+      final capsule = WebTransportCapsule(
           type: CapsuleType.registerBidirectionalStream, payload: Uint8List(0));
       registry.register(8, capsule);
       expect(registry.get(8), isNotNull);
@@ -122,7 +122,7 @@ void main() {
 
     test('isRegistered returns correct boolean', () {
       final registry = StreamCapsuleRegistry();
-      final capsule = Capsule(
+      final capsule = WebTransportCapsule(
           type: CapsuleType.registerUnidirectionalStream,
           payload: Uint8List(0));
       registry.register(12, capsule);
@@ -134,7 +134,7 @@ void main() {
   group('WebTransportSession stream tracking', () {
     test('tracks registered bidirectional streams', () {
       final session = WebTransportSession(1);
-      final capsule = Capsule(
+      final capsule = WebTransportCapsule(
         type: CapsuleType.registerBidirectionalStream,
         payload: VarInt.encode(8),
       );
@@ -147,7 +147,7 @@ void main() {
 
     test('tracks registered unidirectional streams', () {
       final session = WebTransportSession(1);
-      final capsule = Capsule(
+      final capsule = WebTransportCapsule(
         type: CapsuleType.registerUnidirectionalStream,
         payload: VarInt.encode(12),
       );

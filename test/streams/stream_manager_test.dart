@@ -30,6 +30,40 @@ void main() {
       expect(manager.getStream(0)!.streamId, equals(0));
     });
 
+    test('onStreamFrame marks receive stream as early data when requested', () {
+      final manager = StreamManager();
+      final frame = StreamFrame(
+        streamId: 0,
+        data: Uint8List.fromList([1, 2, 3]),
+      );
+
+      manager.onStreamFrame(frame, isEarlyData: true);
+
+      final stream = manager.getStream(0)! as QuicReceiveStream;
+      expect(stream.isEarlyData, isTrue);
+    });
+
+    test('onStreamFrame marks receive stream as normal data by default', () {
+      final manager = StreamManager();
+      final frame = StreamFrame(
+        streamId: 0,
+        data: Uint8List.fromList([1, 2, 3]),
+      );
+
+      manager.onStreamFrame(frame);
+
+      final stream = manager.getStream(0)! as QuicReceiveStream;
+      expect(stream.isEarlyData, isFalse);
+    });
+
+    test('createSendStream marks send stream as early data when requested', () {
+      final manager = StreamManager();
+      final stream = manager.createSendStream(0, isEarlyData: true);
+
+      expect(stream.isEarlyData, isTrue);
+      expect(manager.getStream(0), same(stream));
+    });
+
     test('onStreamFrame on existing stream does not recreate', () {
       final manager = StreamManager();
       final frame1 = StreamFrame(

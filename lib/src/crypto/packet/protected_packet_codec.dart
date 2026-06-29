@@ -43,12 +43,70 @@ class ProtectedPacketCodec {
   /// Removes header protection from [protectedPacket], decrypts the payload,
   /// and parses the resulting frames.
   ///
-  /// Returns the unprotected header bytes and the list of parsed frames,
-  /// or `null` if the packet could not be successfully unprotected.
+  /// Returns the unprotected header bytes, the list of parsed frames, and the
+  /// key phase bit for short-header packets (null for long headers), or `null`
+  /// if the packet could not be successfully unprotected.
   ///
   /// Throws if header protection is successfully removed but AEAD decryption
   /// fails (e.g., corrupted ciphertext or authentication tag).
-  Future<({Uint8List header, List<Frame> frames})?> unprotectAndDecrypt(
+
+  /// Remove header protection from [protectedPacket] and return the
+  /// unprotected header bytes, or null if header protection cannot be removed.
+  ///
+  /// For short headers, [pnLen] is the packet-number length in bytes (1-4).
+  /// The caller should determine the correct [pnLen] by trying all four values
+  /// or by using packet-number reconstruction.
+  Uint8List? unprotectHeader(Uint8List protectedPacket, int pnLen) {
+    if (protectedPacket.isEmpty) return null;
+    final isLong = (protectedPacket[0] & 0x80) != 0;
+    if (isLong) {
+      return _unprotectLongHeader(protectedPacket, pnLen);
+    } else {
+      return _unprotectShortHeader(protectedPacket, pnLen);
+    }
+  }
+
+  Uint8List? _unprotectLongHeader(Uint8List protectedPacket, int pnLen) {
+    final pnOffset = _computeLongHeaderPnOffset(protectedPacket);
+    final headerLen = pnOffset + pnLen;
+    if (headerLen > protectedPacket.length) return null;
+    final header = protectedPacket.sublist(0, headerLen);
+    final payload = protectedPacket.sublist(headerLen);
+    try {
+      return keys.unprotectHeader(header, payload);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Uint8List? _unprotectShortHeader(Uint8List protectedPacket, int pnLen) {
+    final headerLen = 1 + destinationConnectionIdLength + pnLen;
+    if (headerLen > protectedPacket.length) return null;
+    final header = protectedPacket.sublist(0, headerLen);
+    final payload = protectedPacket.sublist(headerLen);
+    try {
+      return keys.headerProtection.removeShortHeader(header, payload, pnLen);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Decrypt the [payload] of a packet given the [unprotectedHeader] and full
+  /// [packetNumber]. Returns the parsed frames, or null if decryption fails.
+  Future<List<Frame>?> decryptPayload(
+    Uint8List unprotectedHeader,
+    Uint8List payload,
+    int packetNumber,
+  ) async {
+    try {
+      final plaintext = await keys.decrypt(packetNumber, unprotectedHeader, payload);
+      return _parseFrames(plaintext);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<({Uint8List header, List<Frame> frames, int? keyPhase})?> unprotectAndDecrypt(
     Uint8List protectedPacket,
   ) async {
     if (protectedPacket.isEmpty) return null;
@@ -77,7 +135,7 @@ class ProtectedPacketCodec {
     }
   }
 
-  Future<({Uint8List header, List<Frame> frames})?>
+  Future<({Uint8List header, List<Frame> frames, int? keyPhase})?>
       _unprotectAndDecryptLongHeader(Uint8List packet) async {
     final pnOffset = _computeLongHeaderPnOffset(packet);
 
@@ -105,13 +163,13 @@ class ProtectedPacketCodec {
       final plaintext =
           await keys.decrypt(packetNumber, unprotectedHeader, payload);
       final frames = _parseFrames(plaintext);
-      return (header: unprotectedHeader, frames: frames);
+      return (header: unprotectedHeader, frames: frames, keyPhase: null);
     }
 
     return null;
   }
 
-  Future<({Uint8List header, List<Frame> frames})?>
+  Future<({Uint8List header, List<Frame> frames, int? keyPhase})?>
       _unprotectAndDecryptShortHeader(Uint8List packet) async {
     for (var pnLen = 1; pnLen <= 4; pnLen++) {
       final headerLen = 1 + destinationConnectionIdLength + pnLen;
@@ -142,7 +200,8 @@ class ProtectedPacketCodec {
         final plaintext =
             await keys.decrypt(packetNumber, unprotectedHeader, payload);
         final frames = _parseFrames(plaintext);
-        return (header: unprotectedHeader, frames: frames);
+        final keyPhase = (unprotectedHeader[0] & 0x04) != 0 ? 1 : 0;
+        return (header: unprotectedHeader, frames: frames, keyPhase: keyPhase);
       } catch (_) {
         // Decrypt failed (likely wrong pnLen guess); try next pnLen.
         continue;

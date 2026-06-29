@@ -72,12 +72,15 @@ void main() {
       expect(unprotectedHeader[0] & 0x03, equals(0)); // pnLen = 1
 
       final parsedFrames = result.frames;
-      expect(parsedFrames.length, equals(2));
+      // Initial packets are padded to the RFC 9000 minimum size, so the parsed
+      // frames include the two CRYPTO frames followed by a single PaddingFrame.
+      expect(parsedFrames.length, equals(3));
       expect(parsedFrames[0], isA<CryptoFrame>());
       expect((parsedFrames[0] as CryptoFrame).data,
           equals([0x01, 0x00, 0x00, 0x05]));
       expect(parsedFrames[1], isA<CryptoFrame>());
       expect((parsedFrames[1] as CryptoFrame).data, equals([0x02, 0x03]));
+      expect(parsedFrames[2], isA<PaddingFrame>());
     });
 
     test('ShortHeader Application round-trip with STREAM frames', () async {

@@ -128,6 +128,37 @@ void main() {
 
       expect(keyManager.hasKeysFor(PacketNumberSpace.handshake), isTrue);
     });
+
+    test('installApplicationKeys discards 0-RTT keys per RFC 9001 §4.1.4',
+        () async {
+      await coordinator.generateKeys();
+
+      // Install 0-RTT keys before the handshake completes.
+      final zeroRttManager = await KeyManager.deriveZeroRtt(
+        SimpleSecretKey([0xAB, 0xCD]),
+        backend,
+      );
+      final zeroRttKeys = zeroRttManager.keysFor(PacketNumberSpace.zeroRtt)!;
+      keyManager.installKeys(PacketNumberSpace.zeroRtt, zeroRttKeys);
+      expect(keyManager.hasKeysFor(PacketNumberSpace.zeroRtt), isTrue);
+
+      final random = Uint8List(32);
+      final keyShareExt = _buildKeyShareExtension(List<int>.filled(32, 0xCD));
+      final clientHelloMsg = TlsMessageBuilder.buildClientHello(
+        random,
+        Uint8List(0),
+        [0x1301],
+        [keyShareExt],
+      );
+      final frame = CryptoFrame(offset: 0, data: clientHelloMsg);
+
+      final handshakeSecret = await coordinator.processClientHello(frame);
+      await coordinator.deriveMasterSecret(handshakeSecret);
+      await coordinator.installApplicationKeys();
+
+      expect(keyManager.hasKeysFor(PacketNumberSpace.application), isTrue);
+      expect(keyManager.hasKeysFor(PacketNumberSpace.zeroRtt), isFalse);
+    });
   });
 
   group('CryptoFrameHandler with coordinator', () {

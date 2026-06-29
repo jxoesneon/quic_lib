@@ -89,7 +89,7 @@ class PacketReceiver {
         case LongHeader.typeHandshake:
           return PacketNumberSpace.handshake;
         case LongHeader.typeZeroRtt:
-          return PacketNumberSpace.application;
+          return PacketNumberSpace.zeroRtt;
         case LongHeader.typeRetry:
           return null;
         default:

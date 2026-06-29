@@ -606,24 +606,40 @@ class QuicConnection {
   /// Whether the connection should pace outgoing packets.
   bool get shouldPacePackets => _pacingCalculator.shouldPace;
 
-  /// Allocates a new client-initiated bidirectional stream ID.
+  /// Allocates a new client-initiated bidirectional stream ID and creates the
+  /// send-side stream in the [streamManager].
   ///
-  /// The returned stream ID is unique within this connection and can be used
-  /// to create a [QuicStream] via the [streamManager]. Bidirectional streams
-  /// allow both endpoints to send and receive data.
+  /// Bidirectional streams allow both endpoints to send and receive data. If
+  /// 0-RTT keys are currently available, the new stream is marked as early data.
   ///
   /// Throws [StateError] if the connection is closed or the stream limit has
   /// been reached.
-  int openBidirectionalStream() => _streamIdAllocator.allocateClientBidi();
+  int openBidirectionalStream() {
+    final streamId = _streamIdAllocator.allocateClientBidi();
+    _streamManager.createSendStream(
+      streamId,
+      isEarlyData: canSendZeroRtt,
+    );
+    return streamId;
+  }
 
-  /// Allocates a new client-initiated unidirectional stream ID.
+  /// Allocates a new client-initiated unidirectional stream ID and creates the
+  /// send-side stream in the [streamManager].
   ///
-  /// The returned stream ID is unique within this connection. Unidirectional
-  /// streams allow only the initiator to send data; the peer can only receive.
+  /// Unidirectional streams allow only the initiator to send data; the peer can
+  /// only receive. If 0-RTT keys are currently available, the new stream is
+  /// marked as early data.
   ///
   /// Throws [StateError] if the connection is closed or the stream limit has
   /// been reached.
-  int openUnidirectionalStream() => _streamIdAllocator.allocateClientUni();
+  int openUnidirectionalStream() {
+    final streamId = _streamIdAllocator.allocateClientUni();
+    _streamManager.createSendStream(
+      streamId,
+      isEarlyData: canSendZeroRtt,
+    );
+    return streamId;
+  }
 
   /// Initiates a graceful close of this connection.
   ///
@@ -692,6 +708,14 @@ class QuicConnection {
       final km = _keyManager;
       if (km != null) {
         km.onPacketSentWithCurrentKey(packetNumber);
+        // Confirm a peer-initiated key update on the first send with the new
+        // keys (RFC 9001 §6.2). The peer observes that we have adopted the new
+        // phase and can discard the old keys.
+        if (km.keyUpdatePending) {
+          km.confirmKeyUpdate();
+        }
+        // Discard old keys once the 3×PTO reordering window has expired.
+        km.maybeDiscardPreviousKeys(sentTimeUs);
       }
     }
   }
@@ -930,7 +954,10 @@ class QuicConnection {
           _cidManager.retireId(f.sequenceNumber);
           break;
         case StreamFrame f:
-          _streamManager.onStreamFrame(f);
+          _streamManager.onStreamFrame(
+            f,
+            isEarlyData: space == PacketNumberSpace.zeroRtt,
+          );
         case HandshakeDoneFrame _:
           if (_stateMachine.isHandshaking) {
             _stateMachine.transitionTo(
@@ -1025,6 +1052,10 @@ class QuicConnection {
     }
 
     final packetNumber = allocatePacketNumber(space);
+    final keyPhase = space == PacketNumberSpace.application
+        ? (_keyManager?.keyPhase ?? 0) != 0
+        : false;
+
     final plaintext = await PacketSender.buildPacket(
       frames: frames,
       space: space,
@@ -1033,6 +1064,7 @@ class QuicConnection {
       packetNumber: packetNumber,
       greaseQuicBit:
           space == PacketNumberSpace.application ? greaseQuicBit : false,
+      keyPhase: keyPhase,
     );
 
     // Patch the Length field for long headers to account for the AEAD tag.
@@ -1122,14 +1154,11 @@ class QuicConnection {
         }
       }
     } else {
-      // Short header packets are always in the Application space.
-      final space = PacketNumberSpace.application;
-      final codec = _codecForSpace(space);
-      if (codec != null) {
-        final decrypted = await codec.unprotectAndDecrypt(rawPacket);
-        if (decrypted != null) {
-          return (space: space, frames: decrypted.frames);
-        }
+      // Short header packets are always in the Application space. Try to
+      // decrypt using the key phase indicated by the header (RFC 9001 §6.2).
+      final result = await _processShortHeaderPacket(rawPacket);
+      if (result != null) {
+        return (space: result.space, frames: result.frames);
       }
     }
 
@@ -1139,6 +1168,91 @@ class QuicConnection {
       return (space: result.space!, frames: result.frames);
     }
     return null;
+  }
+
+  /// Process a 1-RTT short-header packet, using the key phase bit to select
+  /// the correct peer receive keys (RFC 9001 Section 6.2).
+  ///
+  /// Header protection keys do not change across key updates, so the current
+  /// local keys are used to remove header protection. The AEAD keys are then
+  /// selected based on the key phase indicated in the unprotected header. If
+  /// the peer has initiated a key update, this method promotes the next
+  /// generation of keys and updates local send keys to match.
+  Future<({PacketNumberSpace space, List<Frame> frames, int keyPhase})?>
+      _processShortHeaderPacket(Uint8List rawPacket) async {
+    final km = _keyManager;
+    if (km == null) return null;
+
+    // Header protection keys are stable across key updates, but peer packets
+    // were protected with the peer's header-protection key.
+    final hpKeys = km.peerKeysFor(PacketNumberSpace.application);
+    if (hpKeys == null) return null;
+
+    final dcidLen = connectionId?.length ?? 8;
+
+    for (var pnLen = 1; pnLen <= 4; pnLen++) {
+      final headerLen = 1 + dcidLen + pnLen;
+      if (headerLen > rawPacket.length) continue;
+
+      final header = rawPacket.sublist(0, headerLen);
+      final payload = rawPacket.sublist(headerLen);
+
+      Uint8List unprotectedHeader;
+      try {
+        unprotectedHeader =
+            hpKeys.headerProtection.removeShortHeader(header, payload, pnLen);
+      } catch (_) {
+        continue;
+      }
+
+      final actualPnLen = (unprotectedHeader[0] & 0x03) + 1;
+      if (actualPnLen != pnLen) continue;
+
+      final keyPhase = (unprotectedHeader[0] & 0x04) != 0 ? 1 : 0;
+      final packetNumber = _decodePacketNumber(
+        unprotectedHeader.sublist(1 + dcidLen, headerLen),
+      );
+
+      final receiveKeys = km.receiveKeysForPhase(keyPhase, packetNumber);
+      if (receiveKeys == null) continue;
+
+      try {
+        final plaintext =
+            await receiveKeys.decrypt(packetNumber, unprotectedHeader, payload);
+        final frames = FrameCodec.parseAll(plaintext);
+
+        if (keyPhase != km.keyPhase) {
+          await km.onPeerKeyUpdateDetected(packetNumber, keyPhase);
+          // Start the 3×PTO window for retaining the old receive keys so that
+          // reordered packets from the previous generation can still be decrypted.
+          km.setPreviousKeyDiscardDeadline(
+            DateTime.now().millisecondsSinceEpoch * 1000,
+            _ptoScheduler.currentPtoUs,
+          );
+        } else {
+          // Same phase: still track the highest received packet number.
+          km.onPeerKeyUpdateDetected(packetNumber, keyPhase);
+        }
+
+        return (
+          space: PacketNumberSpace.application,
+          frames: frames,
+          keyPhase: keyPhase
+        );
+      } catch (_) {
+        continue;
+      }
+    }
+
+    return null;
+  }
+
+  static int _decodePacketNumber(Uint8List bytes) {
+    var result = 0;
+    for (final b in bytes) {
+      result = (result << 8) | b;
+    }
+    return result;
   }
 
   /// Map a QUIC v1 long-header packet type to its [PacketNumberSpace].

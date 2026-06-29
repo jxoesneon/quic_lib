@@ -12,6 +12,8 @@ import 'package:quic_lib/src/recovery/pto_scheduler.dart';
 import 'package:quic_lib/src/recovery/rtt_estimator.dart';
 import 'package:quic_lib/src/streams/stream_id.dart';
 import 'package:quic_lib/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/packet_builder.dart';
+import 'package:quic_lib/src/wire/packet_header.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -69,6 +71,59 @@ void main() {
 
       expect(packet, isA<Uint8List>());
       expect(packet.isNotEmpty, isTrue);
+    });
+
+    test('openBidirectionalStream marks stream as early data when 0-RTT keys exist',
+        () async {
+      final backend = DefaultCryptoBackend();
+      final psk = SimpleSecretKey([0xAB, 0xCD]);
+      final keyManager = await KeyManager.deriveZeroRtt(psk, backend);
+
+      final conn = createConnection(keyManager: keyManager);
+      final streamId = conn.openBidirectionalStream();
+
+      final stream = conn.streamManager.getStream(streamId)!;
+      expect(stream.isEarlyData, isTrue);
+    });
+
+    test('dispatching a STREAM frame from a 0-RTT packet marks stream as early data',
+        () async {
+      final conn = createConnection();
+      final dcid = List<int>.filled(8, 0x01);
+      final header = LongHeader(
+        version: 0x00000001,
+        packetType: LongHeader.typeZeroRtt,
+        destinationConnectionId: dcid,
+        sourceConnectionId: const [],
+        packetNumber: 0,
+      );
+      final packet = await PacketBuilder.build(header, [
+        StreamFrame(streamId: 0, data: Uint8List.fromList([1, 2, 3]), fin: false),
+      ]);
+
+      conn.processIncomingDatagram(packet);
+
+      final stream = conn.streamManager.getStream(0)!;
+      expect(stream.isEarlyData, isTrue);
+    });
+
+    test('dispatching a STREAM frame from a 1-RTT packet does not mark stream as early data',
+        () async {
+      final conn = createConnection();
+      final dcid = List<int>.filled(8, 0x01);
+      final header = ShortHeader(
+        destinationConnectionId: dcid,
+        packetNumber: 0,
+        packetNumberLength: 1,
+      );
+      final packet = await PacketBuilder.build(header, [
+        StreamFrame(streamId: 0, data: Uint8List.fromList([1, 2, 3]), fin: false),
+      ]);
+
+      conn.processIncomingDatagram(packet);
+
+      final stream = conn.streamManager.getStream(0)!;
+      expect(stream.isEarlyData, isFalse);
     });
   });
 }

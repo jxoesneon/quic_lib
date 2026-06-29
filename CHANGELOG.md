@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.0] — 2026-06-29
+
+### Added
+- **Peer-initiated key update detection (RFC 9001 §6.2)** — `QuicConnection` now detects key updates initiated by the peer via the 1-RTT key phase bit and updates local send keys to match
+- **Proactive next-generation key derivation** — `KeyManager` derives next-generation receive and send keys ahead of time to avoid timing side-channels when a peer update is detected
+- **Packet-number-based key selection** — `KeyManager.receiveKeysForPhase()` selects previous vs. next-generation keys based on packet number, supporting reordered packets and preventing rollback to old keys for high packet numbers (RFC 9001 §6.5)
+- **Header protection key stability** — the header protection key is now reused across key updates as required by RFC 9001 §5.4
+- **Non-monotonic key update protection** — `KeyManager.onPeerKeyUpdateDetected()` rejects packet numbers that would roll back key phase and prevents a second key update before the previous one is acknowledged
+- **Key update completion signaling** — `QuicConnection.onPacketSent` confirms a peer-initiated key update on the first application-space send; old keys are discarded via `KeyManager.confirmKeyUpdate()` or after a 3×PTO deadline
+- **Initial packet padding** — `PacketBuilder.build` pads client Initial packets to at least 1200 bytes per RFC 9000 Section 14.1; `FrameCodec` coalesces consecutive PADDING bytes into a single frame
+- **0-RTT early-data flag** — `QuicStream` exposes `isEarlyData`; `StreamManager` sets it for receive streams from 0-RTT packets and `QuicConnection` sets it for send streams opened while 0-RTT keys are available; `PacketReceiver` now maps 0-RTT headers to `PacketNumberSpace.zeroRtt`
+- **0-RTT key cleanup** — `HandshakeCoordinator.installApplicationKeys` now discards 0-RTT keys once 1-RTT (Application) keys are available, per RFC 9001 §4.1.4
+- **Key update completion retention** — a 3×PTO discard deadline is set when a peer-initiated key update is detected so that previous-generation keys remain available for reordered packets (RFC 9001 §6.5); `KeyManager.confirmKeyUpdate` clears the pending flag and may be followed by `maybeDiscardPreviousKeys`
+
+### Changed
+- **Tests** — added `test/crypto/peer_key_update_test.dart` and `test/integration/v150_peer_key_update_test.dart` covering peer-initiated detection, simultaneous updates, non-monotonic rollback rejection, key confirmation, and 3×PTO discard; updated `test/wire/packet_builder_test.dart`, `test/connection/zero_rtt_transmission_test.dart`, `test/streams/stream_manager_test.dart`, and `test/connection/packet_receiver_test.dart` for the new behaviors
+- **Public API** — `KeyManager.forTest()` remains unchanged; new `KeyManager.forTestWithKeys()` factory provides real derived keys for crypto round-trip tests
+
+---
+
 ## [1.4.2] — 2026-06-29
 
 ### Fixed

@@ -59,5 +59,24 @@ void main() {
       final packet = await PacketBuilder.build(header, []);
       expect(packet.length, equals(1 + 1 + 1)); // header byte + DCID + PN
     });
+
+    test('Initial packet is padded to at least 1200 bytes', () async {
+      final header = LongHeader(
+        version: 0x00000001,
+        packetType: LongHeader.typeInitial,
+        destinationConnectionId: [0x01, 0x02, 0x03],
+        sourceConnectionId: [0x04, 0x05],
+        packetNumber: 0,
+        token: const [],
+      );
+      final frames = [
+        CryptoFrame(offset: 0, data: [0x01, 0x02])
+      ];
+      final packet = await PacketBuilder.build(header, frames);
+      expect(packet.length, greaterThanOrEqualTo(1200));
+      // The packet should still be a long header Initial packet.
+      expect(packet[0] & 0x80, isNonZero);
+      expect((packet[0] >> 4) & 0x03, equals(0x00)); // Initial type
+    });
   });
 }

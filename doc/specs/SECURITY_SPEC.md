@@ -123,14 +123,7 @@ max_bytes = 3 * bytes_received_from_client
 
 #### 2.4.3 Initial Packet Padding
 
-Client's first Initial packet MUST be padded to at least **1200 bytes**. The `PacketBuilder` framework supports this via `PaddingFrame`, but automatic padding to 1200 bytes is not yet enforced in the sender path:
-
-```dart
-// Planned: automatic padding in PacketSender.buildPacket()
-if (isInitialPacket && totalSize < 1200) {
-  frames.add(PaddingFrame(length: 1200 - totalSize));
-}
-```
+Client's first Initial packet MUST be padded to at least **1200 bytes**. `PacketBuilder.build()` now automatically adds a trailing `PaddingFrame` when an Initial packet would be smaller than 1200 bytes, and `FrameCodec` coalesces consecutive PADDING bytes into a single frame to keep the parser efficient.
 
 This ensures the client sends enough data for the server's 3x amplification limit to permit a full response.
 
@@ -152,15 +145,7 @@ This ensures the client sends enough data for the server's 3x amplification limi
 
 #### 2.5.2 Dart API Marking
 
-The API marks 0-RTT data via the `PacketNumberSpace.zeroRtt` enum and `QuicConnection.canSendZeroRtt`. A per-stream `isEarlyData` flag is planned but not yet implemented:
-
-```dart
-// Planned: add to QuicStream or frame metadata
-class QuicStream {
-  /// Whether this stream carries 0-RTT (potentially replayable) data.
-  bool get isEarlyData;  // TODO: wire into frame dispatch path
-}
-```
+The API marks 0-RTT data via the `PacketNumberSpace.zeroRtt` enum, `QuicConnection.canSendZeroRtt`, and the per-stream `QuicStream.isEarlyData` flag. `StreamManager` sets `isEarlyData` when creating a receive stream from a 0-RTT packet, and `QuicConnection` sets it when opening a send stream while 0-RTT keys are available. Applications should inspect this flag to decide whether to accept 0-RTT data.
 
 ---
 

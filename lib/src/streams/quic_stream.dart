@@ -68,6 +68,12 @@ abstract class QuicStream {
   /// Sends a RESET_STREAM frame to abruptly terminate the stream. Any
   /// buffered but unsent data is discarded.
   void reset({int errorCode = 0});
+
+  /// Whether this stream carries 0-RTT (early) data.
+  ///
+  /// Per RFC 9001 Section 4.6, 0-RTT data is potentially replayable. Marking a
+  /// stream as early data lets the application decide whether to accept it.
+  bool get isEarlyData;
 }
 
 /// QUIC send-side stream.
@@ -91,8 +97,13 @@ class QuicSendStream implements QuicStream {
   final SendStateMachine _stateMachine;
 
   /// Creates a send stream for [streamId] backed by [stateMachine].
-  QuicSendStream(this.streamId, {required SendStateMachine stateMachine})
-      : _stateMachine = stateMachine,
+  ///
+  /// Set [isEarlyData] to true when the stream is opened in a 0-RTT flight.
+  QuicSendStream(
+    this.streamId, {
+    required SendStateMachine stateMachine,
+    this.isEarlyData = false,
+  })  : _stateMachine = stateMachine,
         _dataController = StreamController<Uint8List>.broadcast();
 
   @override
@@ -128,6 +139,9 @@ class QuicSendStream implements QuicStream {
   bool get isBidirectional => (streamId & 0x02) == 0;
   @override
   bool get isUnidirectional => (streamId & 0x02) != 0;
+
+  @override
+  final bool isEarlyData;
 }
 
 /// QUIC receive-side stream.
@@ -157,8 +171,14 @@ class QuicReceiveStream implements QuicStream {
   final ReceiveStateMachine _stateMachine;
 
   /// Creates a receive stream for [streamId] backed by [stateMachine].
-  QuicReceiveStream(this.streamId, {required ReceiveStateMachine stateMachine})
-      : _stateMachine = stateMachine,
+  ///
+  /// Set [isEarlyData] to true when the first STREAM frame for this stream was
+  /// received in a 0-RTT packet.
+  QuicReceiveStream(
+    this.streamId, {
+    required ReceiveStateMachine stateMachine,
+    this.isEarlyData = false,
+  })  : _stateMachine = stateMachine,
         _dataController = StreamController<Uint8List>.broadcast();
 
   /// Deliver received [data] to the stream.
@@ -203,4 +223,7 @@ class QuicReceiveStream implements QuicStream {
   bool get isBidirectional => (streamId & 0x02) == 0;
   @override
   bool get isUnidirectional => (streamId & 0x02) != 0;
+
+  @override
+  final bool isEarlyData;
 }

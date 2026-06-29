@@ -132,6 +132,9 @@ class HandshakeCoordinator {
 
     final keys = derivedManager.keysFor(PacketNumberSpace.application)!;
     keyManager.installKeys(PacketNumberSpace.application, keys);
+    // 0-RTT keys MUST be discarded once 1-RTT (Application) keys are available
+    // per RFC 9001 §4.1.4.
+    keyManager.discardZeroRttKeys();
   }
 
   /// Computes the Finished verify data for this endpoint.

@@ -4,6 +4,7 @@ import '../wire/frame.dart';
 import 'flow_controller.dart';
 import 'quic_stream.dart';
 import 'receive_state_machine.dart';
+import 'send_state_machine.dart';
 import 'stream_scheduler.dart';
 
 /// Routes incoming STREAM frames to the correct [QuicStream] instance.
@@ -20,13 +21,16 @@ class StreamManager {
 
   /// Deliver a STREAM frame to the appropriate stream.
   /// Creates the stream if it does not exist.
-  void onStreamFrame(StreamFrame frame) {
+  ///
+  /// [isEarlyData] is true when the frame was received in a 0-RTT packet.
+  void onStreamFrame(StreamFrame frame, {bool isEarlyData = false}) {
     final bool isNew = !_streams.containsKey(frame.streamId);
     final stream = _streams.putIfAbsent(
       frame.streamId,
       () => QuicReceiveStream(
         frame.streamId,
         stateMachine: ReceiveStateMachine(),
+        isEarlyData: isEarlyData,
       ),
     ) as QuicReceiveStream;
 
@@ -51,6 +55,21 @@ class StreamManager {
 
     final receiveFlowController = _receiveFlowControllers[frame.streamId];
     receiveFlowController?.consume(frame.data.length);
+  }
+
+  /// Create a send-side stream for [streamId].
+  ///
+  /// Set [isEarlyData] to true when the stream is opened in a 0-RTT flight.
+  QuicSendStream createSendStream(int streamId, {bool isEarlyData = false}) {
+    final stream = QuicSendStream(
+      streamId,
+      stateMachine: SendStateMachine(),
+      isEarlyData: isEarlyData,
+    );
+    _streams[streamId] = stream;
+    _sendFlowControllers[streamId] = FlowController(initialLimit: 65536);
+    _receiveFlowControllers[streamId] = FlowController(initialLimit: 65536);
+    return stream;
   }
 
   /// Get an existing stream by ID.

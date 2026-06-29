@@ -94,8 +94,8 @@ void main() {
 
 
   group('RFC 9001 key update tracking', () {
-    test('KeyManager requires ACK before subsequent key update', () {
-      final km = KeyManager.forTest();
+    test('KeyManager requires ACK before subsequent key update', () async {
+      final km = await KeyManager.forTestWithKeys();
       km.onPacketSentWithCurrentKey(1);
       // Without an ACK, a subsequent key update is not allowed.
       expect(() => km.initiateKeyUpdate(), throwsA(isA<StateError>()));
@@ -103,8 +103,9 @@ void main() {
       expect(() => km.initiateKeyUpdate(), returnsNormally);
     });
 
-    test('QuicConnection wires KeyManager for application-space packets only', () {
-      final km = KeyManager.forTest();
+    test('QuicConnection wires KeyManager for application-space packets only',
+        () async {
+      final km = await KeyManager.forTestWithKeys();
       final conn = QuicConnection(
         stateMachine: ConnectionStateMachine(),
         cidManager: ConnectionIdManager(),
@@ -146,7 +147,7 @@ void main() {
       // After a key update, reset internal state and verify non-application
       // packets are not tracked.
       km.confirmKeyUpdate();
-      final km2 = KeyManager.forTest();
+      final km2 = await KeyManager.forTestWithKeys();
       final conn2 = QuicConnection(
         stateMachine: ConnectionStateMachine(),
         cidManager: ConnectionIdManager(),

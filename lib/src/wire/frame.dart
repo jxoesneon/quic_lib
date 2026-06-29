@@ -804,6 +804,20 @@ class FrameCodec {
     return _frameLength(frame, bytes, offset);
   }
 
+  /// Parse all frames from [bytes] and return them as a list.
+  ///
+  /// Throws if any frame is malformed or if trailing bytes cannot be parsed.
+  static List<Frame> parseAll(Uint8List bytes) {
+    final frames = <Frame>[];
+    var offset = 0;
+    while (offset < bytes.length) {
+      final (frame, newOffset) = parse(bytes, offset: offset);
+      frames.add(frame);
+      offset = newOffset;
+    }
+    return frames;
+  }
+
   // SECURITY: Helper for safe buffer access during frame parsing.
   static Uint8List _safeSublist(Uint8List bytes, int start, int length,
       {int? maxLength}) {
@@ -833,7 +847,14 @@ class FrameCodec {
 
     switch (type) {
       case 0x00: // PADDING
-        return PaddingFrame(length: 1);
+        // Coalesce consecutive PADDING bytes into a single frame. This avoids
+        // creating thousands of tiny frames when a packet is padded to the
+        // RFC 9000 minimum Initial packet size.
+        var length = 1;
+        while (offset + length < bytes.length && bytes[offset + length] == 0x00) {
+          length++;
+        }
+        return PaddingFrame(length: length);
       case 0x01: // PING
         return PingFrame();
       case 0x02: // ACK

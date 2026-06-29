@@ -219,5 +219,14 @@ void main() {
       final f = PingFrame();
       expect(FrameCodec.serialize(f), equals(f.serialize()));
     });
+
+    test('coalesces consecutive padding bytes into a single PaddingFrame', () {
+      final bytes = Uint8List.fromList([0x00, 0x00, 0x00, 0x01]);
+      final frames = FrameCodec.parseAll(bytes);
+      expect(frames.length, equals(2));
+      expect(frames[0], isA<PaddingFrame>());
+      expect((frames[0] as PaddingFrame).length, equals(3));
+      expect(frames[1], isA<PingFrame>());
+    });
   });
 }

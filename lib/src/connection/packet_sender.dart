@@ -12,6 +12,9 @@ class PacketSender {
   static const int maxUdpPayloadSize = 1200;
 
   /// Build a packet for a given space.
+  ///
+  /// For 1-RTT short headers, [keyPhase] controls the key phase bit (RFC 9001
+  /// Section 6). It is ignored for other packet number spaces.
   static Future<Uint8List> buildPacket({
     required List<Frame> frames,
     required PacketNumberSpace space,
@@ -19,6 +22,7 @@ class PacketSender {
     List<int>? scid,
     required int packetNumber,
     bool greaseQuicBit = false,
+    bool keyPhase = false,
   }) async {
     PacketHeader header;
     switch (space) {
@@ -44,6 +48,7 @@ class PacketSender {
           destinationConnectionId: dcid,
           packetNumber: packetNumber,
           packetNumberLength: 1,
+          keyPhase: keyPhase,
           greaseQuicBit: greaseQuicBit,
         );
       case PacketNumberSpace.zeroRtt:

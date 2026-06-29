@@ -52,7 +52,7 @@ void main() {
       expect(PacketReceiver.spaceFromHeader(header), isNull);
     });
 
-    test('ZeroRtt → application space', () {
+    test('ZeroRtt → zeroRtt space', () {
       final header = LongHeader(
         version: 0x00000001,
         packetType: LongHeader.typeZeroRtt,
@@ -61,7 +61,7 @@ void main() {
         packetNumber: 0,
       );
       expect(PacketReceiver.spaceFromHeader(header),
-          equals(PacketNumberSpace.application));
+          equals(PacketNumberSpace.zeroRtt));
     });
 
     test('unknown long header type → null', () {

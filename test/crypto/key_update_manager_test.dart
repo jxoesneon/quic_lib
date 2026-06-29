@@ -15,56 +15,56 @@ void main() {
       expect(km.onPacketSentWithCurrentKey(2), isFalse);
     });
 
-    test('initiateKeyUpdate toggles phase and sets pending', () {
-      final km = KeyManager.forTest();
+    test('initiateKeyUpdate toggles phase and sets pending', () async {
+      final km = await KeyManager.forTestWithKeys();
       km.onPacketSentWithCurrentKey(1);
       km.onAckReceived(1);
-      km.initiateKeyUpdate();
+      await km.initiateKeyUpdate();
       expect(km.keyPhase, 1);
       expect(km.keyUpdatePending, isTrue);
     });
 
-    test('confirmKeyUpdate clears pending', () {
-      final km = KeyManager.forTest();
+    test('confirmKeyUpdate clears pending', () async {
+      final km = await KeyManager.forTestWithKeys();
       km.onPacketSentWithCurrentKey(1);
       km.onAckReceived(1);
-      km.initiateKeyUpdate();
+      await km.initiateKeyUpdate();
       expect(km.keyUpdatePending, isTrue);
       km.confirmKeyUpdate();
       expect(km.keyUpdatePending, isFalse);
     });
 
-    test('double initiate throws StateError', () {
-      final km = KeyManager.forTest();
+    test('double initiate throws StateError', () async {
+      final km = await KeyManager.forTestWithKeys();
       km.onPacketSentWithCurrentKey(1);
       km.onAckReceived(1);
-      km.initiateKeyUpdate();
+      await km.initiateKeyUpdate();
       expect(() => km.initiateKeyUpdate(), throwsA(isA<StateError>()));
     });
 
-    test('packet counter resets on key update', () {
-      final km = KeyManager.forTest();
+    test('packet counter resets on key update', () async {
+      final km = await KeyManager.forTestWithKeys();
       for (var i = 0; i < 10; i++) {
         km.onPacketSentWithCurrentKey(i);
       }
       km.onAckReceived(9);
-      km.initiateKeyUpdate();
+      await km.initiateKeyUpdate();
       // After update, counter resets, so we shouldn't hit limit immediately.
       expect(km.onPacketSentWithCurrentKey(10), isFalse);
     });
 
     test(
         'initiateKeyUpdate throws if no ACK received for current key phase packets',
-        () {
-      final km = KeyManager.forTest();
+        () async {
+      final km = await KeyManager.forTestWithKeys();
       km.onPacketSentWithCurrentKey(1);
       // No ACK received for packet 1.
       expect(() => km.initiateKeyUpdate(), throwsA(isA<StateError>()));
     });
 
     test('onAckReceived allows subsequent key update when ACK covers sent packet',
-        () {
-      final km = KeyManager.forTest();
+        () async {
+      final km = await KeyManager.forTestWithKeys();
       km.onPacketSentWithCurrentKey(5);
       km.onAckReceived(3);
       // ACK does not cover packet 5 yet.

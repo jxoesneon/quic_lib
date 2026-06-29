@@ -22,6 +22,12 @@ const int _maxCapsuleDataLength = 1024 * 1024;
 ///
 /// Each capsule on the wire is:
 ///   VarInt(Type) + VarInt(Length) + Data (Length bytes)
+///
+/// NOTE: This HTTP/3 `Capsule` class is distinct from the `Capsule` class in
+/// `lib/src/webtransport/capsule_types.dart`. Both are exported from
+/// `quic_lib.dart` (via different barrel files), which creates a naming
+/// ambiguity when both are imported. This will be resolved in v2.0.0 by
+/// renaming the WebTransport class to `WebTransportCapsule`.
 abstract class Capsule {
   final int type;
   final Uint8List data;

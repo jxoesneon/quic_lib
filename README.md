@@ -293,6 +293,13 @@ Contributions are welcome. Please read the architecture overview in `ARCHITECTUR
 2. `dart test` — all tests green.
 3. `dart format --set-exit-if-changed` — formatting clean.
 
+## Known limitations
+
+The following items are tracked for future releases and do not affect typical short-lived connections:
+
+1. **Peer-initiated key updates (RFC 9001 §6.2)** — v1.4.2 implements the local-initiator side of key updates (§6.1) with packet-number confirmation before subsequent updates. Detection of key updates initiated by the peer (via the key phase bit) is not yet implemented and is scheduled for v1.5.0.
+2. **HTTP/3 `Capsule` vs WebTransport `Capsule` naming** — both barrel files export a `Capsule` class, which creates an ambiguity when `quic_lib.dart` and `http3.dart` are imported together. The WebTransport class will be renamed to `WebTransportCapsule` in v2.0.0. Until then, import the specific files you need or use library prefixes to disambiguate.
+
 ## License
 
 MIT — see `LICENSE`.

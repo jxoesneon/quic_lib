@@ -1,4 +1,4 @@
-/// Metadata for a sent packet used by [SentPacketTracker] and [RecoveryManager].
+/// Metadata for a sent packet used by [SentPacketTracker].
 ///
 /// Tracks per-packet state required for loss detection, congestion control,
 /// and RTT measurement. A packet is considered "in flight" if it has been

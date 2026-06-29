@@ -24,8 +24,8 @@ class DCUtRUdpCoordinator {
 
   /// Starts listening to the underlying [UdpSocket] for DCUtR datagrams.
   ///
-  /// Valid CONNECT messages trigger [_stateMachine.onConnectReceived] and
-  /// valid SYNC messages trigger [_stateMachine.onSyncReceived].
+  /// Valid CONNECT messages trigger `_stateMachine.onConnectReceived()` and
+  /// valid SYNC messages trigger `_stateMachine.onSyncReceived()`.
   void startListening() {
     _subscription = _socket.incoming.listen((datagram) {
       final data = datagram.data;
@@ -58,7 +58,7 @@ class DCUtRUdpCoordinator {
   }
 
   /// Sends a DCUtR CONNECT message to [addr]:[port] and transitions the
-  /// state machine with [onConnectSent].
+  /// state machine with `onConnectSent()`.
   Future<bool> sendConnect(
     InternetAddress addr,
     int port,
@@ -72,7 +72,7 @@ class DCUtRUdpCoordinator {
   }
 
   /// Sends a DCUtR SYNC message to [addr]:[port] and transitions the
-  /// state machine with [onSyncReceived].
+  /// state machine with `onSyncReceived()`.
   Future<bool> sendSync(
     InternetAddress addr,
     int port,

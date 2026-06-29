@@ -495,8 +495,8 @@ class QuicConnection {
   /// Parse peer transport parameters and update connection state.
   ///
   /// Each parameter is encoded as: id (varint) + length (varint) + value.
-  /// If a [version_information] parameter is present, its [chosenVersion] is
-  /// validated against its [availableVersions] per RFC 9368.
+  /// If a version information parameter is present, its chosen version is
+  /// validated against available versions per RFC 9368.
   void applyPeerTransportParameters(Uint8List bytes) {
     var offset = 0;
     while (offset < bytes.length) {

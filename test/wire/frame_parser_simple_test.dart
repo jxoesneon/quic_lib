@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:test/test.dart';
 import 'package:quic_lib/src/wire/frame.dart';
+import 'package:quic_lib/src/wire/transport_error_codes.dart';
 
 void main() {
   group('FrameCodec.parse simple frames', () {
@@ -69,11 +70,10 @@ void main() {
       expect(nextOffset, bytes.length);
     });
 
-    test('unsupported type is silently ignored per RFC 9000 Section 19.21', () {
+    test('unknown frame type causes FrameEncodingError per RFC 9000 Section 12.4',
+        () {
       final bytes = Uint8List.fromList([0x1f]); // unsupported frame type
-      final (parsed, nextOffset) = FrameCodec.parse(bytes);
-      expect(parsed, isA<PaddingFrame>());
-      expect(nextOffset, 0);
+      expect(() => FrameCodec.parse(bytes), throwsA(isA<FrameEncodingError>()));
     });
   });
 }

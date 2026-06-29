@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:typed_data';
+import 'transport_error_codes.dart';
 import 'varint.dart';
 
 /// Base class for all QUIC frames.
@@ -720,20 +721,20 @@ class DatagramFrame extends Frame {
 ///   Sequence Number (i),
 ///   Requested Ack Eliciting Threshold (i),
 ///   Requested Max Ack Delay (i),
-///   Ignore Order (8),
+///   Reordering Threshold (i),
 /// }
 /// ```
 class AckFrequencyFrame extends Frame {
   final int sequenceNumber;
   final int requestedAckElicitingThreshold;
   final int requestedMaxAckDelay;
-  final bool ignoreOrder;
+  final int reorderingThreshold;
 
   AckFrequencyFrame({
     required this.sequenceNumber,
     required this.requestedAckElicitingThreshold,
     required this.requestedMaxAckDelay,
-    this.ignoreOrder = false,
+    this.reorderingThreshold = 1,
   });
 
   @override
@@ -749,7 +750,7 @@ class AckFrequencyFrame extends Frame {
     builder.add(VarInt.encode(sequenceNumber));
     builder.add(VarInt.encode(requestedAckElicitingThreshold));
     builder.add(VarInt.encode(requestedMaxAckDelay));
-    builder.addByte(ignoreOrder ? 1 : 0);
+    builder.add(VarInt.encode(reorderingThreshold));
     return builder.toBytes();
   }
 
@@ -759,7 +760,7 @@ class AckFrequencyFrame extends Frame {
         VarInt.encode(sequenceNumber).length +
         VarInt.encode(requestedAckElicitingThreshold).length +
         VarInt.encode(requestedMaxAckDelay).length +
-        1;
+        VarInt.encode(reorderingThreshold).length;
   }
 }
 
@@ -1045,12 +1046,16 @@ class FrameCodec {
       case 0x1e: // HANDSHAKE_DONE
         return HandshakeDoneFrame();
       case 0x30: // DATAGRAM (no length)
-        final data = _safeSublist(bytes, pos, bytes.length - pos);
+        // Defensive upper bound for datagram payloads; the negotiated
+        // max_datagram_frame_size should be smaller in practice.
+        final data = _safeSublist(bytes, pos, bytes.length - pos,
+            maxLength: 1024 * 1024);
         return DatagramFrame(data: data, hasLength: false);
       case 0x31: // DATAGRAM (with length)
         final lengthValue = readVarInt(pos);
         pos += varIntLength(pos);
-        final data = _safeSublist(bytes, pos, lengthValue);
+        final data = _safeSublist(bytes, pos, lengthValue,
+            maxLength: 1024 * 1024);
         return DatagramFrame(data: data, hasLength: true);
       case 0xaf: // ACK_FREQUENCY (RFC 9298)
         final seqNum = readVarInt(pos);
@@ -1059,18 +1064,18 @@ class FrameCodec {
         pos += varIntLength(pos);
         final maxDelay = readVarInt(pos);
         pos += varIntLength(pos);
-        final ignoreOrder = _safeSublist(bytes, pos, 1)[0] != 0;
+        final reorderingThreshold = readVarInt(pos);
         return AckFrequencyFrame(
           sequenceNumber: seqNum,
           requestedAckElicitingThreshold: threshold,
           requestedMaxAckDelay: maxDelay,
-          ignoreOrder: ignoreOrder,
+          reorderingThreshold: reorderingThreshold,
         );
       default:
-        // RFC 9000 Section 19.21: Unknown frame types MUST be silently ignored.
-        // We skip the frame by returning a zero-length padding placeholder.
-        // The caller must advance past this frame using the length field.
-        return PaddingFrame(length: 0);
+        // RFC 9000 Section 12.4: An endpoint MUST treat the receipt of a frame
+        // of unknown type as a connection error of type FRAME_ENCODING_ERROR.
+        throw FrameEncodingError(
+            'Unknown frame type: 0x${type.toRadixString(16)}');
     }
   }
 

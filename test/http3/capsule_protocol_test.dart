@@ -81,10 +81,13 @@ void main() {
       expect(consumed, equals(bytes.length));
     });
 
-    test('parse throws for unknown capsule type', () {
-      // Build an unknown capsule manually: type 0x99, length 0, no data.
-      final unknown = Uint8List.fromList([0x99, 0x00]);
-      expect(() => Capsule.parse(unknown), throwsArgumentError);
+    test('parse returns UnknownCapsule for unknown capsule type', () {
+      // Build an unknown capsule manually: type 0x3F (single-byte varint),
+      // length 0, no data.
+      final unknown = Uint8List.fromList([0x3F, 0x00]);
+      final (parsed, _) = Capsule.parse(unknown);
+      expect(parsed, isA<UnknownCapsule>());
+      expect(parsed.type, 0x3F);
     });
 
     test('parse throws for truncated data', () {

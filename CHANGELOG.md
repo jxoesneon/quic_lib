@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.2] — 2026-06-29
+
+### Fixed
+- **RFC 9000 unknown frame handling** — `FrameCodec.parse` now treats unknown frame types as `FRAME_ENCODING_ERROR` per RFC 9000 Section 12.4 (1.4.1 incorrectly ignored them)
+- **WebTransport SETTINGS identifiers** — corrected `Http3SettingsId` values per draft-ietf-webtrans-http3-15: `SETTINGS_WT_ENABLED` (0x2c7cf000), `SETTINGS_WT_INITIAL_MAX_DATA` (0x2b61), `SETTINGS_WT_INITIAL_MAX_STREAMS_UNI` (0x2b64), `SETTINGS_WT_INITIAL_MAX_STREAMS_BIDI` (0x2b65)
+- **ACK_FREQUENCY frame format** — replaced the incorrect `Ignore Order` boolean with the `Reordering Threshold` varint per RFC 9298
+- **ACK_FREQUENCY validation** — `AckFrequencyPolicy.processAckFrequencyFrame()` now validates `requestedMaxAckDelay` (< 2^14 ms and >= `min_ack_delay`) and `requestedAckElicitingThreshold` (non-negative) per RFC 9298
+- **Key update confirmation** — `KeyManager` now verifies that an ACK was received for a packet sent with the current key phase before allowing a subsequent key update, per RFC 9001 §6.1; also tracks lowest packet sent with current key
+- **Application-space key update wiring** — `QuicConnection.onPacketSent()` and `onAckReceived()` now notify `KeyManager` for 1-RTT packets
+- **Capsule size limits** — `Capsule.parse()` rejects capsule payloads larger than 1 MiB to prevent DoS via memory exhaustion
+- **DATAGRAM frame size limits** — `FrameCodec.parse()` now enforces a 1 MiB defensive upper bound on DATAGRAM frame payloads (types 0x30/0x31) to prevent excessive memory allocation from malicious length fields
+- **Public API exports** — `http3.dart` now exports `RegisterBidirectionalStreamCapsule`, `RegisterUnidirectionalStreamCapsule`, `WtMaxStreamsCapsule`, `WtMaxDataCapsule`, `WtMaxStreamDataCapsule`, and `UnknownCapsule`; `quic_lib.dart` now exports `AckFrequencyPolicy` and `KeyManager`
+
+### Changed
+- **Tests** — updated all `ACK_FREQUENCY`, `KeyManager`, and WebTransport settings tests to match the corrected RFC behavior
+
+---
+
 ## [1.4.1] — 2026-06-29
 
 ### Added

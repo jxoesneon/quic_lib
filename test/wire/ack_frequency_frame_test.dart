@@ -10,7 +10,7 @@ void main() {
         sequenceNumber: 42,
         requestedAckElicitingThreshold: 10,
         requestedMaxAckDelay: 25,
-        ignoreOrder: true,
+        reorderingThreshold: 3,
       );
       final bytes = frame.serialize();
       final (parsed, _) = FrameCodec.parse(bytes);
@@ -20,10 +20,10 @@ void main() {
       expect(af.sequenceNumber, equals(42));
       expect(af.requestedAckElicitingThreshold, equals(10));
       expect(af.requestedMaxAckDelay, equals(25));
-      expect(af.ignoreOrder, isTrue);
+      expect(af.reorderingThreshold, equals(3));
     });
 
-    test('serialize and parse with ignoreOrder=false', () {
+    test('default reorderingThreshold is 1', () {
       final frame = AckFrequencyFrame(
         sequenceNumber: 0,
         requestedAckElicitingThreshold: 1,
@@ -33,7 +33,7 @@ void main() {
       final (parsed, _) = FrameCodec.parse(bytes);
 
       final af = parsed as AckFrequencyFrame;
-      expect(af.ignoreOrder, isFalse);
+      expect(af.reorderingThreshold, equals(1));
     });
 
     test('frame type is 0xaf', () {
@@ -51,6 +51,7 @@ void main() {
         sequenceNumber: 255,
         requestedAckElicitingThreshold: 100,
         requestedMaxAckDelay: 50,
+        reorderingThreshold: 5,
       );
       expect(frame.getByteLength(), equals(frame.serialize().length));
     });

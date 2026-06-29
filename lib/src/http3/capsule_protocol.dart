@@ -13,6 +13,11 @@ import 'package:quic_lib/src/wire/varint.dart';
 /// WT_MAX_STREAMS (0x190B4D3F/0x190B4D40), WT_MAX_DATA, and
 /// WT_MAX_STREAM_DATA (draft-ietf-webtrans-http3).
 
+/// Maximum size of a capsule payload accepted by the parser (1 MiB).
+///
+/// Limits memory allocation when receiving unknown or malicious capsules.
+const int _maxCapsuleDataLength = 1024 * 1024;
+
 /// Base class for the Capsule Protocol (RFC 9297).
 ///
 /// Each capsule on the wire is:
@@ -70,6 +75,12 @@ abstract class Capsule {
       );
     }
     final dataLength = VarInt.decode(bytes.buffer, offset: lengthOffset);
+    if (dataLength > _maxCapsuleDataLength) {
+      throw ArgumentError(
+        'Capsule data length $dataLength exceeds maximum allowed '
+        '$_maxCapsuleDataLength bytes',
+      );
+    }
 
     // Extract data
     final dataOffset = lengthOffset + lengthLength;

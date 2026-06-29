@@ -66,3 +66,16 @@ enum QuicTransportErrorCode {
     return null;
   }
 }
+
+/// Exception indicating a malformed or unknown frame was encountered.
+///
+/// Per RFC 9000 Section 12.4, receipt of a frame of unknown type MUST be
+/// treated as a connection error of type FRAME_ENCODING_ERROR. The connection
+/// handler can catch this exception and emit a CONNECTION_CLOSE frame with
+/// [QuicTransportErrorCode.frameEncodingError].
+class FrameEncodingError implements Exception {
+  final String message;
+  FrameEncodingError(this.message);
+  @override
+  String toString() => 'FrameEncodingError: $message';
+}

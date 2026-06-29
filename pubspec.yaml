@@ -6,6 +6,7 @@ homepage: https://github.com/jxoesneon/quic_lib
 repository: https://github.com/jxoesneon/quic_lib
 issue_tracker: https://github.com/jxoesneon/quic_lib/issues
 documentation: https://github.com/jxoesneon/quic_lib/tree/main/doc
+license: MIT
 
 topics:
   - networking

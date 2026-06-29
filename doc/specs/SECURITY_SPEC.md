@@ -123,10 +123,12 @@ max_bytes = 3 * bytes_received_from_client
 
 #### 2.4.3 Initial Packet Padding
 
-Client's first Initial packet MUST be padded to at least **1200 bytes**:
+Client's first Initial packet MUST be padded to at least **1200 bytes**. The `PacketBuilder` framework supports this via `PaddingFrame`, but automatic padding to 1200 bytes is not yet enforced in the sender path:
+
 ```dart
+// Planned: automatic padding in PacketSender.buildPacket()
 if (isInitialPacket && totalSize < 1200) {
-  addPaddingFrames(1200 - totalSize);
+  frames.add(PaddingFrame(length: 1200 - totalSize));
 }
 ```
 
@@ -150,10 +152,13 @@ This ensures the client sends enough data for the server's 3x amplification limi
 
 #### 2.5.2 Dart API Marking
 
+The API marks 0-RTT data via the `PacketNumberSpace.zeroRtt` enum and `QuicConnection.canSendZeroRtt`. A per-stream `isEarlyData` flag is planned but not yet implemented:
+
 ```dart
+// Planned: add to QuicStream or frame metadata
 class QuicStream {
   /// Whether this stream carries 0-RTT (potentially replayable) data.
-  bool get isEarlyData;
+  bool get isEarlyData;  // TODO: wire into frame dispatch path
 }
 ```
 
@@ -202,7 +207,17 @@ class QuicStream {
 
 #### 2.7.3 Implementation Limits
 
+Limits are enforced at the subsystem level rather than in a single `SecurityLimits` class:
+
+| Limit | Implementation | Location |
+|-------|---------------|----------|
+| maxConnections | `ConnectionRegistry.maxConnections` (default 65536) | `lib/src/connection/connection_registry.dart` |
+| handshakeTimeout | Handshake PTO (10s default via `maxAckDelay` TP) | `lib/src/recovery/pto_scheduler.dart` |
+| maxStreamResetRate | Rate limiter (100/sec) | `lib/src/security/rate_limiter.dart` |
+| maxMemoryPerConnection | Not yet centrally enforced | Planned |
+
 ```dart
+// Planned: central SecurityLimits configuration class
 class SecurityLimits {
   static const int maxConnectionsPerIp = 100;
   static const int maxConcurrentHandshakes = 50;

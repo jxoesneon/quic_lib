@@ -3,11 +3,28 @@ import 'dart:typed_data';
 import 'package:quic_lib/src/crypto/tls/client_hello.dart';
 
 /// RFC 8446 NewSessionTicket handshake message.
+///
+/// Sent by the server after the handshake completes to enable session
+/// resumption and 0-RTT data on subsequent connections.
+///
+/// See also:
+/// - [ClientHello] — can include PSK extensions referencing this ticket
+/// - [ZeroRttHelper] — derives 0-RTT keys from the PSK
+/// - RFC 8446 Section 4.6.1 — NewSessionTicket message format
 class NewSessionTicket {
+  /// Ticket lifetime in seconds (maximum 604800 = 7 days per RFC 8446).
   final int ticketLifetime;
+
+  /// Random value added to ticket age to prevent tracking.
   final int ticketAgeAdd;
+
+  /// Per-ticket nonce used in PSK derivation.
   final Uint8List ticketNonce;
+
+  /// Opaque ticket data used by the server to resume the session.
   final Uint8List ticket;
+
+  /// Optional extensions (commonly `early_data` for 0-RTT).
   final List<TlsExtension> extensions;
 
   NewSessionTicket({

@@ -69,7 +69,7 @@ Add `quic_lib` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  quic_lib: ^1.2.0
+  quic_lib: ^1.4.0
 ```
 
 Then run `dart pub get`.
@@ -240,16 +240,19 @@ Future<void> main() async {
 | Packet protection (AES-GCM, ChaCha20-Poly1305) | ✅ Complete | Header protection, key update, retry integrity |
 | Stream multiplexing & flow control | ✅ Complete | Bidirectional & unidirectional streams |
 | Connection migration | ✅ Complete | Path challenge/response, NAT rebinding |
-| Congestion control | ✅ Complete | Cubic-style controller, pacing |
-| Loss detection & recovery | ✅ Complete | RttEstimator, LossDetector, PTO scheduler |
-| HTTP/3 framing (RFC 9114) | ✅ Complete | HEADERS, DATA, SETTINGS, GOAWAY, CANCEL_PUSH |
-| QPACK header compression | ✅ Complete | Static table, encoder/decoder |
-| WebTransport capsules (RFC 9220) | ✅ Complete | CLOSE, DRAIN, GOAWAY, REGISTER_STREAM, DATAGRAM |
-| libp2p multiaddr parsing | ✅ Complete | ip4, ip6, udp, dns, quic-v1, p2p |
+| Congestion control | ✅ Complete | NewReno, CUBIC (RFC 8312), BBR, Hystart; pacing |
+| Loss detection & recovery | ✅ Complete | RttEstimator, LossDetector, PTO scheduler, persistent congestion |
+| ECN processing | ✅ Complete | ECT marking, AckEcnFrame validation (RFC 9000 §13.4) |
+| HTTP/3 framing (RFC 9114) | ✅ Complete | HEADERS, DATA, SETTINGS, GOAWAY, CANCEL_PUSH, ORIGIN (RFC 9412), PRIORITY_UPDATE (RFC 9218) |
+| QPACK header compression | ✅ Complete | Static table, encoder/decoder, stream instructions (RFC 9204) |
+| WebTransport capsules (RFC 9220) | ✅ Complete | CLOSE, DRAIN, GOAWAY, REGISTER_BIDIRECTIONAL/UNIDIRECTIONAL_STREAM, DATAGRAM |
+| Compatible version negotiation (RFC 9368) | ✅ Complete | VersionInformation, version greasing |
+| libp2p multiaddr parsing | ✅ Complete | ip4, ip6, tcp, udp, dns, dns4, dns6, ws, wss, quic, quic-v1, tls, p2p |
+| libp2p TLS extension | ✅ Complete | Ed25519 peer authentication, certificate generator |
+| libp2p multistream-select | ✅ Complete | `/multistream/1.0.0` protocol negotiation |
 | libp2p PeerId (base58/base36) | ✅ Complete | Encoding, decoding, equality |
-| 0-RTT | 🚧 Partial | ZeroRttHelper present; full path requires app-level integration |
-| Server push (HTTP/3) | 🚧 Partial | Frame parsing complete; stream mapping scaffolding |
-| WebAssembly | 🚧 Experimental | Platform declared; under active testing |
+| 0-RTT | ✅ Complete (wire protocol) | Key derivation (RFC 9001), `NewSessionTicket` (RFC 8446), `buildZeroRttPacket`, `earlyData` TP |
+| Server push (HTTP/3) | ✅ Complete | `PUSH_PROMISE`, `CANCEL_PUSH`, `MAX_PUSH_ID` frames; `registerPushPromise` / `hasPushPromise` API |
 
 ## API documentation
 
@@ -280,7 +283,7 @@ dart test --coverage=coverage
 dart run coverage:format_coverage --in=coverage --out=coverage/lcov.info --lcov
 ```
 
-**1,685+ passing tests** cover QUIC wire format, crypto, connection management, recovery, HTTP/3, WebTransport, and libp2p transport.
+**1,960+ passing tests** cover QUIC wire format, crypto, connection management, recovery, HTTP/3, WebTransport, and libp2p transport.
 
 ## Contributing
 

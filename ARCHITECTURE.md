@@ -1,7 +1,7 @@
 # quic_lib Architecture
 
-**Version:** 1.2.0  
-**Last updated:** 2026-06-27
+**Version:** 1.4.0  
+**Last updated:** 2026-06-29
 
 ---
 
@@ -136,7 +136,7 @@ UdpSocket receives Initial packet
 
 ## Security Architecture
 
-All subsystems have been hardened through 7 audit loops (36 fixes):
+All subsystems have been hardened through 7 audit loops (49 fixes):
 
 | Layer | Defenses |
 |-------|----------|
@@ -211,7 +211,7 @@ See `SECURITY_FIXES.md` for the complete list.
 
 | Gap | Status |
 |-----|--------|
-| Packet number reconstruction | **DONE** — `PacketNumberReconstructor` per RFC 9000 §17.1 |
+| Packet number reconstruction | **DONE** — `PacketNumber.reconstruct()` per RFC 9000 §17.1 |
 | TLS message construction | **DONE** — `TlsMessageBuilder` produces structurally valid ClientHello, ServerHello, Finished |
 | HTTP/3 request/response lifecycle | **DONE** — `Http3Connection.sendRequest()` allocates streams; `onStreamFrame()` dispatches frames |
 | QPACK dynamic table | **DONE** — `QpackDynamicTable` with insertions, evictions, capacity management, and dynamic→static→literal encoding |

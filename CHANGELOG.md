@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.1] — 2026-06-29
+
+### Added
+- **RFC 9000 transport error codes** — `QuicTransportErrorCode` enum defines all 17 standard error codes (0x00–0x10) per RFC 9000 Section 20.1; includes `fromValue()` lookup helper
+- **WebTransport SETTINGS parameters** — `SETTINGS_WEBTRANSPORT_MAX_SESSIONS` (0x2b60) and `SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_UNI` (0x14e9cd29) added to `Http3SettingsId`
+- **WebTransport flow control capsules** — `WtMaxStreamsCapsule`, `WtMaxDataCapsule`, and `WtMaxStreamDataCapsule` implement draft-ietf-webtrans-http3 §5.6 flow control
+- **ACK_FREQUENCY receiver processing** — `AckFrequencyPolicy` tracks peer-requested ACK parameters; `AckGenerator` integrates threshold-based ACK triggering per RFC 9298 §6
+- **Key update tracking** — `KeyManager` now tracks packet counts, initiates key updates on confidentiality limit, and manages key phase confirmation per RFC 9001 §6
+- **Unknown capsule handling** — `UnknownCapsule` class preserves unknown capsule types instead of throwing
+
+### Fixed
+- **Unknown frame handling** — `FrameCodec.parse` now silently ignores unknown extension frames per RFC 9000 Section 19.21 instead of throwing `UnsupportedError`
+
+---
+
 ## [1.4.0] — 2026-06-29
 
 ### Added

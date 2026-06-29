@@ -1,4 +1,5 @@
 import 'package:quic_lib/src/connection/congestion_control/congestion_controller.dart';
+import 'ack_generator.dart';
 import 'loss_detector.dart';
 import 'pto_scheduler.dart';
 import 'rtt_estimator.dart';
@@ -20,6 +21,7 @@ class RecoveryManager {
   final PtoScheduler _ptoScheduler;
   final RttEstimator _rttEstimator;
   final SentPacketTracker _sentPacketTracker;
+  final AckGenerator _ackGenerator = AckGenerator();
 
   /// Time (microseconds) when the largest acknowledged packet was sent.
   /// -1 means no packet has been acknowledged yet.
@@ -36,6 +38,9 @@ class RecoveryManager {
         _ptoScheduler = ptoScheduler,
         _rttEstimator = rttEstimator,
         _sentPacketTracker = sentPacketTracker;
+
+  /// ACK generator for building ACK frames and processing ACK_FREQUENCY.
+  AckGenerator get ackGenerator => _ackGenerator;
 
   /// Process an ACK frame and update all recovery subsystems in order.
   ///

@@ -1067,8 +1067,10 @@ class FrameCodec {
           ignoreOrder: ignoreOrder,
         );
       default:
-        throw UnsupportedError(
-            'Frame parsing not yet implemented for type 0x${type.toRadixString(16)}');
+        // RFC 9000 Section 19.21: Unknown frame types MUST be silently ignored.
+        // We skip the frame by returning a zero-length padding placeholder.
+        // The caller must advance past this frame using the length field.
+        return PaddingFrame(length: 0);
     }
   }
 

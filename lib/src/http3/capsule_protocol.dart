@@ -4,17 +4,14 @@ import 'dart:typed_data';
 import 'package:quic_lib/src/utils/collections.dart';
 import 'package:quic_lib/src/wire/varint.dart';
 
-/// WebTransport flow control is handled at the QUIC stream level,
-/// not via capsules. Per draft-ietf-webtrans-http3, there are no
-/// flow-control capsules; stream registration and backpressure are
-/// managed through QUIC's native stream and flow-control mechanisms.
-///
 /// This file implements the capsule types defined by RFC 9220 and
 /// WebTransport over HTTP/3:
 /// DATAGRAM (0x00), CLOSE_WEBTRANSPORT_SESSION (0x2843),
 /// DRAIN_WEBTRANSPORT_SESSION (0x78ae), GOAWAY (0x1d),
-/// REGISTER_BIDIRECTIONAL_STREAM (0x41), and
-/// REGISTER_UNIDIRECTIONAL_STREAM (0x42).
+/// REGISTER_BIDIRECTIONAL_STREAM (0x41),
+/// REGISTER_UNIDIRECTIONAL_STREAM (0x42),
+/// WT_MAX_STREAMS (0x190B4D3F/0x190B4D40), WT_MAX_DATA, and
+/// WT_MAX_STREAM_DATA (draft-ietf-webtrans-http3).
 
 /// Base class for the Capsule Protocol (RFC 9297).
 ///
@@ -104,10 +101,17 @@ abstract class Capsule {
         return RegisterBidirectionalStreamCapsule(data);
       case 0x42:
         return RegisterUnidirectionalStreamCapsule(data);
+      case 0x190B4D3F:
+        return WtMaxStreamsCapsule.bidi(data);
+      case 0x190B4D40:
+        return WtMaxStreamsCapsule.uni(data);
+      case 0x190B4D41:
+        return WtMaxDataCapsule(data);
+      case 0x190B4D42:
+        return WtMaxStreamDataCapsule(data);
       default:
-        throw ArgumentError(
-          'Unknown capsule type: 0x${type.toRadixString(16)}',
-        );
+        // Unknown capsule types are ignored per draft-ietf-webtrans-http3.
+        return UnknownCapsule(type, data);
     }
   }
 
@@ -197,4 +201,49 @@ class RegisterBidirectionalStreamCapsule extends Capsule {
 class RegisterUnidirectionalStreamCapsule extends Capsule {
   RegisterUnidirectionalStreamCapsule(Uint8List data)
       : super(type: 0x42, data: data);
+}
+
+/// An unknown capsule type encountered on the wire.
+///
+/// Per draft-ietf-webtrans-http3, unknown capsule types MUST be ignored.
+class UnknownCapsule extends Capsule {
+  UnknownCapsule(int type, Uint8List data) : super(type: type, data: data);
+}
+
+/// WT_MAX_STREAMS capsule (draft-ietf-webtrans-http3 §5.6.2).
+///
+/// Carries a VarInt count of maximum streams allowed for a session.
+class WtMaxStreamsCapsule extends Capsule {
+  final bool bidirectional;
+
+  WtMaxStreamsCapsule.bidi(Uint8List data)
+      : bidirectional = true,
+        super(type: 0x190B4D3F, data: data);
+
+  WtMaxStreamsCapsule.uni(Uint8List data)
+      : bidirectional = false,
+        super(type: 0x190B4D40, data: data);
+
+  /// Maximum streams value encoded in the capsule payload.
+  int get maxStreams => VarInt.decode(data.buffer, offset: data.offsetInBytes);
+}
+
+/// WT_MAX_DATA capsule (draft-ietf-webtrans-http3 §5.6.3).
+///
+/// Carries a VarInt count of maximum bytes allowed for a session.
+class WtMaxDataCapsule extends Capsule {
+  WtMaxDataCapsule(Uint8List data) : super(type: 0x190B4D41, data: data);
+
+  /// Maximum data value encoded in the capsule payload.
+  int get maxData => VarInt.decode(data.buffer, offset: data.offsetInBytes);
+}
+
+/// WT_MAX_STREAM_DATA capsule (draft-ietf-webtrans-http3 §5.6.4).
+///
+/// Carries a VarInt count of maximum bytes allowed on a stream.
+class WtMaxStreamDataCapsule extends Capsule {
+  WtMaxStreamDataCapsule(Uint8List data) : super(type: 0x190B4D42, data: data);
+
+  /// Maximum stream data value encoded in the capsule payload.
+  int get maxStreamData => VarInt.decode(data.buffer, offset: data.offsetInBytes);
 }

@@ -118,6 +118,7 @@ export 'src/wire/stateless_reset_generator.dart' show StatelessResetGenerator;
 export 'src/wire/v2_header.dart' show V2LongHeader;
 export 'src/wire/quic_versions.dart' show QuicVersions;
 export 'src/wire/quic_bit_greaser.dart' show QuicBitGreaser;
+export 'src/wire/transport_error_codes.dart' show QuicTransportErrorCode;
 
 // ---------------------------------------------------------------------------
 // Crypto exports

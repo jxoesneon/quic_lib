@@ -933,6 +933,10 @@ class QuicConnection {
         case DatagramFrame f:
           _datagramController.add(Uint8List.fromList(f.data));
           break;
+        case AckFrequencyFrame f:
+          _recoveryManager.ackGenerator.frequencyPolicy
+              .processAckFrequencyFrame(f);
+          break;
         default:
           // Unknown/unhandled frame types are ignored per RFC 9000.
           break;

@@ -19,6 +19,13 @@ enum Http3SettingsId {
   /// SETTINGS_H3_DATAGRAM (0x33) per RFC 9297.
   h3Datagram(0x33),
 
+  /// SETTINGS_WEBTRANSPORT_MAX_SESSIONS (0x2b60) per draft-ietf-webtrans-http3.
+  wtMaxSessions(0x2b60),
+
+  /// SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_UNI (0x14e9cd29)
+  /// per draft-ietf-webtrans-http3 §5.5.1.
+  wtInitialMaxStreamsUni(0x14e9cd29),
+
   /// GREASE value for interoperability testing (0x1f * 1 + 0x21 = 0x40).
   grease0(0x40),
 
@@ -79,6 +86,8 @@ class Http3SettingsFrame {
     int? blockedStreams,
     int? enableConnectProtocol,
     int? h3Datagram,
+    int? wtMaxSessions,
+    int? wtInitialMaxStreamsUni,
   }) {
     final map = <int, int>{};
     if (maxFieldSectionSize != null) {
@@ -95,6 +104,13 @@ class Http3SettingsFrame {
     }
     if (h3Datagram != null) {
       map[Http3SettingsId.h3Datagram.value] = h3Datagram;
+    }
+    if (wtMaxSessions != null) {
+      map[Http3SettingsId.wtMaxSessions.value] = wtMaxSessions;
+    }
+    if (wtInitialMaxStreamsUni != null) {
+      map[Http3SettingsId.wtInitialMaxStreamsUni.value] =
+          wtInitialMaxStreamsUni;
     }
     return Http3SettingsFrame(settings: map);
   }

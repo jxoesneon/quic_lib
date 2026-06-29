@@ -69,9 +69,11 @@ void main() {
       expect(nextOffset, bytes.length);
     });
 
-    test('unsupported type still throws', () {
+    test('unsupported type is silently ignored per RFC 9000 Section 19.21', () {
       final bytes = Uint8List.fromList([0x1f]); // unsupported frame type
-      expect(() => FrameCodec.parse(bytes), throwsA(isA<UnsupportedError>()));
+      final (parsed, nextOffset) = FrameCodec.parse(bytes);
+      expect(parsed, isA<PaddingFrame>());
+      expect(nextOffset, 0);
     });
   });
 }

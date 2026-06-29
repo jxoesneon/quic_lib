@@ -342,4 +342,56 @@ class KeyManager {
   void discardKeys(PacketNumberSpace space) {
     _keys.remove(space);
   }
+
+  // ---- Key Update Tracking (RFC 9001 Section 6) ----
+
+  /// Current key phase (0 or 1) for application data.
+  int _keyPhase = 0;
+
+  /// Number of packets encrypted with the current application key phase.
+  int _packetsWithCurrentKey = 0;
+
+  /// Whether a key update is currently pending (waiting for peer confirmation).
+  bool _keyUpdatePending = false;
+
+  /// Confidentiality limits per cipher suite (RFC 9001 Section 5.5).
+  static const int _aesGcmConfidentialityLimit = 0x800000; // 2^23
+  static const int _chachaConfidentialityLimit = 0x1000000000; // 2^36
+
+  /// Current key phase (0 or 1).
+  int get keyPhase => _keyPhase;
+
+  /// Whether a key update is pending.
+  bool get keyUpdatePending => _keyUpdatePending;
+
+  /// Notify the key manager that a packet was sent with the current application keys.
+  /// Returns `true` if the confidentiality limit has been reached and a key
+  /// update SHOULD be initiated.
+  bool onPacketSentWithCurrentKey({bool isChaCha20 = false}) {
+    _packetsWithCurrentKey++;
+    final limit = isChaCha20 ? _chachaConfidentialityLimit : _aesGcmConfidentialityLimit;
+    if (_packetsWithCurrentKey >= limit) {
+      return true;
+    }
+    return false;
+  }
+
+  /// Initiate a key update by toggling the key phase.
+  ///
+  /// Per RFC 9001 §6, endpoints MUST NOT initiate a key update prior to
+  /// confirming the handshake (i.e., before HANDSHAKE_DONE or equivalent).
+  void initiateKeyUpdate() {
+    if (_keyUpdatePending) {
+      throw StateError('Key update already pending');
+    }
+    _keyPhase ^= 1;
+    _packetsWithCurrentKey = 0;
+    _keyUpdatePending = true;
+  }
+
+  /// Confirm the key update once an ACK is received for a packet sent
+  /// with the new keys.
+  void confirmKeyUpdate() {
+    _keyUpdatePending = false;
+  }
 }

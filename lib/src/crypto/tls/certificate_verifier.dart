@@ -4,6 +4,7 @@ import 'package:quic_lib/src/crypto/cipher_suites.dart';
 import 'package:quic_lib/src/crypto/crypto_backend.dart';
 import 'package:quic_lib/src/crypto/tls/certificate_chain.dart';
 import 'package:quic_lib/src/crypto/tls/certificate_message.dart';
+import 'package:quic_lib/src/crypto/tls/revocation_policy.dart';
 import 'package:quic_lib/src/crypto/tls/x509_parser.dart';
 
 /// TLS certificate chain verification.
@@ -14,7 +15,10 @@ import 'package:quic_lib/src/crypto/tls/x509_parser.dart';
 /// * Name chaining (Subject of cert i == Issuer of cert i-1).
 /// * Signature verification against issuer public keys.
 ///
-/// Note: CRL/OCSP revocation checks are not implemented in this version.
+///
+/// Phase 1: CRL/OCSP extension URLs are parsed and exposed through
+/// [CertificateInfo.revocationInfo]. Actual revocation checking is planned
+/// for a later release.
 class _SimplePublicKey implements PublicKey {
   @override
   final List<int> bytes;
@@ -43,12 +47,21 @@ class _SimplePublicKey implements PublicKey {
 /// - RFC 8446 Section 4.4.2 — Certificate message structure.
 class CertificateVerifier {
   final CryptoBackend _backend;
+  final RevocationPolicy _revocationPolicy;
 
   /// Creates a [CertificateVerifier] backed by the given [CryptoBackend].
   ///
   /// The crypto backend provides Ed25519, ECDSA P-256, and RSA signature
   /// verification routines required by [verifySignature].
-  CertificateVerifier(this._backend);
+  ///
+  /// [revocationPolicy] controls whether CRL/OCSP extension URLs are parsed
+  /// ([RevocationPolicy.softFail], default) or ignored
+  /// ([RevocationPolicy.disabled]). [RevocationPolicy.hardFail] requires a full
+  /// revocation implementation and is reserved for future releases.
+  CertificateVerifier(
+    this._backend, {
+    RevocationPolicy revocationPolicy = RevocationPolicy.softFail,
+  }) : _revocationPolicy = revocationPolicy;
 
   /// Verifies a certificate chain.
   ///
@@ -78,6 +91,17 @@ class CertificateVerifier {
     final certChain = CertificateChain(infos);
     if (!certChain.validateChain(DateTime.now())) {
       return false;
+    }
+
+    // Phase 1: surface revocation URLs; hardFail is unsupported and returns
+    // false if the chain contains any revocation extension.
+    if (_revocationPolicy == RevocationPolicy.hardFail) {
+      final hasRevocation = infos.any(
+        (info) => info.revocationInfo.isNotEmpty,
+      );
+      if (hasRevocation) {
+        return false;
+      }
     }
 
     for (var i = 0; i < chain.length; i++) {

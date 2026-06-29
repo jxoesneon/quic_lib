@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.9.0] — 2026-06-29
+
+### Added
+- **CRL/OCSP extension parsing (Phase 1)** — `CertificateInfo` now exposes a `revocationInfo` field containing OCSP responder URLs and CRL distribution point URLs extracted from the peer certificate's X.509 extensions.
+- New `RevocationInfo` value object in `src/crypto/tls/revocation_parser.dart`.
+- New `RevocationPolicy` enum (`disabled`, `softFail`, `hardFail`) in `src/crypto/tls/revocation_policy.dart`.
+- `CertificateVerifier` accepts a `RevocationPolicy` parameter. `softFail` (default) extracts and exposes URLs without blocking handshakes; `hardFail` rejects chains that advertise revocation URLs until full CRL/OCSP checking is implemented.
+
+### Tests
+- Added `test/crypto/tls/revocation_parser_test.dart` covering AIA/OCSP, CRLDistributionPoints, non-OCSP access methods, and malformed extension handling.
+
+---
+
 ## [1.8.0] — 2026-06-29
 
 ### Fixed

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:quic_lib/src/crypto/crypto_backend.dart';
@@ -96,10 +97,12 @@ class CertificateChain {
   ///
   /// This method:
   /// 1. Extracts the [SignedKey] from the libp2p TLS extension.
-  /// 2. Verifies the [SignedKey.signature] against [SignedKey.publicKey]
-  ///    using the [backend] (Ed25519 verification).
-  /// 3. Derives the [PeerId] from the public key.
-  /// 4. Compares the derived [PeerId] with [expectedPeerId].
+  /// 2. Reconstructs the signed message as `libp2p-tls-handshake:` ||
+  ///    SubjectPublicKeyInfo DER from the end-entity certificate.
+  /// 3. Verifies the [SignedKey.signature] against that message using the
+  ///    public key from the extension (Ed25519 verification).
+  /// 4. Derives the [PeerId] from the public key data.
+  /// 5. Compares the derived [PeerId] with [expectedPeerId].
   ///
   /// Returns `true` only if all steps succeed.
   Future<bool> verifyLibp2pSignature(
@@ -110,18 +113,28 @@ class CertificateChain {
     if (ext == null) return false;
 
     final signedKey = ext.signedKey;
+    final publicKeyData = signedKey.publicKey.data;
+
+    // Reconstruct the signed message.
+    if (certs.isEmpty) return false;
+    final x509 = parseX509(certs.first.rawBytes);
+    final spkiDer = x509.subjectPublicKeyInfo;
+    final handshakeMessage = Uint8List.fromList([
+      ...utf8.encode('libp2p-tls-handshake:'),
+      ...spkiDer,
+    ]);
 
     // Verify the signature using the public key in the extension.
-    final pubKey = _SimplePublicKey(signedKey.publicKey);
+    final pubKey = _SimplePublicKey(publicKeyData);
     final signatureValid = await backend.ed25519Verify(
       pubKey,
-      signedKey.publicKey,
+      handshakeMessage,
       signedKey.signature,
     );
     if (!signatureValid) return false;
 
-    // Derive PeerId from the public key.
-    final derivedPeerId = await PeerId.fromPublicKey(signedKey.publicKey);
+    // Derive PeerId from the public key data.
+    final derivedPeerId = await PeerId.fromPublicKey(publicKeyData);
     return derivedPeerId == expectedPeerId;
   }
 }

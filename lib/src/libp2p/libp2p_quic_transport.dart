@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import '../connection/quic_connection.dart';
@@ -286,18 +287,26 @@ class Libp2pQuicConnection {
     if (ext == null) return false;
 
     final signedKey = ext.signedKey;
+    final publicKeyData = signedKey.publicKey.data;
+
+    // Reconstruct the signed message: libp2p-tls-handshake: || SPKI DER.
+    final spkiDer = x509.subjectPublicKeyInfo;
+    final handshakeMessage = Uint8List.fromList([
+      ...utf8.encode('libp2p-tls-handshake:'),
+      ...spkiDer,
+    ]);
 
     // Verify the signature using the public key in the extension.
-    final pubKey = _SimplePublicKey(signedKey.publicKey);
+    final pubKey = _SimplePublicKey(publicKeyData);
     final signatureValid = await backend.ed25519Verify(
       pubKey,
-      signedKey.publicKey,
+      handshakeMessage,
       signedKey.signature,
     );
     if (!signatureValid) return false;
 
-    // Derive PeerId from the public key.
-    final derived = await PeerId.fromPublicKey(signedKey.publicKey);
+    // Derive PeerId from the public key data.
+    final derived = await PeerId.fromPublicKey(publicKeyData);
     if (expectedPeerId != null && derived != expectedPeerId) {
       return false;
     }

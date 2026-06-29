@@ -16,7 +16,10 @@ import '../helpers/minimal_cert.dart' as helper;
 void main() {
   group('SignedKey', () {
     test('serialize and parse round-trip', () {
-      final publicKey = Uint8List.fromList([1, 2, 3, 4, 5]);
+      final publicKey = Libp2pPublicKey(
+        type: Libp2pKeyType.ed25519,
+        data: Uint8List.fromList([1, 2, 3, 4, 5]),
+      );
       final signature = Uint8List.fromList([10, 20, 30, 40, 50]);
 
       final signedKey = SignedKey(
@@ -27,7 +30,8 @@ void main() {
       final serialized = signedKey.serialize();
       final parsed = SignedKey.parse(serialized);
 
-      expect(parsed.publicKey, equals(publicKey));
+      expect(parsed.publicKey.type, equals(publicKey.type));
+      expect(parsed.publicKey.data, equals(publicKey.data));
       expect(parsed.signature, equals(signature));
     });
 
@@ -40,7 +44,10 @@ void main() {
   group('Libp2pExtension', () {
     test('serialize and parse round-trip', () {
       final signedKey = SignedKey(
-        publicKey: Uint8List.fromList([0xAB, 0xCD, 0xEF]),
+        publicKey: Libp2pPublicKey(
+          type: Libp2pKeyType.ed25519,
+          data: Uint8List.fromList([0xAB, 0xCD, 0xEF]),
+        ),
         signature: Uint8List.fromList([0x12, 0x34, 0x56, 0x78]),
       );
 
@@ -48,7 +55,8 @@ void main() {
       final serialized = ext.serialize();
       final parsed = Libp2pExtension.parse(serialized);
 
-      expect(parsed.signedKey.publicKey, equals(signedKey.publicKey));
+      expect(parsed.signedKey.publicKey.type, equals(signedKey.publicKey.type));
+      expect(parsed.signedKey.publicKey.data, equals(signedKey.publicKey.data));
       expect(parsed.signedKey.signature, equals(signedKey.signature));
     });
 
@@ -110,7 +118,8 @@ void main() {
       final ext = parseLibp2pExtension(x509);
 
       expect(ext, isNotNull);
-      expect(ext!.signedKey.publicKey, equals(hostPublicKey.bytes));
+      expect(ext!.signedKey.publicKey.type, equals(Libp2pKeyType.ed25519));
+      expect(ext.signedKey.publicKey.data, equals(hostPublicKey.bytes));
     });
 
     test('generated certificate passes verifyLibp2pSignature', () async {

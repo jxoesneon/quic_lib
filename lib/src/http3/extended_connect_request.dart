@@ -44,7 +44,10 @@ class ExtendedConnectRequest {
   });
 
   /// Encode the request headers as a QPACK-encoded field section.
-  Uint8List encodeHeaders() {
+  ///
+  /// [encoder] may be used to emit dynamic table insertions on the QPACK
+  /// encoder stream. When omitted, only the static table is used.
+  Uint8List encodeHeaders({QpackEncoder? encoder}) {
     final lines = <({String name, String value})>[
       (name: ':method', value: 'CONNECT'),
       (name: ':scheme', value: scheme),
@@ -54,6 +57,9 @@ class ExtendedConnectRequest {
     ];
     for (final entry in headers.entries) {
       lines.add((name: entry.key.toLowerCase(), value: entry.value));
+    }
+    if (encoder != null) {
+      return encoder.encodeLines(lines);
     }
     return QpackEncoder.encodeFieldLines(lines);
   }

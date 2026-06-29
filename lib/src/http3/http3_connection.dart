@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'qpack_static_table.dart';
 
 import 'cancel_push_frame.dart';
 import 'capsule_protocol.dart';
@@ -15,6 +16,10 @@ import 'max_push_id_frame.dart';
 import 'origin_frame.dart';
 import 'priority_update_frame.dart';
 import 'push_promise_frame.dart';
+import 'qpack_decoder.dart';
+import 'qpack_decoder_stream.dart';
+import 'qpack_encoder.dart';
+import 'qpack_encoder_stream.dart';
 import 'settings_frame.dart';
 import 'webtransport_session.dart';
 import 'package:quic_lib/src/recovery/packet_number_space.dart';
@@ -108,6 +113,16 @@ class Http3Connection {
   final List<PriorityUpdateFrame> _pendingPriorityUpdates = [];
   final Map<int, WebTransportSession> _webTransportSessions = {};
 
+  /// QPACK encoder used for request/response headers on this connection.
+  final QpackEncoder qpackEncoder = QpackEncoder();
+
+  /// QPACK decoder used for request/response headers on this connection.
+  final QpackDecoder qpackDecoder = QpackDecoder();
+
+  int? _encoderStreamId;
+  int? _decoderStreamId;
+  final List<DecoderInstruction> _pendingDecoderInstructions = [];
+
   /// Creates an [Http3Connection] over [quicConnection].
   ///
   /// [quicConnection] must support `openBidirectionalStream()`,
@@ -126,7 +141,11 @@ class Http3Connection {
               maxFieldSectionSize: 16384,
               maxTableCapacity: 0,
               blockedStreams: 0,
-            );
+            ) {
+    // The local decoder capacity is bounded by the local SETTINGS value that
+    // we will advertise to the peer.
+    qpackDecoder.dynamicTable.setCapacity(_localSettings.maxTableCapacity);
+  }
 
   /// The underlying QUIC connection.
   ///
@@ -183,6 +202,13 @@ class Http3Connection {
   /// Pending PRIORITY_UPDATE frames staged for transmission.
   List<PriorityUpdateFrame> get pendingPriorityUpdates =>
       List.unmodifiable(_pendingPriorityUpdates);
+
+  /// Pending QPACK decoder-stream instructions staged for transmission.
+  ///
+  /// Exposed for testing; in normal operation these are flushed by
+  /// [flushQpackDecoderInstructions].
+  List<DecoderInstruction> get pendingDecoderInstructions =>
+      List.unmodifiable(_pendingDecoderInstructions);
 
   /// Active WebTransport sessions keyed by stream ID.
   Map<int, WebTransportSession> get webTransportSessions =>
@@ -301,7 +327,7 @@ class Http3Connection {
   Future<int> sendRequest(Http3Request request) async {
     final quic = _quicConnection as dynamic;
     final streamId = quic.openBidirectionalStream() as int;
-    final headers = request.encodeHeaders();
+    final headers = request.encodeHeaders(encoder: qpackEncoder);
     _sendHeaders(streamId, headers);
     if (request.body != null && request.body!.isNotEmpty) {
       _sendData(streamId, request.body!);
@@ -316,7 +342,7 @@ class Http3Connection {
   Future<int> sendExtendedConnect(ExtendedConnectRequest request) async {
     final quic = _quicConnection as dynamic;
     final streamId = quic.openBidirectionalStream() as int;
-    final headers = request.encodeHeaders();
+    final headers = request.encodeHeaders(encoder: qpackEncoder);
     _sendHeaders(streamId, headers);
     if (request.body != null && request.body!.isNotEmpty) {
       _sendData(streamId, request.body!);
@@ -341,7 +367,23 @@ class Http3Connection {
     final headersFrame = _pendingHeaders[streamId];
     if (headersFrame == null) return null;
     final encoded = Uint8List.fromList(headersFrame.encodedFieldSection);
-    return Http3Response.decodeHeaders(encoded);
+    qpackDecoder.dynamicTable.resetRequiredInsertCount();
+    final response = Http3Response.decodeHeaders(encoded, decoder: qpackDecoder);
+    _pendingDecoderInstructions.add(SectionAcknowledgment(streamId: streamId));
+    return response;
+  }
+
+  /// Send an HTTP/3 response on [streamId] and store the encoded headers.
+  ///
+  /// The response headers are encoded using the connection's QPACK encoder,
+  /// which may emit dynamic table instructions that should be flushed via
+  /// [flushQpackEncoderInstructions].
+  void sendResponse(int streamId, Http3Response response) {
+    final headers = response.encodeHeaders(encoder: qpackEncoder);
+    _sendHeaders(streamId, headers);
+    if (response.body != null && response.body!.isNotEmpty) {
+      _sendData(streamId, response.body!);
+    }
   }
 
   /// Open a new bidirectional stream and return a wrapper for sending data.
@@ -574,10 +616,80 @@ class Http3Connection {
     await _openUnidirectionalStream(StreamType.control, bytes);
   }
 
+  /// Open the QPACK encoder and decoder unidirectional streams.
+  ///
+  /// Sets the local decoder capacity and sends a Set Dynamic Table Capacity
+  /// instruction on the encoder stream. The encoder capacity is updated when
+  /// the peer's SETTINGS_QPACK_MAX_TABLE_CAPACITY is received.
+  Future<void> openQpackStreams() async {
+    qpackDecoder.dynamicTable.setCapacity(_localSettings.maxTableCapacity);
+    qpackEncoder.dynamicTable.setCapacity(_localSettings.maxTableCapacity);
+
+    // Decoder stream: currently empty on open, instructions are added later.
+    final decoderBytes = Uint8List(0);
+    _decoderStreamId = await _openUnidirectionalStream(
+      StreamType.qpackDecoder,
+      decoderBytes,
+    );
+
+    // Encoder stream: start with a Set Dynamic Table Capacity instruction.
+    final capacityInstruction = SetDynamicTableCapacity(
+      capacity: _localSettings.maxTableCapacity,
+    );
+    final encoderBytes = capacityInstruction.serialize();
+    _encoderStreamId = await _openUnidirectionalStream(
+      StreamType.qpackEncoder,
+      encoderBytes,
+    );
+  }
+
+  /// Flush pending QPACK encoder instructions to the encoder stream.
+  ///
+  /// Returns the stream ID if instructions were sent, or `null` if the buffer
+  /// was empty.
+  Future<int?> flushQpackEncoderInstructions() async {
+    final instructions = qpackEncoder.takeInstructions();
+    if (instructions.isEmpty) return null;
+    final builder = BytesBuilder();
+    for (final instruction in instructions) {
+      builder.add(instruction.serialize());
+    }
+    final bytes = builder.toBytes();
+    if (_encoderStreamId == null) {
+      await openQpackStreams();
+    }
+    return _openUnidirectionalStream(
+      StreamType.qpackEncoder,
+      Uint8List.fromList(bytes),
+    );
+  }
+
+  /// Flush pending QPACK decoder instructions to the decoder stream.
+  ///
+  /// Returns the stream ID if instructions were sent, or `null` if the buffer
+  /// was empty.
+  Future<int?> flushQpackDecoderInstructions() async {
+    if (_pendingDecoderInstructions.isEmpty) return null;
+    final instructions = List<DecoderInstruction>.from(_pendingDecoderInstructions);
+    _pendingDecoderInstructions.clear();
+    final builder = BytesBuilder();
+    for (final instruction in instructions) {
+      builder.add(instruction.serialize());
+    }
+    if (_decoderStreamId == null) {
+      await openQpackStreams();
+    }
+    return _openUnidirectionalStream(
+      StreamType.qpackDecoder,
+      Uint8List.fromList(builder.toBytes()),
+    );
+  }
+
   /// Process received data on a unidirectional stream.
   ///
   /// Reads the first varint as the [StreamType] identifier, then parses the
   /// remaining bytes as HTTP/3 frames and dispatches them via [onStreamFrame].
+  /// QPACK encoder and decoder streams are handled separately.
   void onUnidirectionalStreamData(int streamId, Uint8List data) {
     if (data.isEmpty) return;
     final typeLength = VarInt.decodeLength(data[0]);
@@ -586,12 +698,99 @@ class Http3Connection {
     final streamType = StreamType.fromValue(typeValue);
     if (streamType == null) return;
 
+    switch (streamType) {
+      case StreamType.qpackEncoder:
+        _encoderStreamId ??= streamId;
+        _handleQpackEncoderStream(data, offset: typeLength);
+        return;
+      case StreamType.qpackDecoder:
+        _decoderStreamId ??= streamId;
+        _handleQpackDecoderStream(data, offset: typeLength);
+        return;
+      case StreamType.control:
+      case StreamType.push:
+        break;
+    }
+
     var offset = typeLength;
     while (offset < data.length) {
       try {
         final (frame, consumed) = Http3Frame.parse(data, offset: offset);
         onStreamFrame(streamId, frame);
         offset += consumed;
+      } catch (_) {
+        break;
+      }
+    }
+  }
+
+  /// Parse incoming QPACK encoder-stream instructions and update the decoder.
+  void _handleQpackEncoderStream(Uint8List data, {required int offset}) {
+    var insertions = 0;
+    while (offset < data.length) {
+      try {
+        final instruction = EncoderInstruction.parse(
+          Uint8List.fromList(data.sublist(offset)),
+        );
+        if (instruction is SetDynamicTableCapacity) {
+          qpackDecoder.dynamicTable.setCapacity(instruction.capacity);
+        } else if (instruction is InsertWithoutNameReference) {
+          qpackDecoder.dynamicTable.insert(instruction.name, instruction.value);
+          insertions++;
+        } else if (instruction is InsertWithNameReference) {
+          String name;
+          if (instruction.isStatic) {
+            final entry = QpackStaticTable.get(instruction.nameIndex);
+            if (entry == null) {
+              throw ArgumentError(
+                'Static name index ${instruction.nameIndex} not found',
+              );
+            }
+            name = entry.name;
+          } else {
+            final entry = qpackDecoder.dynamicTable.get(instruction.nameIndex);
+            if (entry == null) {
+              throw ArgumentError(
+                'Dynamic name index ${instruction.nameIndex} not found',
+              );
+            }
+            name = entry.name;
+          }
+          qpackDecoder.dynamicTable.insert(name, instruction.value);
+          insertions++;
+        } else if (instruction is Duplicate) {
+          final entry = qpackDecoder.dynamicTable.get(instruction.index);
+          if (entry == null) {
+            throw ArgumentError(
+              'Duplicate index ${instruction.index} not found',
+            );
+          }
+          qpackDecoder.dynamicTable.insert(entry.name, entry.value);
+          insertions++;
+        }
+        offset += instruction.serialize().length;
+      } catch (_) {
+        break;
+      }
+    }
+    if (insertions > 0) {
+      _pendingDecoderInstructions.add(
+        InsertCountIncrement(increment: insertions),
+      );
+    }
+  }
+
+  /// Parse incoming QPACK decoder-stream instructions and update the encoder.
+  void _handleQpackDecoderStream(Uint8List data, {required int offset}) {
+    while (offset < data.length) {
+      try {
+        final instruction = DecoderInstruction.parse(
+          Uint8List.fromList(data.sublist(offset)),
+        );
+        if (instruction is InsertCountIncrement) {
+          qpackEncoder.knownReceivedCount += instruction.increment;
+        }
+        offset += instruction.serialize().length;
       } catch (_) {
         break;
       }

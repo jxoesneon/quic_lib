@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.0] — 2026-06-29
+
+### Added
+- **QPACK encoder/decoder streams (RFC 9204 Section 4.2)** — `Http3Connection` now owns a `QpackEncoder` and `QpackDecoder`, opens QPACK unidirectional streams, and flushes encoder/decoder instructions.
+- Dynamic table insertions from `QpackEncoder` are emitted as encoder-stream instructions and can be sent via `flushQpackEncoderInstructions()`.
+- Received encoder-stream instructions update the decoder's dynamic table; received decoder-stream instructions update the encoder's known received count.
+- `Http3Response.getResponse()` now emits a `SectionAcknowledgment` decoder instruction per decoded header block.
+- Added `Http3SettingsFrame` convenience getters for `maxFieldSectionSize`, `maxTableCapacity`, and `blockedStreams`.
+
+### Changed
+- `Http3Request.encodeHeaders`, `Http3Response.encodeHeaders`, and `ExtendedConnectRequest.encodeHeaders` accept an optional `QpackEncoder` for dynamic table usage.
+- `Http3Response.decodeHeaders` accepts an optional `QpackDecoder`.
+- `Http3Connection` initializes the decoder dynamic table capacity from local SETTINGS.
+
+### Tests
+- Added `test/http3/qpack_stream_integration_test.dart` covering stream opening, instruction flushing, and instruction parsing for both encoder and decoder streams.
+
+---
+
 ## [1.6.0] — 2026-06-29
 
 ### Added

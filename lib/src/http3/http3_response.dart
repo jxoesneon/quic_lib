@@ -64,12 +64,18 @@ class Http3Response {
   /// The `:status` pseudo-header is encoded first, followed by regular
   /// headers with lower-cased names. The returned bytes are suitable for
   /// an HTTP/3 HEADERS frame payload.
-  Uint8List encodeHeaders() {
+  ///
+  /// [encoder] may be used to emit dynamic table insertions on the QPACK
+  /// encoder stream. When omitted, only the static table is used.
+  Uint8List encodeHeaders({QpackEncoder? encoder}) {
     final lines = <({String name, String value})>[
       (name: ':status', value: statusCode.toString()),
     ];
     for (final entry in headers.entries) {
       lines.add((name: entry.key.toLowerCase(), value: entry.value));
+    }
+    if (encoder != null) {
+      return encoder.encodeLines(lines);
     }
     return QpackEncoder.encodeFieldLines(lines);
   }
@@ -78,8 +84,11 @@ class Http3Response {
   ///
   /// Extracts the `:status` pseudo-header and treats the remainder as regular
   /// headers. If `:status` cannot be parsed as an integer, it defaults to `0`.
-  static Http3Response decodeHeaders(Uint8List bytes) {
-    final lines = QpackDecoder.decodeFieldLines(bytes);
+  ///
+  /// [decoder] may be used to decode dynamic table references and to track
+  /// the required insert count for acknowledgment.
+  static Http3Response decodeHeaders(Uint8List bytes, {QpackDecoder? decoder}) {
+    final lines = decoder != null ? decoder.decodeLines(bytes) : QpackDecoder.decodeFieldLines(bytes);
 
     int statusCode = 0;
     final headers = <String, String>{};

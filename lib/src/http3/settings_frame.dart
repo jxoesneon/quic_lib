@@ -132,6 +132,18 @@ class Http3SettingsFrame {
     return Http3SettingsFrame(settings: map);
   }
 
+  /// SETTINGS_MAX_FIELD_SECTION_SIZE, or 0 if not present.
+  int get maxFieldSectionSize =>
+      settings[Http3SettingsId.maxFieldSectionSize.value] ?? 0;
+
+  /// SETTINGS_QPACK_MAX_TABLE_CAPACITY, or 0 if not present.
+  int get maxTableCapacity =>
+      settings[Http3SettingsId.maxTableCapacity.value] ?? 0;
+
+  /// SETTINGS_QPACK_BLOCKED_STREAMS, or 0 if not present.
+  int get blockedStreams =>
+      settings[Http3SettingsId.blockedStreams.value] ?? 0;
+
   @override
   String toString() => 'Http3SettingsFrame(${settings.length} settings)';
 

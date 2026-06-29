@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'qpack_dynamic_table.dart';
+import 'qpack_encoder_stream.dart';
 import 'qpack_integer.dart';
 import 'qpack_string.dart';
 import 'qpack_static_table.dart';
@@ -11,6 +12,22 @@ class QpackEncoder {
 
   /// Dynamic table for this encoder.
   final QpackDynamicTable dynamicTable = QpackDynamicTable(capacity: 0);
+
+  /// Encoder-stream instructions emitted by the most recent encode pass.
+  ///
+  /// Callers (typically [Http3Connection]) flush these to the QPACK encoder
+  /// stream so the peer's decoder can update its dynamic table.
+  final List<EncoderInstruction> emittedInstructions = [];
+
+  /// The number of dynamic table insertions the peer has acknowledged.
+  int knownReceivedCount = 0;
+
+  /// Atomically remove and return all emitted instructions, clearing the buffer.
+  List<EncoderInstruction> takeInstructions() {
+    final taken = List<EncoderInstruction>.from(emittedInstructions);
+    emittedInstructions.clear();
+    return taken;
+  }
 
   /// Encode a single field line using both static and dynamic tables.
   ///
@@ -50,8 +67,12 @@ class QpackEncoder {
       return _encodeLiteralWithNameRef(nameIndex, value);
     }
 
-    // Insert into dynamic table and emit literal without name reference
-    dynamicTable.insert(name, value);
+    // Insert into dynamic table and emit literal without name reference,
+    // but only when the peer has advertised a non-zero table capacity.
+    if (dynamicTable.capacity > 0) {
+      dynamicTable.insert(name, value);
+      emittedInstructions.add(InsertWithoutNameReference(name: name, value: value));
+    }
     return _encodeLiteralWithoutNameRef(name, value);
   }
 

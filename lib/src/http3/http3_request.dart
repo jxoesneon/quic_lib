@@ -73,8 +73,11 @@ class Http3Request {
   /// first, followed by regular headers. The `host` header is promoted to
   /// `:authority`; all other header names are lower-cased.
   ///
+  /// [encoder] may be used to emit dynamic table insertions on the QPACK
+  /// encoder stream. When omitted, only the static table is used.
+  ///
   /// The returned bytes are suitable for an HTTP/3 HEADERS frame payload.
-  Uint8List encodeHeaders() {
+  Uint8List encodeHeaders({QpackEncoder? encoder}) {
     final lines = <({String name, String value})>[
       (name: ':method', value: method),
       (name: ':path', value: path),
@@ -84,6 +87,9 @@ class Http3Request {
     for (final entry in headers.entries) {
       if (entry.key.toLowerCase() == 'host') continue;
       lines.add((name: entry.key.toLowerCase(), value: entry.value));
+    }
+    if (encoder != null) {
+      return encoder.encodeLines(lines);
     }
     return QpackEncoder.encodeFieldLines(lines);
   }

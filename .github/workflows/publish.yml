@@ -71,6 +71,17 @@ jobs:
       - name: Dry-run publish
         run: dart pub publish --dry-run
 
+      - name: Verify dependency constraint lower bounds
+        run: |
+          dart pub downgrade
+          dart analyze --fatal-infos
+          dart pub get
+
+      - name: Run pana (pub.dev scoring)
+        run: |
+          dart pub global activate pana
+          pana . --no-warning
+
   publish:
     name: Publish to pub.dev
     needs: validate

@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.0] — 2026-06-29
+
+### Added
+- **BBR congestion control** — `BbrCongestionController` implements Bottleneck Bandwidth and RTT (BBR) congestion control algorithm; exported in `lib/quic.dart` and `lib/quic_lib.dart`
+- **Hystart** — `Hystart` exported from `lib/quic.dart` and `lib/quic_lib.dart` for slow-start exit heuristic (RFC 8312 Appendix B)
+- **ACK_FREQUENCY frame (RFC 9298)** — `AckFrequencyFrame` with `sequenceNumber`, `packetTolerance`, `maxAckDelay`, and `requestImmediateAck` fields; serialize/parse support in `frame.dart`
+- **ACK range tracking** — `AckGenerator` implements ACK range tracking per RFC 9000 Section 13.2.1
+- **Persistent congestion detection** — Implemented per RFC 9002 Section 7.6
+- **App-limited detection** — Implemented per RFC 9002 Section 7.3
+- **Missing transport parameters** — Added `original_destination_connection_id`, `stateless_reset_token`, `initial_source_connection_id`, `retry_source_connection_id`, and `preferred_address` parsing in `applyPeerTransportParameters`
+- **WebTransport bidirectional/unidirectional stream capsules** — `REGISTER_BIDIRECTIONAL_STREAM` (0x41) and `REGISTER_UNIDIRECTIONAL_STREAM` (0x54) capsules with serialize/parse
+- **ALPN in libp2p TLS handshake** — Wired ALPN negotiation and validation into `libp2p_quic_transport.dart` TLS handshake
+
+### Fixed
+- **HTTP/3 SETTINGS frame IDs** — Fixed GREASE values to RFC 9114 pattern (0x40, 0x5f)
+- **ORIGIN frame** — Corrected field parsing and serialization to match RFC 9412
+- **QPACK encoder indexing** — Fixed static table indexing and post-base index integration into main encoder flow
+- **Huffman EOS/padding validation** — `huffman.dart` now validates end-of-stream padding per RFC 7541 Section 5.2
+- **CUBIC congestion control RTT handling** — Fixed `CubicCongestionController` to use correct RTT for congestion window calculations
+- **Multiaddr error sanitization** — `Multiaddr` and `PeerId` now throw descriptive `FormatException` instead of raw strings
+- **HTTP/3 MAX_PUSH_ID handling** — `Http3Connection` now properly receives and dispatches MAX_PUSH_ID frames
+- **H3_DATAGRAM guard** — Added frame-processing guards for HTTP/3 datagram frames
+- **ECN documentation** — Added inline RFC 9000 Section 13.4 references throughout recovery layer
+- **WebTransport capsule type values** — Fixed `CLOSE_WEBTRANSPORT_SESSION` to correct RFC 9220 value (0x2843)
+- **Duplicate WebTransportSession** — Consolidated duplicate class definitions into single canonical implementation
+
+### Changed
+- `QuicConnection` exposes `congestionController` setter for pluggable congestion control algorithms
+- `libp2p.dart` exports `WebTransportSession`, `WebTransportConnectRequest`, `DCUtRMessage`, `DCUtRHandler`, `DCUtRUdpCoordinator`, `MultistreamSelect`, `SignedKey`, `Libp2pExtension`, and `Libp2pCertificateGenerator`
+
+---
+
 ## [1.3.0]
 
 ### Protocol Completeness

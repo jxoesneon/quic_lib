@@ -86,8 +86,8 @@ class QpackDecoder {
 
   /// Decode multiple field lines from [bytes] using the given [base].
   ///
-  /// This is a convenience method that sets [this.base] to [base] before
-  /// decoding and restores it afterwards.
+  /// This is a convenience method that sets the dynamic table base to [base]
+  /// before decoding and restores it afterwards.
   List<QpackFieldLine> decodeLinesWithBase(Uint8List bytes, int base) {
     final previousBase = this.base;
     this.base = base;

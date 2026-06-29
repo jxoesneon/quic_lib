@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.0] — 2026-06-29
+
+### Added
+- **Packet pacing enforcement (RFC 9002 §7.7)** — added `PacingTimer` and wired it into `QuicConnection.buildPacket` / `buildEncryptedPacket`. Pacing is now enforced with a synchronous delay when the congestion window exceeds the burst threshold; ACK-only packets are skipped as recommended by the RFC.
+
+### Changed
+- **Tests** — added `test/recovery/pacing_timer_test.dart` and expanded `test/recovery/pacing_integration_test.dart` with enforcement tests.
+
+---
+
 ## [1.5.0] — 2026-06-29
 
 ### Added

@@ -25,6 +25,7 @@ import 'package:quic_lib/src/connection/congestion_control/cubic.dart';
 import 'package:quic_lib/src/recovery/congestion_controller.dart' as recovery;
 import 'package:quic_lib/src/recovery/recovery_manager.dart';
 import 'package:quic_lib/src/recovery/pacing_calculator.dart';
+import 'package:quic_lib/src/recovery/pacing_timer.dart';
 import 'package:quic_lib/src/recovery/sent_packet_tracker.dart';
 import 'package:quic_lib/src/security/anti_amplification_limit.dart';
 import 'package:quic_lib/src/utils/hex.dart';
@@ -104,6 +105,7 @@ class QuicConnection {
   final SentPacketTracker _sentPacketTracker = SentPacketTracker();
   final AntiAmplificationLimit _antiAmpLimit = AntiAmplificationLimit();
   final PacingCalculator _pacingCalculator = PacingCalculator();
+  final PacingTimer _pacingTimer = PacingTimer();
   final MigrationHelper _migrationHelper = _QuicMigrationHelper();
   PathChallengeFrame? _lastPendingChallenge;
   late final RecoveryManager _recoveryManager;
@@ -606,6 +608,24 @@ class QuicConnection {
   /// Whether the connection should pace outgoing packets.
   bool get shouldPacePackets => _pacingCalculator.shouldPace;
 
+  /// The internal pacing timer, exposed for testing.
+  PacingTimer get pacingTimerForTest => _pacingTimer;
+
+  /// Wait for the pacing interval if this packet should be paced.
+  ///
+  /// ACK-only packets are not paced per RFC 9002 Section 7.7.
+  Future<void> _applyPacingDelay(List<Frame> frames) async {
+    if (frames.isEmpty) return;
+    if (frames.every((f) => f is AckFrame)) return;
+    final delay = pacingDelayUs;
+    if (delay == null || delay <= 0) return;
+    final wait = _pacingTimer.timeUntilNextSend(delay);
+    if (wait > 0) {
+      await Future.delayed(Duration(microseconds: wait));
+    }
+    _pacingTimer.recordSend();
+  }
+
   /// Allocates a new client-initiated bidirectional stream ID and creates the
   /// send-side stream in the [streamManager].
   ///
@@ -1009,6 +1029,7 @@ class QuicConnection {
     required List<int> dcid,
     List<int>? scid,
   }) async {
+    await _applyPacingDelay(frames);
     final packetNumber = allocatePacketNumber(space);
     final packet = await PacketSender.buildPacket(
       frames: frames,
@@ -1045,6 +1066,7 @@ class QuicConnection {
     required List<int> dcid,
     List<int>? scid,
   }) async {
+    await _applyPacingDelay(frames);
     final codec = _codecForSpace(space);
     if (codec == null) {
       // No keys available — build plaintext packet.

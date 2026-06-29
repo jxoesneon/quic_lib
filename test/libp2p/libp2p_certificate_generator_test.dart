@@ -110,10 +110,17 @@ void main() {
 
       final ext = parseLibp2pExtension(x509);
       expect(ext, isNotNull);
-      expect(ext!.signedKey.publicKey, equals(hostPublicKeyBytes));
+      expect(ext!.signedKey.publicKey.type, equals(Libp2pKeyType.ed25519));
+      expect(ext.signedKey.publicKey.data, equals(hostPublicKeyBytes));
+      // The signature covers libp2p-tls-handshake: || SubjectPublicKeyInfo DER.
+      final spkiDer = x509.subjectPublicKeyInfo;
+      final handshakeMessage = Uint8List.fromList([
+        ...Uint8List.fromList('libp2p-tls-handshake:'.codeUnits),
+        ...spkiDer,
+      ]);
       expect(
         ext.signedKey.signature,
-        equals(await backend.ed25519Sign(hostIdentityKey, hostPublicKeyBytes)),
+        equals(await backend.ed25519Sign(hostIdentityKey, handshakeMessage)),
       );
     });
 

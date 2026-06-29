@@ -25,6 +25,110 @@ int _varintLength(int value) {
   return len;
 }
 
+/// libp2p public key types per the libp2p TLS spec.
+///
+/// Values match the protobuf enum used in the libp2p PublicKey message.
+enum Libp2pKeyType {
+  rsa(0),
+  ed25519(1),
+  secp256k1(2),
+  ecdsa(3);
+
+  final int value;
+  const Libp2pKeyType(this.value);
+
+  static Libp2pKeyType? fromValue(int value) {
+    for (final type in values) {
+      if (type.value == value) return type;
+    }
+    return null;
+  }
+}
+
+/// A protobuf-encoded libp2p public key used in the libp2p TLS extension.
+///
+/// Wire format:
+/// ```
+/// message PublicKey {
+///   required KeyType Type = 1;
+///   required bytes Data = 2;
+/// }
+/// ```
+class Libp2pPublicKey {
+  final Libp2pKeyType type;
+  final Uint8List data;
+
+  Libp2pPublicKey({required this.type, required this.data});
+
+  Uint8List serialize() {
+    final typeLen = _varintLength(type.value);
+    final dataLen = data.length;
+    final totalLen = 1 + typeLen + 1 + _varintLength(dataLen) + dataLen;
+    final result = Uint8List(totalLen);
+    var offset = 0;
+
+    result[offset++] = 0x08; // field 1, type 0 (varint)
+    final typeBytes = _encodeVarint(type.value);
+    result.setRange(offset, offset + typeBytes.length, typeBytes);
+    offset += typeBytes.length;
+
+    result[offset++] = 0x12; // field 2, type 2 (length-delimited)
+    final dataLenBytes = _encodeVarint(dataLen);
+    result.setRange(offset, offset + dataLenBytes.length, dataLenBytes);
+    offset += dataLenBytes.length;
+    result.setRange(offset, offset + dataLen, data);
+
+    return result;
+  }
+
+  static Libp2pPublicKey parse(Uint8List bytes) {
+    Libp2pKeyType? type;
+    Uint8List? data;
+    var offset = 0;
+
+    while (offset < bytes.length) {
+      final tag = bytes[offset++];
+      final fieldNumber = tag >> 3;
+      final wireType = tag & 0x07;
+
+      if (fieldNumber == 1 && wireType == 0) {
+        var value = 0;
+        var shift = 0;
+        while (offset < bytes.length) {
+          final b = bytes[offset];
+          value |= (b & 0x7F) << shift;
+          offset++;
+          if ((b & 0x80) == 0) break;
+          shift += 7;
+        }
+        type = Libp2pKeyType.fromValue(value);
+      } else if (fieldNumber == 2 && wireType == 2) {
+        var length = 0;
+        var shift = 0;
+        while (offset < bytes.length) {
+          final b = bytes[offset];
+          length |= (b & 0x7F) << shift;
+          offset++;
+          if ((b & 0x80) == 0) break;
+          shift += 7;
+        }
+        if (offset + length > bytes.length) {
+          throw FormatException('Protobuf length exceeds buffer');
+        }
+        data = bytes.sublist(offset, offset + length);
+        offset += length;
+      } else {
+        break;
+      }
+    }
+
+    if (type == null || data == null) {
+      throw FormatException('Missing required fields in PublicKey');
+    }
+    return Libp2pPublicKey(type: type, data: data);
+  }
+}
+
 /// A protobuf-encoded signed key used in the libp2p TLS extension.
 ///
 /// The wire format is:
@@ -34,20 +138,24 @@ int _varintLength(int value) {
 ///   bytes signature   = 2;
 /// }
 /// ```
+///
+/// The [publicKey] field contains a serialized [Libp2pPublicKey] protobuf. The
+/// [signature] is computed over the UTF-8 string `libp2p-tls-handshake:`
+/// concatenated with the SubjectPublicKeyInfo DER of the certificate carrying
+/// the extension.
 class SignedKey {
-  /// The peer's raw public key bytes.
-  final Uint8List publicKey;
+  /// The peer's protobuf-encoded public key.
+  final Libp2pPublicKey publicKey;
 
-  /// Signature of [publicKey] by the host's identity key.
+  /// Signature of the libp2p TLS handshake message by the host identity key.
   final Uint8List signature;
 
   SignedKey({required this.publicKey, required this.signature});
 
   /// Encodes this [SignedKey] as a protobuf message.
   Uint8List serialize() {
-    // field 1, wire type 2 (length-delimited): tag = (1 << 3) | 2 = 10
-    // field 2, wire type 2 (length-delimited): tag = (2 << 3) | 2 = 18
-    final pkLen = publicKey.length;
+    final pkBytes = publicKey.serialize();
+    final pkLen = pkBytes.length;
     final sigLen = signature.length;
     final totalLen =
         1 + _varintLength(pkLen) + pkLen + 1 + _varintLength(sigLen) + sigLen;
@@ -58,7 +166,7 @@ class SignedKey {
     final pkLenBytes = _encodeVarint(pkLen);
     result.setRange(offset, offset + pkLenBytes.length, pkLenBytes);
     offset += pkLenBytes.length;
-    result.setRange(offset, offset + pkLen, publicKey);
+    result.setRange(offset, offset + pkLen, pkBytes);
     offset += pkLen;
 
     result[offset++] = 0x12; // field 2, type 2
@@ -73,7 +181,7 @@ class SignedKey {
 
   /// Decodes a [SignedKey] from protobuf bytes.
   static SignedKey parse(Uint8List bytes) {
-    Uint8List? pk;
+    Uint8List? pkBytes;
     Uint8List? sig;
     var offset = 0;
 
@@ -83,7 +191,6 @@ class SignedKey {
       final wireType = tag & 0x07;
 
       if (wireType == 2) {
-        // length-delimited
         var length = 0;
         var shift = 0;
         while (offset < bytes.length) {
@@ -99,20 +206,22 @@ class SignedKey {
         final value = bytes.sublist(offset, offset + length);
         offset += length;
         if (fieldNumber == 1) {
-          pk = value;
+          pkBytes = value;
         } else if (fieldNumber == 2) {
           sig = value;
         }
       } else {
-        // Skip unknown wire types
         break;
       }
     }
 
-    if (pk == null || sig == null) {
+    if (pkBytes == null || sig == null) {
       throw FormatException('Missing required fields in SignedKey');
     }
-    return SignedKey(publicKey: pk, signature: sig);
+    return SignedKey(
+      publicKey: Libp2pPublicKey.parse(pkBytes),
+      signature: sig,
+    );
   }
 }
 

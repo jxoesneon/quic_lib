@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.8.0] — 2026-06-29
+
+### Fixed
+- **libp2p TLS extension signature algorithm** — brought the SignedKey signature into compliance with the libp2p TLS spec. The signature is now computed over `UTF-8("libp2p-tls-handshake:") || SubjectPublicKeyInfo_DER` instead of the raw host public key bytes.
+- The `SignedKey.public_key` field now carries a protobuf `PublicKey` message with a `KeyType` enum and `Data` bytes, matching the spec's `SignedKey` definition.
+
+### Changed
+- `Libp2pPublicKey` and `Libp2pKeyType` added to `libp2p_tls_extension.dart`.
+- `Libp2pCertificateGenerator` builds the ephemeral SPKI DER, prefixes the spec handshake string, and signs that message.
+- `CertificateChain.verifyLibp2pSignature` and `Libp2pQuicTransport.verifyPeerCertificate` reconstruct the same handshake message and verify the signature against it.
+- Updated existing libp2p TLS tests to exercise the new protobuf public key and signature format.
+
+---
+
 ## [1.7.0] — 2026-06-29
 
 ### Added

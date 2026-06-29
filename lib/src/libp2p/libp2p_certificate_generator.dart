@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:asn1lib/asn1lib.dart';
@@ -43,19 +44,32 @@ class Libp2pCertificateGenerator {
     final ephemeralPublicKey = await ephemeralKeyPair.publicKey;
     final ephemeralPrivateKey = await ephemeralKeyPair.secretKey;
 
-    // 2. Sign the host public key with the host identity key.
-    final identitySignature =
-        await _backend.ed25519Sign(hostIdentityPrivateKey, hostPublicKeyBytes);
+    // 2. Build the SubjectPublicKeyInfo DER for the ephemeral certificate key.
+    // This is needed both for the certificate and for the libp2p signature.
+    final spki = _buildSubjectPublicKeyInfo(ephemeralPublicKey.bytes);
+    final spkiDer = spki.encodedBytes;
 
-    // 3. Build the libp2p extension.
+    // 3. Sign libp2p-tls-handshake: || SubjectPublicKeyInfo_DER with the host
+    // identity key per the libp2p TLS specification.
+    final handshakeMessage = Uint8List.fromList([
+      ..._utf8Bytes('libp2p-tls-handshake:'),
+      ...spkiDer,
+    ]);
+    final identitySignature =
+        await _backend.ed25519Sign(hostIdentityPrivateKey, handshakeMessage);
+
+    // 4. Build the libp2p extension.
     final signedKey = SignedKey(
-      publicKey: Uint8List.fromList(hostPublicKeyBytes),
+      publicKey: Libp2pPublicKey(
+        type: Libp2pKeyType.ed25519,
+        data: Uint8List.fromList(hostPublicKeyBytes),
+      ),
       signature: Uint8List.fromList(identitySignature),
     );
     final libp2pExt = Libp2pExtension(signedKey: signedKey);
     final libp2pExtBytes = libp2pExt.serialize();
 
-    // 4. Build X.509 TBSCertificate.
+    // 5. Build X.509 TBSCertificate.
     final tbs = _buildTbsCertificate(
       ephemeralPublicKey: ephemeralPublicKey.bytes,
       notBefore: nb,
@@ -63,16 +77,16 @@ class Libp2pCertificateGenerator {
       libp2pExtensionBytes: libp2pExtBytes,
     );
 
-    // 5. Sign the TBS certificate with the ephemeral ECDSA private key.
+    // 6. Sign the TBS certificate with the ephemeral ECDSA private key.
     final tbsSignature = await _backend.ecdsaP256Sign(
       ephemeralPrivateKey,
       tbs.encodedBytes,
     );
 
-    // 6. Build the outer certificate.
+    // 7. Build the outer certificate.
     final cert = _buildCertificate(tbs, tbsSignature);
 
-    // 7. Parse into CertificateInfo and wrap in a chain.
+    // 8. Parse into CertificateInfo and wrap in a chain.
     final certInfo = parseCertificate(cert.encodedBytes);
     return CertificateChain([certInfo]);
   }
@@ -198,4 +212,6 @@ class Libp2pCertificateGenerator {
     final na = ASN1UtcTime(notAfter);
     return ASN1Sequence()..elements.addAll([nb, na]);
   }
+
+  static List<int> _utf8Bytes(String value) => utf8.encode(value);
 }

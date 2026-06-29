@@ -354,6 +354,12 @@ class KeyManager {
   /// Whether a key update is currently pending (waiting for peer confirmation).
   bool _keyUpdatePending = false;
 
+  /// Lowest packet number sent with the current key phase.
+  int _lowestPacketWithCurrentKey = -1;
+
+  /// Highest packet number acknowledged in the 1-RTT space.
+  int _highestAckedPacket = -1;
+
   /// Confidentiality limits per cipher suite (RFC 9001 Section 5.5).
   static const int _aesGcmConfidentialityLimit = 0x800000; // 2^23
   static const int _chachaConfidentialityLimit = 0x1000000000; // 2^36
@@ -367,25 +373,46 @@ class KeyManager {
   /// Notify the key manager that a packet was sent with the current application keys.
   /// Returns `true` if the confidentiality limit has been reached and a key
   /// update SHOULD be initiated.
-  bool onPacketSentWithCurrentKey({bool isChaCha20 = false}) {
+  bool onPacketSentWithCurrentKey(int packetNumber, {bool isChaCha20 = false}) {
     _packetsWithCurrentKey++;
-    final limit = isChaCha20 ? _chachaConfidentialityLimit : _aesGcmConfidentialityLimit;
+    if (_lowestPacketWithCurrentKey < 0 ||
+        packetNumber < _lowestPacketWithCurrentKey) {
+      _lowestPacketWithCurrentKey = packetNumber;
+    }
+
+    final limit = isChaCha20
+        ? _chachaConfidentialityLimit
+        : _aesGcmConfidentialityLimit;
     if (_packetsWithCurrentKey >= limit) {
       return true;
     }
     return false;
   }
 
+  /// Notify the key manager that an ACK was received for a packet in the
+  /// 1-RTT space.
+  void onAckReceived(int packetNumber) {
+    if (packetNumber > _highestAckedPacket) {
+      _highestAckedPacket = packetNumber;
+    }
+  }
+
   /// Initiate a key update by toggling the key phase.
   ///
-  /// Per RFC 9001 §6, endpoints MUST NOT initiate a key update prior to
-  /// confirming the handshake (i.e., before HANDSHAKE_DONE or equivalent).
+  /// Per RFC 9001 §6.1, endpoints MUST NOT initiate a subsequent key update
+  /// unless it has received an ACK for a packet sent with the current key phase.
   void initiateKeyUpdate() {
     if (_keyUpdatePending) {
       throw StateError('Key update already pending');
     }
+    if (_lowestPacketWithCurrentKey >= 0 &&
+        _highestAckedPacket < _lowestPacketWithCurrentKey) {
+      throw StateError(
+          'Cannot initiate key update: no ACK received for packets sent with current key phase');
+    }
     _keyPhase ^= 1;
     _packetsWithCurrentKey = 0;
+    _lowestPacketWithCurrentKey = -1;
     _keyUpdatePending = true;
   }
 

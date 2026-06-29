@@ -658,12 +658,19 @@ class QuicConnection {
       0, // RecoveryManager computes effective ackedBytes from tracker
       ranges: ranges,
     );
+    // Track application-space ACKs for key update confirmation (RFC 9001 §6.1).
+    if (spaceIndex == PacketNumberSpace.application.spaceIndex) {
+      final km = _keyManager;
+      if (km != null) {
+        km.onAckReceived(largestAcked);
+      }
+    }
     _pacingCalculator.updateRtt(_rttEstimator.smoothedRtt);
     _pacingCalculator
         .updateCongestionWindow(_congestionController.congestionWindow);
   }
 
-  /// Register a sent packet with the recovery manager.
+  /// Register a sent packet with the recovery manager and key manager.
   void onPacketSent(
     int packetNumber,
     int sentTimeUs, {
@@ -680,6 +687,13 @@ class QuicConnection {
       ackEliciting: ackEliciting,
       inFlight: inFlight,
     );
+    // Track application-space packets for key update limits (RFC 9001 §6).
+    if (spaceIndex == PacketNumberSpace.application.spaceIndex) {
+      final km = _keyManager;
+      if (km != null) {
+        km.onPacketSentWithCurrentKey(packetNumber);
+      }
+    }
   }
 
   /// Check if a PTO timer has expired.

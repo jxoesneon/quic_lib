@@ -144,6 +144,7 @@ export 'src/crypto/packet/header_protection.dart' show HeaderProtection;
 export 'src/crypto/packet/nonce_generator.dart' show NonceGenerator;
 export 'src/crypto/packet/key_derivation.dart' show KeyDerivation;
 export 'src/crypto/packet/key_update.dart' show KeyUpdate;
+export 'src/crypto/key_manager.dart' show KeyManager;
 export 'src/crypto/packet/retry_integrity_tag.dart' show RetryIntegrityTag;
 export 'src/crypto/zero_rtt_helper.dart' show ZeroRttHelper;
 
@@ -223,7 +224,7 @@ export 'src/recovery/congestion_controller.dart' show CongestionController;
 export 'src/recovery/pacing_calculator.dart' show PacingCalculator;
 export 'src/recovery/sent_packet_tracker.dart'
     show SentPacketTracker, SentPacketInfo;
-export 'src/recovery/ack_generator.dart' show AckGenerator;
+export 'src/recovery/ack_generator.dart' show AckGenerator, AckFrequencyPolicy;
 
 // ---------------------------------------------------------------------------
 // HTTP/3 exports

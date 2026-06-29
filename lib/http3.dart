@@ -52,4 +52,10 @@ export 'src/http3/capsule_protocol.dart'
         DatagramCapsule,
         CloseWebTransportSessionCapsule,
         DrainWebTransportSessionCapsule,
-        GoawayCapsule;
+        GoawayCapsule,
+        RegisterBidirectionalStreamCapsule,
+        RegisterUnidirectionalStreamCapsule,
+        WtMaxStreamsCapsule,
+        WtMaxDataCapsule,
+        WtMaxStreamDataCapsule,
+        UnknownCapsule;

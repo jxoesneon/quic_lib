@@ -25,10 +25,8 @@ class BbrCongestionController implements CongestionController {
   static const double _bbrPacingGain = 1.0; // steady-state pacing gain
   static const double _bbrCwndGain = 2.0; // cwnd gain factor
   static const double _bbrMinCwndGain = 2.0; // minimum cwnd during STARTUP
-  static const int _bbrProbeRttDurationUs =
-      200000; // 200 ms PROBE_RTT duration
-  static const int _bbrProbeRttIntervalUs =
-      10000000; // 10 s between PROBE_RTT
+  static const int _bbrProbeRttDurationUs = 200000; // 200 ms PROBE_RTT duration
+  static const int _bbrProbeRttIntervalUs = 10000000; // 10 s between PROBE_RTT
   static const int _bbrMinCwndPackets = 4; // minimum cwnd in PROBE_RTT
   static const int _startupRoundsThreshold =
       3; // rounds without bw growth to exit STARTUP
@@ -66,8 +64,7 @@ class BbrCongestionController implements CongestionController {
   // Delivery tracking for bandwidth estimation.
   int _delivered = 0;
 
-  BbrCongestionController({int packetSize = 1200})
-      : _packetSize = packetSize;
+  BbrCongestionController({int packetSize = 1200}) : _packetSize = packetSize;
 
   // ---------------------------------------------------------------------------
   // CongestionController interface
@@ -99,9 +96,8 @@ class BbrCongestionController implements CongestionController {
     _updateBwFilter(now);
 
     // Update bottleneck bandwidth.
-    final newBtlBw = _bwFilter.isEmpty
-        ? _btlBw
-        : _bwFilter.map((s) => s.bw).reduce(max);
+    final newBtlBw =
+        _bwFilter.isEmpty ? _btlBw : _bwFilter.map((s) => s.bw).reduce(max);
     if (newBtlBw > _btlBw) {
       _btlBw = newBtlBw;
     }
@@ -235,8 +231,7 @@ class BbrCongestionController implements CongestionController {
         now.difference(_minRttTimestamp!).inMicroseconds + _minRttUs;
     if (elapsedUs > _bbrProbeRttIntervalUs) {
       _state = BbrState.probeRtt;
-      _probeRttDoneTimeUs =
-          now.microsecondsSinceEpoch + _bbrProbeRttDurationUs;
+      _probeRttDoneTimeUs = now.microsecondsSinceEpoch + _bbrProbeRttDurationUs;
       _probeRttRoundDone = false;
     }
   }

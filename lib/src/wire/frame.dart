@@ -46,6 +46,7 @@ enum FrameType {
   handshakeDone(0x1e),
   datagram(0x30),
   datagramWithLength(0x31),
+
   /// ACK_FREQUENCY frame (RFC 9298).
   ///
   /// Allows a receiver to request the sender to change its acknowledgement

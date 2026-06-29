@@ -1,5 +1,3 @@
-
-
 import 'package:quic_lib/src/crypto/cipher_suites.dart';
 import 'package:quic_lib/src/crypto/crypto_backend.dart';
 import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
@@ -91,8 +89,7 @@ class KeyManager {
       backend: backend,
     );
 
-    manager._keys[PacketNumberSpace.initial] =
-        await _deriveDirectionalKeys(
+    manager._keys[PacketNumberSpace.initial] = await _deriveDirectionalKeys(
       secrets.clientSecret,
       secrets.serverSecret,
       backend,
@@ -193,8 +190,7 @@ class KeyManager {
   }) async {
     final manager = KeyManager._(role, backend);
 
-    manager._keys[PacketNumberSpace.handshake] =
-        await _deriveDirectionalKeys(
+    manager._keys[PacketNumberSpace.handshake] = await _deriveDirectionalKeys(
       clientSecret,
       serverSecret,
       backend,
@@ -228,8 +224,7 @@ class KeyManager {
     manager._peerAppSecret =
         role == HandshakeRole.client ? serverSecret : clientSecret;
 
-    manager._keys[PacketNumberSpace.application] =
-        await _deriveDirectionalKeys(
+    manager._keys[PacketNumberSpace.application] = await _deriveDirectionalKeys(
       clientSecret,
       serverSecret,
       backend,
@@ -387,9 +382,8 @@ class KeyManager {
       _lowestPacketWithCurrentKey = packetNumber;
     }
 
-    final limit = isChaCha20
-        ? _chachaConfidentialityLimit
-        : _aesGcmConfidentialityLimit;
+    final limit =
+        isChaCha20 ? _chachaConfidentialityLimit : _aesGcmConfidentialityLimit;
     if (_packetsWithCurrentKey >= limit) {
       return true;
     }
@@ -424,12 +418,8 @@ class KeyManager {
     );
 
     final derivedNextKeys = await _deriveDirectionalKeys(
-      role == HandshakeRole.client
-          ? _nextLocalAppSecret!
-          : _nextPeerAppSecret!,
-      role == HandshakeRole.client
-          ? _nextPeerAppSecret!
-          : _nextLocalAppSecret!,
+      role == HandshakeRole.client ? _nextLocalAppSecret! : _nextPeerAppSecret!,
+      role == HandshakeRole.client ? _nextPeerAppSecret! : _nextLocalAppSecret!,
       _backend,
       Aes128Gcm(),
     );

@@ -48,7 +48,9 @@ class PacketBuilder {
     // Client Initial packets must be padded to at least 1200 bytes (RFC 9000
     // Section 14.1). If the first build is too short, add a PADDING frame and
     // rebuild so the Length field is correct.
-    if (header is LongHeader && header.isInitial && packet.length < _minInitialPacketSize) {
+    if (header is LongHeader &&
+        header.isInitial &&
+        packet.length < _minInitialPacketSize) {
       final paddedFrames = List<Frame>.from(frames)
         ..add(PaddingFrame(length: _minInitialPacketSize - packet.length));
       return _buildOnce(header, paddedFrames);

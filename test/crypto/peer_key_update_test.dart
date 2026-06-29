@@ -105,8 +105,10 @@ void main() {
 
     test('detects peer-initiated key update from packet with new key phase',
         () async {
-      final server = await KeyManager.forTestWithKeys(role: HandshakeRole.server);
-      final client = await KeyManager.forTestWithKeys(role: HandshakeRole.client);
+      final server =
+          await KeyManager.forTestWithKeys(role: HandshakeRole.server);
+      final client =
+          await KeyManager.forTestWithKeys(role: HandshakeRole.client);
 
       const dcid = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08];
 
@@ -133,8 +135,10 @@ void main() {
     });
 
     test('continues decrypting after local key update', () async {
-      final server = await KeyManager.forTestWithKeys(role: HandshakeRole.server);
-      final client = await KeyManager.forTestWithKeys(role: HandshakeRole.client);
+      final server =
+          await KeyManager.forTestWithKeys(role: HandshakeRole.server);
+      final client =
+          await KeyManager.forTestWithKeys(role: HandshakeRole.client);
 
       const dcid = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08];
 
@@ -161,10 +165,14 @@ void main() {
       expect(result.frames.any((f) => f is PingFrame), isTrue);
     });
 
-    test('rejects non-monotonic old-phase packet with high packet number', () async {
-      final server = await KeyManager.forTestWithKeys(role: HandshakeRole.server);
-      final evilServer = await KeyManager.forTestWithKeys(role: HandshakeRole.server);
-      final client = await KeyManager.forTestWithKeys(role: HandshakeRole.client);
+    test('rejects non-monotonic old-phase packet with high packet number',
+        () async {
+      final server =
+          await KeyManager.forTestWithKeys(role: HandshakeRole.server);
+      final evilServer =
+          await KeyManager.forTestWithKeys(role: HandshakeRole.server);
+      final client =
+          await KeyManager.forTestWithKeys(role: HandshakeRole.client);
 
       const dcid = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08];
 
@@ -213,10 +221,14 @@ void main() {
       expect(client.keyPhase, 1);
     });
 
-    test('confirms peer-initiated key update and discards previous keys', () async {
-      final server = await KeyManager.forTestWithKeys(role: HandshakeRole.server);
-      final oldServer = await KeyManager.forTestWithKeys(role: HandshakeRole.server);
-      final client = await KeyManager.forTestWithKeys(role: HandshakeRole.client);
+    test('confirms peer-initiated key update and discards previous keys',
+        () async {
+      final server =
+          await KeyManager.forTestWithKeys(role: HandshakeRole.server);
+      final oldServer =
+          await KeyManager.forTestWithKeys(role: HandshakeRole.server);
+      final client =
+          await KeyManager.forTestWithKeys(role: HandshakeRole.client);
 
       const dcid = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08];
 
@@ -281,11 +293,13 @@ void main() {
       expect(reorderedAfterConfirm, isNull);
     });
 
-
     test('discards previous-generation keys after 3×PTO deadline', () async {
-      final server = await KeyManager.forTestWithKeys(role: HandshakeRole.server);
-      final oldServer = await KeyManager.forTestWithKeys(role: HandshakeRole.server);
-      final client = await KeyManager.forTestWithKeys(role: HandshakeRole.client);
+      final server =
+          await KeyManager.forTestWithKeys(role: HandshakeRole.server);
+      final oldServer =
+          await KeyManager.forTestWithKeys(role: HandshakeRole.server);
+      final client =
+          await KeyManager.forTestWithKeys(role: HandshakeRole.client);
 
       const dcid = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08];
 

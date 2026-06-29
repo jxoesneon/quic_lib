@@ -69,7 +69,9 @@ void main() {
       // packet is delayed by the pacing interval.
       final first = await conn.buildPacket(
         space: PacketNumberSpace.initial,
-        frames: [CryptoFrame(offset: 0, data: [0x01])],
+        frames: [
+          CryptoFrame(offset: 0, data: [0x01])
+        ],
         dcid: [0x01, 0x02, 0x03, 0x04],
       );
       expect(first, isNotNull);
@@ -81,7 +83,9 @@ void main() {
       // without errors and returns a non-empty packet.
       final second = await conn.buildPacket(
         space: PacketNumberSpace.initial,
-        frames: [CryptoFrame(offset: 0, data: [0x02])],
+        frames: [
+          CryptoFrame(offset: 0, data: [0x02])
+        ],
         dcid: [0x01, 0x02, 0x03, 0x04],
       );
       expect(second, isNotNull);

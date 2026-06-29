@@ -99,14 +99,16 @@ class ProtectedPacketCodec {
     int packetNumber,
   ) async {
     try {
-      final plaintext = await keys.decrypt(packetNumber, unprotectedHeader, payload);
+      final plaintext =
+          await keys.decrypt(packetNumber, unprotectedHeader, payload);
       return _parseFrames(plaintext);
     } catch (_) {
       return null;
     }
   }
 
-  Future<({Uint8List header, List<Frame> frames, int? keyPhase})?> unprotectAndDecrypt(
+  Future<({Uint8List header, List<Frame> frames, int? keyPhase})?>
+      unprotectAndDecrypt(
     Uint8List protectedPacket,
   ) async {
     if (protectedPacket.isEmpty) return null;

@@ -88,7 +88,9 @@ class Http3Response {
   /// [decoder] may be used to decode dynamic table references and to track
   /// the required insert count for acknowledgment.
   static Http3Response decodeHeaders(Uint8List bytes, {QpackDecoder? decoder}) {
-    final lines = decoder != null ? decoder.decodeLines(bytes) : QpackDecoder.decodeFieldLines(bytes);
+    final lines = decoder != null
+        ? decoder.decodeLines(bytes)
+        : QpackDecoder.decodeFieldLines(bytes);
 
     int statusCode = 0;
     final headers = <String, String>{};

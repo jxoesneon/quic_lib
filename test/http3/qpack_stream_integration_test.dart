@@ -96,9 +96,11 @@ void main() {
       expect(entry?.name, equals('x-peer'));
       expect(entry?.value, equals('peer-value'));
       expect(conn.pendingDecoderInstructions, hasLength(1));
-      expect(conn.pendingDecoderInstructions.first, isA<InsertCountIncrement>());
       expect(
-        (conn.pendingDecoderInstructions.first as InsertCountIncrement).increment,
+          conn.pendingDecoderInstructions.first, isA<InsertCountIncrement>());
+      expect(
+        (conn.pendingDecoderInstructions.first as InsertCountIncrement)
+            .increment,
         equals(1),
       );
     });
@@ -127,7 +129,8 @@ void main() {
       expect(conn.qpackEncoder.knownReceivedCount, equals(5));
     });
 
-    test('getResponse emits SectionAcknowledgment for decoded stream', () async {
+    test('getResponse emits SectionAcknowledgment for decoded stream',
+        () async {
       final conn = Http3Connection(
         quicConnection: FakeQuicConnection(),
         localSettings: Http3SettingsFrame.from(maxTableCapacity: 1024),
@@ -145,9 +148,11 @@ void main() {
       expect(decoded, isNotNull);
       expect(decoded!.statusCode, equals(200));
       expect(conn.pendingDecoderInstructions, hasLength(1));
-      expect(conn.pendingDecoderInstructions.first, isA<SectionAcknowledgment>());
       expect(
-        (conn.pendingDecoderInstructions.first as SectionAcknowledgment).streamId,
+          conn.pendingDecoderInstructions.first, isA<SectionAcknowledgment>());
+      expect(
+        (conn.pendingDecoderInstructions.first as SectionAcknowledgment)
+            .streamId,
         equals(0),
       );
     });
@@ -164,7 +169,8 @@ void main() {
       // getResponse to populate the instruction list.
       final response = Http3Response(statusCode: 204);
       final encoded = response.encodeHeaders(encoder: conn.qpackEncoder);
-      conn.onStreamFrame(4, Http3HeadersFrame(encodedFieldSection: encoded).toFrame());
+      conn.onStreamFrame(
+          4, Http3HeadersFrame(encodedFieldSection: encoded).toFrame());
       conn.getResponse(4);
       expect(conn.pendingDecoderInstructions, isNotEmpty);
 

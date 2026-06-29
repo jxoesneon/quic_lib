@@ -70,7 +70,8 @@ void main() {
       expect(nextOffset, bytes.length);
     });
 
-    test('unknown frame type causes FrameEncodingError per RFC 9000 Section 12.4',
+    test(
+        'unknown frame type causes FrameEncodingError per RFC 9000 Section 12.4',
         () {
       final bytes = Uint8List.fromList([0x1f]); // unsupported frame type
       expect(() => FrameCodec.parse(bytes), throwsA(isA<FrameEncodingError>()));

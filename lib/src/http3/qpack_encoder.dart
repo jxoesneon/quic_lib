@@ -71,7 +71,8 @@ class QpackEncoder {
     // but only when the peer has advertised a non-zero table capacity.
     if (dynamicTable.capacity > 0) {
       dynamicTable.insert(name, value);
-      emittedInstructions.add(InsertWithoutNameReference(name: name, value: value));
+      emittedInstructions
+          .add(InsertWithoutNameReference(name: name, value: value));
     }
     return _encodeLiteralWithoutNameRef(name, value);
   }

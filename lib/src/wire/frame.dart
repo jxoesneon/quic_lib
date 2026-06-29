@@ -851,7 +851,8 @@ class FrameCodec {
         // creating thousands of tiny frames when a packet is padded to the
         // RFC 9000 minimum Initial packet size.
         var length = 1;
-        while (offset + length < bytes.length && bytes[offset + length] == 0x00) {
+        while (
+            offset + length < bytes.length && bytes[offset + length] == 0x00) {
           length++;
         }
         return PaddingFrame(length: length);
@@ -1075,8 +1076,8 @@ class FrameCodec {
       case 0x31: // DATAGRAM (with length)
         final lengthValue = readVarInt(pos);
         pos += varIntLength(pos);
-        final data = _safeSublist(bytes, pos, lengthValue,
-            maxLength: 1024 * 1024);
+        final data =
+            _safeSublist(bytes, pos, lengthValue, maxLength: 1024 * 1024);
         return DatagramFrame(data: data, hasLength: true);
       case 0xaf: // ACK_FREQUENCY (RFC 9298)
         final seqNum = readVarInt(pos);

@@ -62,7 +62,8 @@ void main() {
       expect(() => km.initiateKeyUpdate(), throwsA(isA<StateError>()));
     });
 
-    test('onAckReceived allows subsequent key update when ACK covers sent packet',
+    test(
+        'onAckReceived allows subsequent key update when ACK covers sent packet',
         () async {
       final km = await KeyManager.forTestWithKeys();
       km.onPacketSentWithCurrentKey(5);
@@ -74,7 +75,8 @@ void main() {
       expect(() => km.initiateKeyUpdate(), returnsNormally);
     });
 
-    test('onPacketSentWithCurrentKey returns true at AES-GCM confidentiality limit',
+    test(
+        'onPacketSentWithCurrentKey returns true at AES-GCM confidentiality limit',
         () {
       final km = KeyManager.forTest();
       for (var i = 0; i < 0x800000 - 1; i++) {
@@ -89,8 +91,8 @@ void main() {
       for (var i = 0; i < 0x1000000; i++) {
         km.onPacketSentWithCurrentKey(i, isChaCha20: true);
       }
-      expect(km.onPacketSentWithCurrentKey(0x1000000, isChaCha20: true),
-          isFalse);
+      expect(
+          km.onPacketSentWithCurrentKey(0x1000000, isChaCha20: true), isFalse);
     });
   });
 }

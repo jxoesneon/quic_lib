@@ -262,5 +262,6 @@ class WtMaxStreamDataCapsule extends Capsule {
   WtMaxStreamDataCapsule(Uint8List data) : super(type: 0x190B4D42, data: data);
 
   /// Maximum stream data value encoded in the capsule payload.
-  int get maxStreamData => VarInt.decode(data.buffer, offset: data.offsetInBytes);
+  int get maxStreamData =>
+      VarInt.decode(data.buffer, offset: data.offsetInBytes);
 }

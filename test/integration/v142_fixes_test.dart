@@ -77,7 +77,8 @@ void main() {
           throwsA(isA<FrameEncodingError>()));
     });
 
-    test('AckFrequencyPolicy triggers immediate ACK on reordering threshold', () {
+    test('AckFrequencyPolicy triggers immediate ACK on reordering threshold',
+        () {
       final policy = AckFrequencyPolicy();
       final frame = AckFrequencyFrame(
         sequenceNumber: 1,
@@ -90,8 +91,6 @@ void main() {
       expect(policy.onPacketReceived(8, isAckEliciting: true), isTrue);
     });
   });
-
-
 
   group('RFC 9001 key update tracking', () {
     test('KeyManager requires ACK before subsequent key update', () async {

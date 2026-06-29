@@ -73,7 +73,8 @@ void main() {
       expect(packet.isNotEmpty, isTrue);
     });
 
-    test('openBidirectionalStream marks stream as early data when 0-RTT keys exist',
+    test(
+        'openBidirectionalStream marks stream as early data when 0-RTT keys exist',
         () async {
       final backend = DefaultCryptoBackend();
       final psk = SimpleSecretKey([0xAB, 0xCD]);
@@ -86,7 +87,8 @@ void main() {
       expect(stream.isEarlyData, isTrue);
     });
 
-    test('dispatching a STREAM frame from a 0-RTT packet marks stream as early data',
+    test(
+        'dispatching a STREAM frame from a 0-RTT packet marks stream as early data',
         () async {
       final conn = createConnection();
       final dcid = List<int>.filled(8, 0x01);
@@ -98,7 +100,8 @@ void main() {
         packetNumber: 0,
       );
       final packet = await PacketBuilder.build(header, [
-        StreamFrame(streamId: 0, data: Uint8List.fromList([1, 2, 3]), fin: false),
+        StreamFrame(
+            streamId: 0, data: Uint8List.fromList([1, 2, 3]), fin: false),
       ]);
 
       conn.processIncomingDatagram(packet);
@@ -107,7 +110,8 @@ void main() {
       expect(stream.isEarlyData, isTrue);
     });
 
-    test('dispatching a STREAM frame from a 1-RTT packet does not mark stream as early data',
+    test(
+        'dispatching a STREAM frame from a 1-RTT packet does not mark stream as early data',
         () async {
       final conn = createConnection();
       final dcid = List<int>.filled(8, 0x01);
@@ -117,7 +121,8 @@ void main() {
         packetNumberLength: 1,
       );
       final packet = await PacketBuilder.build(header, [
-        StreamFrame(streamId: 0, data: Uint8List.fromList([1, 2, 3]), fin: false),
+        StreamFrame(
+            streamId: 0, data: Uint8List.fromList([1, 2, 3]), fin: false),
       ]);
 
       conn.processIncomingDatagram(packet);

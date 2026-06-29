@@ -368,7 +368,8 @@ class Http3Connection {
     if (headersFrame == null) return null;
     final encoded = Uint8List.fromList(headersFrame.encodedFieldSection);
     qpackDecoder.dynamicTable.resetRequiredInsertCount();
-    final response = Http3Response.decodeHeaders(encoded, decoder: qpackDecoder);
+    final response =
+        Http3Response.decodeHeaders(encoded, decoder: qpackDecoder);
     _pendingDecoderInstructions.add(SectionAcknowledgment(streamId: streamId));
     return response;
   }
@@ -670,7 +671,8 @@ class Http3Connection {
   /// was empty.
   Future<int?> flushQpackDecoderInstructions() async {
     if (_pendingDecoderInstructions.isEmpty) return null;
-    final instructions = List<DecoderInstruction>.from(_pendingDecoderInstructions);
+    final instructions =
+        List<DecoderInstruction>.from(_pendingDecoderInstructions);
     _pendingDecoderInstructions.clear();
     final builder = BytesBuilder();
     for (final instruction in instructions) {

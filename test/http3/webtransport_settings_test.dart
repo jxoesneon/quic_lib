@@ -15,7 +15,8 @@ void main() {
       expect(Http3SettingsId.wtInitialMaxStreamsUni.value, 0x2b64);
     });
 
-    test('SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_BIDI has correct value', () {
+    test('SETTINGS_WEBTRANSPORT_INITIAL_MAX_STREAMS_BIDI has correct value',
+        () {
       expect(Http3SettingsId.wtInitialMaxStreamsBidi.value, 0x2b65);
     });
 
@@ -41,7 +42,8 @@ void main() {
         wtInitialMaxStreamsUni: 50,
         wtInitialMaxStreamsBidi: 25,
       );
-      final parsed = Http3SettingsFrame.parsePayload(original.serializePayload());
+      final parsed =
+          Http3SettingsFrame.parsePayload(original.serializePayload());
       expect(parsed.settings[0x2c7cf000], 1);
       expect(parsed.settings[0x2b61], 65536);
       expect(parsed.settings[0x2b64], 50);

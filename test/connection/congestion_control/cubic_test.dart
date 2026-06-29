@@ -26,33 +26,36 @@ void main() {
 
     test('congestion event reduces cwnd by beta=0.7', () {
       // Grow cwnd to 10 packets in slow start (4 iterations of 2400 bytes).
+      var now = DateTime(2024, 1, 1, 0, 0, 0);
       for (var i = 0; i < 4; i++) {
         controller.onPacketSent(i, 2400);
-        controller.onAckReceived(i, 2400, DateTime.now());
+        controller.onAckReceived(i, 2400, now);
+        now = now.add(const Duration(milliseconds: 10));
       }
       expect(controller.congestionWindow, equals(12000)); // 10 * 1200
 
       // Trigger loss.
-      controller.onPacketLost(100, 1200, DateTime.now());
+      controller.onPacketLost(100, 1200, now);
       final expectedSsthresh = (10 * 0.7).floor(); // 7 packets
       expect(controller.congestionWindow, equals(expectedSsthresh * 1200));
     });
 
     test('CUBIC growth after loss', () {
       // Grow cwnd past ssthresh.
+      var now = DateTime(2024, 1, 1, 0, 0, 0);
       for (var i = 0; i < 4; i++) {
         controller.onPacketSent(i, 2400);
-        controller.onAckReceived(i, 2400, DateTime.now());
+        controller.onAckReceived(i, 2400, now);
+        now = now.add(const Duration(milliseconds: 10));
       }
       expect(controller.congestionWindow, greaterThan(2400));
 
       // Trigger loss to enter CUBIC mode.
-      final lossTime = DateTime.now();
-      controller.onPacketLost(100, 1200, lossTime);
+      controller.onPacketLost(100, 1200, now);
       final cwndAfterLoss = controller.congestionWindow;
 
       // Advance time and ack more data to observe CUBIC growth.
-      final future = lossTime.add(const Duration(seconds: 2));
+      final future = now.add(const Duration(seconds: 2));
       controller.onAckReceived(101, 1200, future);
       final cwndLater = controller.congestionWindow;
 
@@ -62,21 +65,22 @@ void main() {
 
     test('fast convergence reduces wMax on decreasing loss peak', () {
       // Grow to first peak of 10 packets.
+      var now = DateTime(2024, 1, 1, 0, 0, 0);
       for (var i = 0; i < 4; i++) {
         controller.onPacketSent(i, 2400);
-        controller.onAckReceived(i, 2400, DateTime.now());
+        controller.onAckReceived(i, 2400, now);
+        now = now.add(const Duration(milliseconds: 10));
       }
       expect(controller.cwndInPackets, equals(10));
-      final t0 = DateTime.now();
-      controller.onPacketLost(100, 1200, t0);
+      controller.onPacketLost(100, 1200, now);
       final firstWMax = controller.wMax; // 10
       expect(firstWMax, equals(10));
 
       // Exit recovery.
-      controller.onAckReceived(101, 1200, t0);
+      controller.onAckReceived(101, 1200, now);
 
       // Grow slightly in CUBIC mode (advance time).
-      final t1 = t0.add(const Duration(seconds: 1));
+      final t1 = now.add(const Duration(seconds: 1));
       controller.onAckReceived(102, 1200, t1);
       final peakAfterRecovery = controller.cwndInPackets; // ~9
 
@@ -117,9 +121,11 @@ void main() {
 
     test('ECN CE marks are treated as loss events', () {
       // Grow cwnd.
+      var now = DateTime(2024, 1, 1, 0, 0, 0);
       for (var i = 0; i < 4; i++) {
         controller.onPacketSent(i, 2400);
-        controller.onAckReceived(i, 2400, DateTime.now());
+        controller.onAckReceived(i, 2400, now);
+        now = now.add(const Duration(milliseconds: 10));
       }
       final before = controller.congestionWindow;
       expect(before, greaterThan(2400));

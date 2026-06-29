@@ -1,12 +1,29 @@
-/// Metadata for a sent packet.
+/// Metadata for a sent packet used by [SentPacketTracker] and [RecoveryManager].
+///
+/// Tracks per-packet state required for loss detection, congestion control,
+/// and RTT measurement. A packet is considered "in flight" if it has been
+/// sent but not yet acked or declared lost.
 class SentPacketInfo {
+  /// Packet number in the packet number space.
   final int packetNumber;
+
+  /// Timestamp when the packet was sent, in microseconds since epoch.
   final int sentTimeUs;
+
+  /// Size of the packet on the wire, in bytes.
   final int sizeInBytes;
+
+  /// Whether this packet elicits an ACK (false for ACK-only packets).
   final bool ackEliciting;
+
+  /// Whether the packet is still in flight (sent but not acked or lost).
   final bool inFlight;
+
+  /// List of frame type constants carried in this packet.
   final List<int> frames;
-  final int space; // 0=Initial, 1=Handshake, 2=Application
+
+  /// Packet number space: 0=Initial, 1=Handshake, 2=Application Data.
+  final int space;
 
   SentPacketInfo({
     required this.packetNumber,

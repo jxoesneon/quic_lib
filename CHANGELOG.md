@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **BBR congestion control** — `BbrCongestionController` implements Bottleneck Bandwidth and RTT (BBR) congestion control algorithm; exported in `lib/quic.dart` and `lib/quic_lib.dart`
 - **Hystart** — `Hystart` exported from `lib/quic.dart` and `lib/quic_lib.dart` for slow-start exit heuristic (RFC 8312 Appendix B)
-- **ACK_FREQUENCY frame (RFC 9298)** — `AckFrequencyFrame` with `sequenceNumber`, `packetTolerance`, `maxAckDelay`, and `requestImmediateAck` fields; serialize/parse support in `frame.dart`
+- **ACK_FREQUENCY frame (RFC 9298)** — `AckFrequencyFrame` with `sequenceNumber`, `requestedAckElicitingThreshold`, `requestedMaxAckDelay`, and `ignoreOrder` fields; serialize/parse support in `frame.dart`
 - **ACK range tracking** — `AckGenerator` implements ACK range tracking per RFC 9000 Section 13.2.1
 - **Persistent congestion detection** — Implemented per RFC 9002 Section 7.6
 - **App-limited detection** — Implemented per RFC 9002 Section 7.3
@@ -37,9 +37,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `QuicConnection` exposes `congestionController` setter for pluggable congestion control algorithms
 - `libp2p.dart` exports `WebTransportSession`, `WebTransportConnectRequest`, `DCUtRMessage`, `DCUtRHandler`, `DCUtRUdpCoordinator`, `MultistreamSelect`, `SignedKey`, `Libp2pExtension`, and `Libp2pCertificateGenerator`
 
+### Tests
+- `test/connection/congestion_control/bbr_test.dart` (4 tests)
+- `test/connection/congestion_control/hystart_test.dart` (4 tests)
+- `test/wire/ack_frequency_frame_test.dart` (5 tests)
+- `test/recovery/ack_generator_test.dart` (6 tests)
+- `test/connection/version_information_test.dart` (6 tests)
+
 ---
 
-## [1.3.0]
+## [1.3.0] — 2026-06-28
 
 ### Protocol Completeness
 - Fixed RFC 9000 errata (8240, 7861, 8410, 7702)

@@ -88,6 +88,8 @@ export 'src/wire/frame.dart'
         AckFrame,
         AckRange,
         AckEcnFrame,
+        AckFrequencyFrame,
+        DatagramFrame,
         ResetStreamFrame,
         StopSendingFrame,
         CryptoFrame,

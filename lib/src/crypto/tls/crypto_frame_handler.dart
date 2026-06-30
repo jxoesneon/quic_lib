@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:quic_lib/src/crypto/tls/crypto_frame_assembler.dart';
 import 'package:quic_lib/src/crypto/tls/crypto_message_parser.dart';
@@ -14,6 +15,12 @@ class CryptoFrameHandler {
   final HandshakeStateMachine _handshakeMachine;
   HandshakeCoordinator? _coordinator;
 
+  /// Raw bytes of the peer's most recent TLS Certificate message, if any.
+  Uint8List? _peerCertificate;
+
+  /// Raw bytes of the peer's most recent TLS CertificateVerify message, if any.
+  Uint8List? _peerCertificateVerify;
+
   CryptoFrameHandler({
     required CryptoFrameAssembler assembler,
     required HandshakeStateMachine handshakeMachine,
@@ -22,6 +29,14 @@ class CryptoFrameHandler {
 
   /// Attach a [HandshakeCoordinator] to receive parsed ClientHello frames.
   set coordinator(HandshakeCoordinator c) => _coordinator = c;
+
+  /// Raw bytes of the peer's TLS Certificate message, or null if not yet
+  /// received.
+  Uint8List? get peerCertificate => _peerCertificate;
+
+  /// Raw bytes of the peer's TLS CertificateVerify message, or null if not yet
+  /// received.
+  Uint8List? get peerCertificateVerify => _peerCertificateVerify;
 
   /// Deliver a [CryptoFrame] to the assembler and, for each contiguous
   /// assembled message, parse its TLS handshake type and notify the state
@@ -46,6 +61,11 @@ class CryptoFrameHandler {
         }
         if (_coordinator != null && type == TlsHandshakeType.clientHello) {
           unawaited(_coordinator!.processClientHello(frame));
+        }
+        if (type == TlsHandshakeType.certificate) {
+          _peerCertificate = Uint8List.fromList(message);
+        } else if (type == TlsHandshakeType.certificateVerify) {
+          _peerCertificateVerify = Uint8List.fromList(message);
         }
       }
     }

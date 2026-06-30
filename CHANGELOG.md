@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.11.0] — 2026-06-29
 
 ### Added
+- Expose `peerCertificate` and `peerCertificateVerify` from `QuicConnection` after TLS handshake messages are received.
+- Add `Libp2pQuicConnection.verifyPeerCertificateFromHandshake()` to verify the peer using the captured handshake certificate.
+- Add `CryptoFrameHandler` tests for peer certificate capture.
 - **121 new tests** for fuzzing, error paths, and coverage gaps:
   - `test/wire/varint_fuzz_test.dart` — truncated varints, invalid offsets, overflow attempts.
   - `test/wire/frame_fuzz_test.dart` — unknown frame types, truncated length-prefixed frames, malformed ACK ranges.

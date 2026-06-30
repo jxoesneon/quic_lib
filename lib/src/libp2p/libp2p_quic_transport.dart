@@ -317,6 +317,36 @@ class Libp2pQuicConnection {
     return true;
   }
 
+  /// Verifies the peer using the certificate received during the handshake.
+  ///
+  /// Reads [peerCertificate] from the underlying [QuicConnection] (or dynamic
+  /// fallback) and delegates to [verifyPeerCertificate]. Returns `false` if no
+  /// peer certificate has been captured yet.
+  Future<bool> verifyPeerCertificateFromHandshake({
+    PeerId? expectedPeerId,
+    required CryptoBackend backend,
+  }) async {
+    final conn = _quicConnection;
+    Uint8List? certBytes;
+    if (conn is QuicConnection) {
+      certBytes = conn.peerCertificate;
+    } else {
+      try {
+        final dynamicConn = conn as dynamic;
+        final raw = dynamicConn.peerCertificate;
+        if (raw is Uint8List?) certBytes = raw;
+      } catch (_) {
+        // Ignore if the underlying object doesn't expose peerCertificate.
+      }
+    }
+    if (certBytes == null) return false;
+    return verifyPeerCertificate(
+      certBytes,
+      expectedPeerId: expectedPeerId,
+      backend: backend,
+    );
+  }
+
   /// Negotiate a protocol using multistream-select.
   ///
   /// Sends the multistream header, then lists the desired [protocols], and

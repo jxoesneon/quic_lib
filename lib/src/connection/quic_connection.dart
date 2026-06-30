@@ -820,8 +820,20 @@ class QuicConnection {
   /// The crypto frame assembler (null until handshake pipeline is wired).
   CryptoFrameAssembler? get cryptoAssembler => _cryptoAssembler;
 
+  /// The crypto frame handler (null until handshake pipeline is wired).
+  CryptoFrameHandler? get cryptoFrameHandler => _cryptoFrameHandler;
+
   /// The handshake state machine (null until handshake pipeline is wired).
   HandshakeStateMachine? get handshakeMachine => _handshakeMachine;
+
+  /// Raw bytes of the peer's TLS Certificate message, or null if the handshake
+  /// pipeline is not wired or the certificate has not yet been received.
+  Uint8List? get peerCertificate => _cryptoFrameHandler?.peerCertificate;
+
+  /// Raw bytes of the peer's TLS CertificateVerify message, or null if the
+  /// handshake pipeline is not wired or the message has not yet been received.
+  Uint8List? get peerCertificateVerify =>
+      _cryptoFrameHandler?.peerCertificateVerify;
 
   /// The connection state machine managing the connection lifecycle.
   ConnectionStateMachine get stateMachine => _stateMachine;

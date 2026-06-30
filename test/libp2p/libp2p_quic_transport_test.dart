@@ -323,6 +323,42 @@ void main() {
       );
       expect(valid, isFalse);
     });
+
+    test(
+        'verifyPeerCertificateFromHandshake uses QuicConnection peerCertificate',
+        () async {
+      final backend = DefaultCryptoBackend();
+      final hostKeyPair = await backend.ed25519GenerateKeyPair();
+      final hostPublicKey = await hostKeyPair.publicKey;
+      final expectedPeerId = await PeerId.fromPublicKey(hostPublicKey.bytes);
+
+      final generator = Libp2pCertificateGenerator(backend);
+      final chain = await generator.generate(
+        hostIdentityPrivateKey: await hostKeyPair.secretKey,
+        hostPublicKeyBytes: hostPublicKey.bytes,
+      );
+      final certBytes = chain.certs.first.rawBytes;
+
+      final fakeConn = _FakeQuicConnectionWithCertificate(
+        Uint8List.fromList(certBytes),
+      );
+      final conn = Libp2pQuicConnection(fakeConn);
+      final valid = await conn.verifyPeerCertificateFromHandshake(
+        backend: backend,
+      );
+      expect(valid, isTrue);
+      expect(conn.peerId, equals(expectedPeerId));
+    });
+
+    test('verifyPeerCertificateFromHandshake returns false without certificate',
+        () async {
+      final backend = DefaultCryptoBackend();
+      final conn = Libp2pQuicConnection('test');
+      final valid = await conn.verifyPeerCertificateFromHandshake(
+        backend: backend,
+      );
+      expect(valid, isFalse);
+    });
   });
 }
 
@@ -336,6 +372,11 @@ class _FakeQuicConnection {
 class _FakeQuicConnectionWithAlpn {
   final String? negotiatedAlpn;
   _FakeQuicConnectionWithAlpn(this.negotiatedAlpn);
+}
+
+class _FakeQuicConnectionWithCertificate {
+  final Uint8List? peerCertificate;
+  _FakeQuicConnectionWithCertificate(this.peerCertificate);
 }
 
 class _FakeQuicConnectionForReadWrite {

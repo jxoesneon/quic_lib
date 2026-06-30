@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:logging/logging.dart';
 import 'package:quic_lib/src/crypto/crypto_backend.dart';
 import 'package:quic_lib/src/crypto/initial_secrets.dart';
 import 'package:quic_lib/src/crypto/key_manager.dart';
@@ -93,6 +94,71 @@ void main() {
 
       expect(handler.peerCertificateVerify, isNotNull);
       expect(handler.peerCertificateVerify, equals(fullMessage));
+    });
+
+    test('logs warning and continues safely for malformed Certificate message',
+        () {
+      final records = <LogRecord>[];
+      final sub = Logger('CryptoFrameHandler').onRecord.listen(records.add);
+      addTearDown(sub.cancel);
+
+      final assembler = CryptoFrameAssembler();
+      final handshakeMachine = state_machine.HandshakeStateMachine(
+        state_machine.HandshakeRole.client,
+      );
+      handshakeMachine.start();
+      handshakeMachine.onMessage(TlsHandshakeType.clientHello, sent: true);
+      handshakeMachine.onMessage(TlsHandshakeType.serverHello, sent: false);
+      handshakeMachine.onMessage(
+        TlsHandshakeType.encryptedExtensions,
+        sent: false,
+      );
+
+      final handler = CryptoFrameHandler(
+        assembler: assembler,
+        handshakeMachine: handshakeMachine,
+      );
+
+      // A Certificate handshake message whose payload is too short to parse.
+      final malformedCert = Uint8List.fromList([
+        TlsHandshakeType.certificate.value,
+        0x00,
+        0x00,
+        0x01, // length: 1
+        0x00, // payload: only request_context_length, no certificates_length
+      ]);
+
+      final frame = CryptoFrame(offset: 0, data: malformedCert);
+      handler.onCryptoFrame(frame);
+
+      expect(handshakeMachine.hasFailed, isFalse);
+      expect(handler.peerCertificate, isNull);
+      expect(records, hasLength(1));
+      expect(records.first.level, Level.WARNING);
+      expect(records.first.message, contains('Certificate'));
+      expect(records.first.message, contains('TlsHandshakeType.certificate'));
+      expect(records.first.error, isNotNull);
+
+      // Handshake continues safely: the next expected message is accepted.
+      final verifyMessage = CertificateVerify(
+        signatureScheme: CertificateVerify.ed25519,
+        signature: Uint8List.fromList([4, 5, 6]),
+      );
+      final verifyBytes = verifyMessage.serialize();
+      final fullVerifyMessage = Uint8List(verifyBytes.length + 4);
+      fullVerifyMessage[0] = TlsHandshakeType.certificateVerify.value;
+      fullVerifyMessage[1] = (verifyBytes.length >> 16) & 0xff;
+      fullVerifyMessage[2] = (verifyBytes.length >> 8) & 0xff;
+      fullVerifyMessage[3] = verifyBytes.length & 0xff;
+      fullVerifyMessage.setRange(4, fullVerifyMessage.length, verifyBytes);
+
+      handler.onCryptoFrame(
+        CryptoFrame(offset: malformedCert.length, data: fullVerifyMessage),
+      );
+      expect(handshakeMachine.hasFailed, isFalse);
+      expect(handler.peerCertificateVerify, isNotNull);
+      expect(handshakeMachine.state,
+          state_machine.HandshakeState.clientWaitFinished);
     });
 
     test('forwards ClientHello to HandshakeCoordinator', () async {

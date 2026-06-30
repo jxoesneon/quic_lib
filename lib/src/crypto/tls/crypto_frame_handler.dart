@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:logging/logging.dart';
 import 'package:quic_lib/src/crypto/tls/certificate_message.dart';
 import 'package:quic_lib/src/crypto/tls/crypto_frame_assembler.dart';
 import 'package:quic_lib/src/crypto/tls/crypto_message_parser.dart';
@@ -8,6 +9,8 @@ import 'package:quic_lib/src/crypto/tls/handshake_coordinator.dart';
 import 'package:quic_lib/src/crypto/tls/handshake_state_machine.dart';
 import 'package:quic_lib/src/crypto/tls/tls_handshake_types.dart';
 import 'package:quic_lib/src/wire/frame.dart';
+
+final Logger _logger = Logger('CryptoFrameHandler');
 
 /// Receives CRYPTO frames, assembles them, and forwards parsed TLS handshake
 /// messages to the [HandshakeStateMachine].
@@ -71,8 +74,13 @@ class CryptoFrameHandler {
               _peerCertificate =
                   Uint8List.fromList(certMessage.entries.first.certData);
             }
-          } catch (_) {
-            // Ignore malformed certificate messages.
+          } catch (e, stackTrace) {
+            _logger.warning(
+              'Failed to parse TLS Certificate message '
+              '(handshake type: $type)',
+              e,
+              stackTrace,
+            );
           }
         } else if (type == TlsHandshakeType.certificateVerify) {
           _peerCertificateVerify = Uint8List.fromList(message);

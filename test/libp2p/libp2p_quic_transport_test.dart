@@ -1,14 +1,44 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:quic_lib/src/connection/connection_id_manager.dart';
+import 'package:quic_lib/src/connection/connection_state_machine.dart';
+import 'package:quic_lib/src/connection/congestion_control/congestion_controller.dart';
+import 'package:quic_lib/src/connection/quic_connection.dart';
 import 'package:quic_lib/src/crypto/crypto_backend.dart';
 import 'package:quic_lib/src/crypto/default_crypto_backend.dart';
+import 'package:quic_lib/src/crypto/tls/certificate_message.dart';
+import 'package:quic_lib/src/crypto/tls/crypto_frame_assembler.dart';
+import 'package:quic_lib/src/crypto/tls/handshake_state_machine.dart';
+import 'package:quic_lib/src/crypto/tls/tls_handshake_types.dart';
 import 'package:quic_lib/src/libp2p/libp2p_certificate_generator.dart';
 import 'package:quic_lib/src/libp2p/libp2p_quic_transport.dart';
 import 'package:quic_lib/src/libp2p/multiaddr.dart';
 import 'package:quic_lib/src/libp2p/multistream_select.dart';
 import 'package:quic_lib/src/libp2p/peer_id.dart';
+import 'package:quic_lib/src/recovery/congestion_controller.dart' as recovery;
+import 'package:quic_lib/src/recovery/loss_detector.dart';
+import 'package:quic_lib/src/recovery/packet_number_space.dart';
+import 'package:quic_lib/src/recovery/pto_scheduler.dart';
+import 'package:quic_lib/src/recovery/rtt_estimator.dart';
+import 'package:quic_lib/src/streams/stream_id.dart';
+import 'package:quic_lib/src/wire/frame.dart';
 import 'package:test/test.dart';
+
+QuicConnection _createQuicConnection() {
+  return QuicConnection(
+    stateMachine: ConnectionStateMachine(),
+    cidManager: ConnectionIdManager(),
+    pnSpaceManager: PacketNumberSpaceManager(),
+    rttEstimator: RttEstimator(),
+    lossDetector: LossDetector(),
+    ptoScheduler: PtoScheduler(RttEstimator()),
+    congestionController: recovery.CongestionController(),
+    streamIdAllocator: StreamIdAllocator(),
+    cryptoAssembler: CryptoFrameAssembler(),
+    handshakeMachine: HandshakeStateMachine(HandshakeRole.client),
+  );
+}
 
 void main() {
   group('Libp2pQuicTransport', () {
@@ -359,6 +389,83 @@ void main() {
       );
       expect(valid, isFalse);
     });
+
+    test(
+        'verifyPeerCertificateFromHandshake uses real QuicConnection peerCertificate',
+        () async {
+      final backend = DefaultCryptoBackend();
+      final hostKeyPair = await backend.ed25519GenerateKeyPair();
+      final hostPublicKey = await hostKeyPair.publicKey;
+      final expectedPeerId = await PeerId.fromPublicKey(hostPublicKey.bytes);
+
+      final generator = Libp2pCertificateGenerator(backend);
+      final chain = await generator.generate(
+        hostIdentityPrivateKey: await hostKeyPair.secretKey,
+        hostPublicKeyBytes: hostPublicKey.bytes,
+      );
+      final certInfo = chain.certs.first;
+      final certMessage = CertificateMessage(
+        entries: [
+          CertificateEntry(
+            certData: certInfo.rawBytes,
+            extensions: const [],
+          ),
+        ],
+      );
+      final certBytes = certMessage.serialize();
+      final fullMessage = Uint8List(certBytes.length + 4);
+      fullMessage[0] = TlsHandshakeType.certificate.value;
+      fullMessage[1] = (certBytes.length >> 16) & 0xff;
+      fullMessage[2] = (certBytes.length >> 8) & 0xff;
+      fullMessage[3] = certBytes.length & 0xff;
+      fullMessage.setRange(4, fullMessage.length, certBytes);
+
+      final quicConn = _createQuicConnection();
+      quicConn.stateMachine.transitionTo(ConnectionState.handshaking);
+      quicConn.handshakeMachine!.start();
+      quicConn.handshakeMachine!.onMessage(
+        TlsHandshakeType.clientHello,
+        sent: true,
+      );
+      quicConn.handshakeMachine!.onMessage(
+        TlsHandshakeType.serverHello,
+        sent: false,
+      );
+      quicConn.handshakeMachine!.onMessage(
+        TlsHandshakeType.encryptedExtensions,
+        sent: false,
+      );
+      quicConn.cryptoFrameHandler!.onCryptoFrame(
+        CryptoFrame(offset: 0, data: fullMessage),
+      );
+
+      expect(quicConn.peerCertificate, isNotNull);
+      expect(quicConn.peerCertificateVerify, isNull);
+
+      final conn = Libp2pQuicConnection(quicConn);
+      final valid = await conn.verifyPeerCertificateFromHandshake(
+        backend: backend,
+      );
+      expect(valid, isTrue);
+      expect(conn.peerId, equals(expectedPeerId));
+    });
+
+    test('verifyPeerCertificateFromHandshake catches dynamic access errors',
+        () async {
+      final backend = DefaultCryptoBackend();
+      final conn = Libp2pQuicConnection(_ThrowingPeerCertificate());
+      final valid = await conn.verifyPeerCertificateFromHandshake(
+        backend: backend,
+      );
+      expect(valid, isFalse);
+    });
+
+    test('negotiatedAlpn reads from real QuicConnection', () {
+      final quicConn = _createQuicConnection();
+      quicConn.negotiatedAlpn = 'libp2p';
+      final conn = Libp2pQuicConnection(quicConn);
+      expect(conn.negotiatedAlpn, equals('libp2p'));
+    });
   });
 }
 
@@ -377,6 +484,10 @@ class _FakeQuicConnectionWithAlpn {
 class _FakeQuicConnectionWithCertificate {
   final Uint8List? peerCertificate;
   _FakeQuicConnectionWithCertificate(this.peerCertificate);
+}
+
+class _ThrowingPeerCertificate {
+  Uint8List? get peerCertificate => throw StateError('no certificate');
 }
 
 class _FakeQuicConnectionForReadWrite {

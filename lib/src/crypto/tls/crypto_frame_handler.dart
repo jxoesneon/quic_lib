@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:quic_lib/src/crypto/tls/certificate_message.dart';
 import 'package:quic_lib/src/crypto/tls/crypto_frame_assembler.dart';
 import 'package:quic_lib/src/crypto/tls/crypto_message_parser.dart';
 import 'package:quic_lib/src/crypto/tls/handshake_coordinator.dart';
@@ -63,7 +64,16 @@ class CryptoFrameHandler {
           unawaited(_coordinator!.processClientHello(frame));
         }
         if (type == TlsHandshakeType.certificate) {
-          _peerCertificate = Uint8List.fromList(message);
+          try {
+            final parsed = parseMessage(message);
+            final certMessage = CertificateMessage.parse(parsed.payload);
+            if (certMessage.entries.isNotEmpty) {
+              _peerCertificate =
+                  Uint8List.fromList(certMessage.entries.first.certData);
+            }
+          } catch (_) {
+            // Ignore malformed certificate messages.
+          }
         } else if (type == TlsHandshakeType.certificateVerify) {
           _peerCertificateVerify = Uint8List.fromList(message);
         }

@@ -19,12 +19,12 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup Dart SDK
-        uses: dart-lang/setup-dart@65eb853643f5fc5646e3b1ce0934064b8b1a6f23 # v1.7.2
+        uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1.7.2
         with:
           sdk: stable
 
       - name: Cache pub dependencies
-        uses: actions/cache@1bd1e32a3bdc45362d1e1db2e1d916222352f7a2 # v4.3.0
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.pub-cache
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
@@ -95,12 +95,12 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup Dart SDK
-        uses: dart-lang/setup-dart@65eb853643f5fc5646e3b1ce0934064b8b1a6f23 # v1.7.2
+        uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1.7.2
         with:
           sdk: stable
 
       - name: Cache pub dependencies
-        uses: actions/cache@1bd1e32a3bdc45362d1e1db2e1d916222352f7a2 # v4.3.0
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.pub-cache
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}

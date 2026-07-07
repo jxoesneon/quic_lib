@@ -27,6 +27,8 @@ library;
 export 'src/webtransport/webtransport_session.dart' show WebTransportSession;
 export 'src/webtransport/webtransport_session_manager.dart'
     show WebTransportSessionManager;
+export 'src/webtransport/webtransport_flow_controller.dart'
+    show WebTransportFlowController;
 export 'src/webtransport/capsule_types.dart'
     show CapsuleType, Capsule, WebTransportCapsule;
 export 'src/webtransport/capsule_router.dart' show CapsuleRouter;

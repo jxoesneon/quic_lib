@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:quic_lib/src/logging/quic_logger.dart';
 import 'package:quic_lib/src/webtransport/capsule_types.dart';
 import 'package:quic_lib/src/webtransport/goaway_capsule.dart';
+import 'package:quic_lib/src/webtransport/webtransport_flow_controller.dart';
 import 'package:quic_lib/src/wire/varint.dart';
 
 /// Manages the state of a single WebTransport session over HTTP/3.
@@ -45,12 +46,26 @@ class WebTransportSession {
   bool _isDraining = false;
   bool _isClosed = false;
   bool _receivedGoaway = false;
+  late final WebTransportFlowController _flowController;
 
   /// Creates a WebTransport session identified by [sessionId].
   ///
   /// [sessionId] is the QUIC stream ID of the bidirectional control stream
-  /// on which capsules are exchanged.
-  WebTransportSession(this._sessionId);
+  /// on which capsules are exchanged. [initialSessionSendCredit] and
+  /// [initialSessionReceiveCredit] seed the session-level flow-control budgets
+  /// (see [WebTransportFlowController]); both default to a large value so that
+  /// sends are not artificially constrained absent explicit negotiation.
+  WebTransportSession(
+    this._sessionId, {
+    int initialSessionSendCredit = WebTransportFlowController.maxCredit,
+    int initialSessionReceiveCredit = WebTransportFlowController.maxCredit,
+  }) {
+    _flowController = WebTransportFlowController(
+      sessionId: _sessionId,
+      initialSessionSendCredit: initialSessionSendCredit,
+      initialSessionReceiveCredit: initialSessionReceiveCredit,
+    );
+  }
 
   /// The QUIC stream ID that serves as this session's identifier.
   ///
@@ -78,6 +93,12 @@ class WebTransportSession {
   /// A GOAWAY signals that the server will no longer accept new sessions.
   /// Existing sessions and streams may continue until they complete.
   bool get receivedGoaway => _receivedGoaway;
+
+  /// The flow controller enforcing session and stream credit limits.
+  ///
+  /// Callers may inspect [WebTransportFlowController.availableSessionSendCredit]
+  /// to determine how much data can be sent before a send would block.
+  WebTransportFlowController get flowController => _flowController;
 
   final List<Uint8List> _receivedDatagrams = [];
   final List<int> _registeredBidirectionalStreams = [];
@@ -107,7 +128,8 @@ class WebTransportSession {
   /// Handle an incoming WebTransportCapsule on the session's control stream.
   ///
   /// Routes the WebTransportCapsule to the appropriate internal state based on its type:
-  /// - [CapsuleType.datagram] — appends payload to [receivedDatagrams].
+  /// - [CapsuleType.datagram] — appends payload to [receivedDatagrams] and
+  ///   accounts the bytes against the receive credit via [flowController].
   /// - [CapsuleType.closeWebTransportSession] — marks [isClosed] true.
   /// - [CapsuleType.drainWebTransportSession] — marks [isDraining] true.
   /// - [CapsuleType.registerBidirectionalStream] — adds stream ID to
@@ -115,12 +137,22 @@ class WebTransportSession {
   /// - [CapsuleType.registerUnidirectionalStream] — adds stream ID to
   ///   [registeredUnidirectionalStreams].
   /// - [CapsuleType.goaway] — sets [receivedGoaway] true.
+  /// - [CapsuleType.webtransportMaxData],
+  ///   [CapsuleType.webtransportMaxStreamData], and
+  ///   [CapsuleType.drainCapabilities] — forwarded to [flowController] to
+  ///   update send credit.
   ///
   /// Unknown or extension capsules are silently ignored per RFC 9220.
   void onCapsuleReceived(WebTransportCapsule capsule) {
+    // Flow-control capsules are handled by the flow controller first.
+    if (_flowController.processCapsule(capsule)) {
+      return;
+    }
+
     switch (capsule.type) {
       case CapsuleType.datagram:
         _receivedDatagrams.add(Uint8List.fromList(capsule.payload));
+        _flowController.onDataReceived(capsule.payload.length);
       case CapsuleType.closeWebTransportSession:
         _isClosed = true;
         QuicLogger.log('WebTransportSession($_sessionId): received CLOSE');
@@ -188,11 +220,41 @@ class WebTransportSession {
   /// Send a datagram via a [WebTransportCapsule] of type [CapsuleType.datagram].
   ///
   /// Per RFC 9220 Section 5, the WebTransportCapsule payload carries the datagram.
+  ///
+  /// Flow control is enforced before the capsule is built: if the session-level
+  /// send credit is insufficient to cover [data.length], a [StateError] is
+  /// thrown. Inspect [flowController.availableSessionSendCredit] to avoid
+  /// blocking.
   WebTransportCapsule sendDatagram(Uint8List data) {
+    _flowController.send(data.length);
     return WebTransportCapsule(
       type: CapsuleType.datagram,
       payload: data,
     );
+  }
+
+  /// Send stream data via a [WebTransportCapsule] of type
+  /// [CapsuleType.datagram] tagged for [streamId].
+  ///
+  /// Both the session-level and per-stream send budgets are enforced; a
+  /// [StateError] is thrown when either is exhausted. Use
+  /// [flowController.availableStreamSendCredit] to check a stream's budget
+  /// before sending.
+  WebTransportCapsule sendStreamData(int streamId, Uint8List data) {
+    _flowController.send(data.length, streamId: streamId);
+    return WebTransportCapsule(
+      type: CapsuleType.datagram,
+      payload: data,
+    );
+  }
+
+  /// Build a `DRAIN_CAPABILITIES` capsule asking the peer to reduce its
+  /// session-level send credit to [newCredit] bytes.
+  ///
+  /// Delegates to [WebTransportFlowController.buildDrainCapabilitiesCapsule].
+  /// The caller must send the returned capsule on the session's control stream.
+  WebTransportCapsule drainCapabilities(int newCredit) {
+    return _flowController.buildDrainCapabilitiesCapsule(newCredit);
   }
 
   /// Send a GOAWAY WebTransportCapsule to signal that no new sessions will be accepted.

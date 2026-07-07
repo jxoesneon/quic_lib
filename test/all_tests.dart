@@ -26,6 +26,9 @@ import 'http3/server_push_test.dart' as server_push_test;
 // Interop tests
 import 'interop/interop_test.dart' as interop_test;
 
+// WebTransport tests
+import 'webtransport/flow_control_test.dart' as flow_control_test;
+
 void main() {
   hex_test.main();
   varint_test_cases_test.main();
@@ -35,5 +38,7 @@ void main() {
   crypto_backend_test.main();
   udp_rate_limiter_test.main();
   http3_e2e_test.main();
+  server_push_test.main();
   interop_test.main();
+  flow_control_test.main();
 }

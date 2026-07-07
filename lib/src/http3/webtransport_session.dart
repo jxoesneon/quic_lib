@@ -13,18 +13,28 @@ import 'http3_connection.dart';
 /// (sending capsules, datagrams, and streams on the underlying
 /// [Http3Connection]).
 class WebTransportSession {
+  /// The HTTP/3 connection carrying this session.
   final Http3Connection connection;
+
+  /// The session identifier, which equals the underlying QUIC stream ID.
   final int sessionId;
+
   final wt.WebTransportSession _state;
   final _incomingStreams = StreamController<Uint8List>.broadcast();
   final _datagrams = StreamController<Uint8List>.broadcast();
   bool _closed = false;
 
+  /// Creates a WebTransport session on [connection] identified by [sessionId].
   WebTransportSession(this.connection, this.sessionId)
       : _state = wt.WebTransportSession(sessionId);
 
+  /// Stream of incoming bidirectional streams opened by the peer.
   Stream<Uint8List> get incomingStreams => _incomingStreams.stream;
+
+  /// Stream of unreliable datagrams received from the peer.
   Stream<Uint8List> get datagrams => _datagrams.stream;
+
+  /// Whether this session has been closed locally or by the peer.
   bool get isClosed => _closed;
 
   /// Whether the peer has initiated a drain.

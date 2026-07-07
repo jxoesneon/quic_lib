@@ -75,12 +75,32 @@ class BbrCongestionController implements CongestionController {
   @override
   int get bytesInFlight => _bytesInFlight;
 
+  /// Records a sent packet and updates bytes-in-flight.
+  ///
+  /// [packetNumber] is used as the round-trip boundary marker: when an ACK
+  /// for a packet number ≥ [packetNumber] arrives, the current bandwidth-
+  /// estimation round is considered complete.
+  ///
+  /// [size] is the wire-format byte length of the sent packet including
+  /// headers and QUIC overhead.
   @override
   void onPacketSent(int packetNumber, int size) {
     _bytesInFlight += size;
     _roundStart = packetNumber;
   }
 
+  /// Processes an incoming ACK and advances the BBR state machine.
+  ///
+  /// This method:
+  /// 1. Reduces [bytesInFlight] by [newlyAckedBytes].
+  /// 2. Updates the bandwidth filter (bottleneck bandwidth estimate).
+  /// 3. Advances the round counter when [largestAcked] ≥ the round-start marker.
+  /// 4. Checks for STARTUP → DRAIN → PROBE_BW → PROBE_RTT state transitions.
+  /// 5. Recomputes the congestion window and pacing interval.
+  ///
+  /// [largestAcked] is the highest packet number confirmed by the ACK frame.
+  /// [newlyAckedBytes] is the total byte count of newly acknowledged packets.
+  /// [now] is the current wall-clock time used for RTprop and pacing updates.
   @override
   void onAckReceived(int largestAcked, int newlyAckedBytes, DateTime now) {
     _bytesInFlight = max(0, _bytesInFlight - newlyAckedBytes);
@@ -120,6 +140,17 @@ class BbrCongestionController implements CongestionController {
     _updatePacing(now);
   }
 
+  /// Records a packet loss event.
+  ///
+  /// BBR v1 does not treat individual packet loss as a congestion signal —
+  /// the bandwidth filter naturally converges to a lower value when packets
+  /// are lost. This method only updates [bytesInFlight]; no window reduction
+  /// is performed. BBR v2 (not yet implemented) would apply additional logic
+  /// here per the draft RFC.
+  ///
+  /// [packetNumber] identifies the lost packet (unused in v1).
+  /// [lostBytes] is the wire-format byte size of the lost packet.
+  /// [now] is the current wall-clock time (unused in v1).
   @override
   void onPacketLost(int packetNumber, int lostBytes, DateTime now) {
     _bytesInFlight = max(0, _bytesInFlight - lostBytes);
@@ -127,6 +158,14 @@ class BbrCongestionController implements CongestionController {
     // Loss handling is implicit via bandwidth estimation.
   }
 
+  /// Updates the minimum RTT estimate (RTprop) with a new sample.
+  ///
+  /// BBR tracks RTprop as the minimum RTT observed over a 10-second window
+  /// (the `ProbeRTT` interval). A lower RTprop triggers the PROBE_RTT state
+  /// which drains the queue to re-measure the true propagation delay.
+  ///
+  /// [rtt] is the latest round-trip time sample, typically derived from the
+  /// [RttEstimator].
   @override
   void onRttSample(Duration rtt) {
     final rttUs = rtt.inMicroseconds;
@@ -136,17 +175,39 @@ class BbrCongestionController implements CongestionController {
     }
   }
 
+  /// Notifies the controller that [count] packets were ECN CE-marked.
+  ///
+  /// BBR v1 ignores ECN Congestion Experienced (CE) marks because it derives
+  /// its congestion signal from bandwidth estimation rather than loss or
+  /// explicit marking. This method is a no-op for BBR v1.
+  ///
+  /// BBR v2 (draft RFC) would reduce the pacing rate on CE marks; that
+  /// behavior is not yet implemented.
   @override
   void onECNCEMarked(int count) {
     // BBR v1 does not use ECN. BBR v2 may incorporate ECN signals.
     // For now, treat as no-op per RFC 8382.
   }
 
+  /// Returns `true` if [bytes] can be sent without exceeding the congestion window.
+  ///
+  /// Checks that `bytesInFlight + bytes ≤ cwnd`. This is the primary back-
+  /// pressure signal: when [canSend] returns `false` the sender must pause
+  /// until ACKs reduce [bytesInFlight].
   @override
   bool canSend(int bytes) {
     return _bytesInFlight + bytes <= _cwnd * _packetSize;
   }
 
+  /// Resets all BBR state to the initial STARTUP condition.
+  ///
+  /// Clears the congestion window, bytes-in-flight, bandwidth filter,
+  /// RTprop estimate, round counters, and pacing interval. The controller
+  /// restarts in the [BbrState.startup] phase as if the connection had just
+  /// been established.
+  ///
+  /// This is typically called after a connection migration or when the
+  /// recovery subsystem needs to reset congestion state.
   @override
   void reset() {
     _cwnd = 4;
@@ -169,12 +230,28 @@ class BbrCongestionController implements CongestionController {
   @override
   bool get appLimited => false;
 
+  /// Marks whether the sender is application-limited.
+  ///
+  /// BBR v1 tracks application-limited periods implicitly through the delivery
+  /// rate calculation: when the application does not fully utilize the
+  /// congestion window the bandwidth samples are naturally lower. There is no
+  /// explicit state to toggle, so this method is a no-op for BBR v1.
+  ///
+  /// [limited] is `true` when the application cannot produce data fast enough
+  /// to fill the congestion window, and `false` otherwise.
   @override
   void setAppLimited(bool limited) {
     // BBR tracks app-limited implicitly via delivery rate.
     // No explicit state needed for v1.
   }
 
+  /// Handles a persistent congestion event (RFC 9002 Section 7.6).
+  ///
+  /// When the loss detector determines that the network is persistently
+  /// congested (i.e., all in-flight packets over a multi-PTO window are
+  /// lost), the congestion window is collapsed to the minimum of
+  /// `_bbrMinCwndPackets` and the state machine is reset to STARTUP so that
+  /// BBR can rediscover the available bandwidth.
   @override
   void onPersistentCongestion() {
     // BBR handles persistent congestion by bandwidth estimation.

@@ -1,64 +1,87 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
-import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:quic_lib/quic_lib.dart';
 
-/// Minimal QUIC echo server example.
+import 'echo_common.dart';
+
+/// QUIC echo server over loopback.
 ///
-/// Demonstrates binding an endpoint, polling active connections,
-/// registering each connection as an isolate (ADR-007), and listening for
-/// incoming data on the receive side of each stream.
-/// The full handshake-driven accept loop uses endpoint.connections
-/// once wired end-to-end.
+/// Listens on `127.0.0.1:12345`, waits for a single encrypted STREAM frame,
+/// and echoes the payload back to the sender on the same stream. The server
+/// uses deterministic application keys from [createEchoConnection] so the
+/// example can run without a full TLS handshake.
+///
+/// Run with:
+/// ```bash
+/// dart run example/echo_server.dart
+/// ```
+/// Then, in another terminal, run [echo_client.dart].
 Future<void> main() async {
-  // 1. Create a QuicEndpoint bound to 127.0.0.1:4433.
-  final endpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 4433);
+  final socket = await RawDatagramSocket.bind(
+      InternetAddress.loopbackIPv4, echoServerPort);
   print('QUIC echo server listening on '
-      '${endpoint.localAddress.address}:${endpoint.localPort}');
+      '${socket.address.address}:${socket.port}');
 
-  // 2. Handle graceful shutdown on Ctrl+C.
-  var running = true;
-  ProcessSignal.sigint.watch().listen((_) {
-    print('\nReceived shutdown signal, closing endpoint...');
-    running = false;
-    endpoint.close();
-  });
+  final connection = await createEchoConnection(role: EchoRole.server);
+  connection.stateMachine
+    ..transitionTo(ConnectionState.handshaking, reason: 'echo example')
+    ..transitionTo(ConnectionState.established, reason: 'echo example');
 
-  // 3. Poll active connections and demonstrate isolate-per-connection.
-  final registeredConnections = <QuicConnection>{};
-  while (running) {
-    await Future.delayed(const Duration(seconds: 1));
-    for (final conn in endpoint.activeConnections) {
-      if (!registeredConnections.contains(conn)) {
-        registeredConnections.add(conn);
-        final receivePort = ReceivePort();
-        final isolate = ConnectionIsolate(
-          connection: conn,
-          sendPort: receivePort.sendPort,
-          connectionId: 'conn-${conn.hashCode}',
-        );
-        isolate.start();
-        endpoint.isolateSupervisor.register(isolate);
-        print('Registered connection isolate. '
-            'Active isolates: ${endpoint.isolateSupervisor.count}');
-      }
-      print('Active connection: state=${conn.state}');
-      for (final stream in conn.streamManager.streams) {
-        if (stream is QuicReceiveStream) {
-          // Subscribe to incoming data on the receive side of the stream.
-          stream.incomingData.listen((data) {
-            print('  Stream ${stream.streamId} received ${data.length} bytes');
-            // In a full implementation, the server would echo the data back.
-            // For a bidirectional stream, that means writing to the matching
-            // send stream; for a unidirectional stream, the response would be
-            // sent on a new server-initiated unidirectional stream.
-          });
-        } else {
-          print('  Stream ${stream.streamId} — echo scaffold would reply here');
-        }
+  // Pre-create the receive stream and listen so data is not lost when the
+  // datagram is processed synchronously.
+  connection.streamManager.onStreamFrame(
+    StreamFrame(streamId: 0, data: Uint8List(0), fin: false, offset: 0),
+  );
+  final receiveStream =
+      connection.streamManager.getStream(0) as QuicReceiveStream;
+  final receivedChunks = <Uint8List>[];
+  receiveStream.incomingData.listen(receivedChunks.add);
+
+  InternetAddress? clientAddress;
+  int? clientPort;
+
+  final subscription = socket.listen((event) async {
+    if (event != RawSocketEvent.read) return;
+    final datagram = socket.receive();
+    if (datagram == null) return;
+
+    clientAddress = datagram.address;
+    clientPort = datagram.port;
+
+    // Yield so the synchronous RawDatagramSocket event dispatch completes
+    // before we run the async QUIC packet processing.
+    await Future.delayed(Duration.zero);
+    await connection.processEncryptedDatagram(datagram.data);
+
+    while (receivedChunks.isNotEmpty) {
+      final data = receivedChunks.removeAt(0);
+      if (data.isEmpty) continue;
+      final text = utf8.decode(data);
+      print('Received: $text');
+
+      final echo = await connection.buildEncryptedPacket(
+        space: PacketNumberSpace.application,
+        frames: [
+          StreamFrame(streamId: 0, data: data, fin: false, offset: 0),
+        ],
+        dcid: echoTestDcid,
+      );
+
+      if (clientAddress != null && clientPort != null) {
+        socket.send(echo, clientAddress!, clientPort!);
+        print('Echoed: $text');
       }
     }
-  }
+  });
 
+  print('Press Ctrl+C to stop.');
+  await ProcessSignal.sigint.watch().first;
+
+  await subscription.cancel();
+  socket.close();
+  connection.abort();
   print('Server stopped.');
 }

@@ -734,12 +734,26 @@ class QuicConnection {
     }
   }
 
-  /// Force-close the connection immediately.
+  /// Force-closes the connection without waiting for the peer to acknowledge.
+  ///
+  /// Immediately transitions the connection to [ConnectionState.closed],
+  /// bypassing the draining period used by [close]. Any in-flight packets are
+  /// discarded. Use this for error recovery or resource-constrained teardown
+  /// where latency is more important than clean shutdown.
+  ///
+  /// For a graceful close that allows the peer to receive a CONNECTION_CLOSE
+  /// frame, use [close] instead.
   void abort() {
     _stateMachine.transitionTo(ConnectionState.closed, reason: 'Abort');
   }
 
-  /// Allocate a packet number for the given space.
+  /// Allocates and returns the next packet number for [space].
+  ///
+  /// Each [PacketNumberSpace] maintains an independent, monotonically
+  /// increasing counter. This method consumes the next value and increments
+  /// the counter so subsequent calls return strictly larger numbers.
+  ///
+  /// See [PacketNumberSpaceManager.allocate] for the underlying implementation.
   int allocatePacketNumber(PacketNumberSpace space) =>
       _pnSpaceManager.allocate(space);
 
@@ -1384,17 +1398,35 @@ class QuicConnection {
     return _congestionController.canSend(bytes) && _antiAmpLimit.canSend(bytes);
   }
 
-  /// Record bytes received from the peer (for anti-amplification accounting).
+  /// Records [bytes] received from the peer for anti-amplification accounting.
+  ///
+  /// The QUIC anti-amplification limit (RFC 9000 Section 8.1) prevents an
+  /// endpoint from sending more than three times the number of bytes it has
+  /// received from an unvalidated address. Call this method each time a UDP
+  /// datagram arrives from the peer so the send budget is updated accordingly.
+  ///
+  /// See also [onBytesSent] and [validateAddress].
   void onBytesReceived(int bytes) {
     _antiAmpLimit.onBytesReceived(bytes);
   }
 
-  /// Record bytes sent to the peer (for anti-amplification accounting).
+  /// Records [bytes] sent to the peer for anti-amplification accounting.
+  ///
+  /// Tracking sent bytes ensures [canSend] correctly enforces the 3× anti-
+  /// amplification limit before the peer address is validated. This method
+  /// should be called by the packet-sending path after each UDP write.
+  ///
+  /// See also [onBytesReceived] and [validateAddress].
   void onBytesSent(int bytes) {
     _antiAmpLimit.onBytesSent(bytes);
   }
 
-  /// Mark the peer address as validated (removes anti-amplification limit).
+  /// Marks the peer address as validated, removing the anti-amplification limit.
+  ///
+  /// Address validation occurs when a PATH_RESPONSE frame matching a previously
+  /// sent PATH_CHALLENGE is received (RFC 9000 Section 8.2), or after a
+  /// successful handshake completes. Once validated, [canSend] no longer
+  /// enforces the 3× receive-to-send ratio and [sendBudget] becomes unlimited.
   void validateAddress() {
     _antiAmpLimit.validateAddress();
   }

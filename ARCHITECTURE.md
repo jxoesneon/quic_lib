@@ -1,7 +1,7 @@
 # quic_lib Architecture
 
-**Version:** 1.4.0  
-**Last updated:** 2026-06-29
+**Version:** 1.12.0  
+**Last updated:** 2026-07-07
 
 ---
 
@@ -10,26 +10,33 @@
 `quic_lib` is a pure-Dart implementation of QUIC (RFC 9000), HTTP/3 (RFC 9114), WebTransport (RFC 9220), and libp2p QUIC transport. It is organized as a set of loosely-coupled subsystems that are wired together at the connection level.
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         quic_lib                               │
-├─────────────┬─────────────┬─────────────┬─────────────────────┤
-│   HTTP/3    │ WebTransport│   libp2p    │      QUIC Core      │
-│   (RFC 9114)│  (RFC 9220) │             │     (RFC 9000)      │
-├─────────────┴─────────────┴─────────────┴─────────────────────┤
-│                       Recovery (RFC 9002)                     │
-│  LossDetector │ SentPacketTracker │ CongestionController      │
-│  RttEstimator │ PtoScheduler      │ AckGenerator              │
-├─────────────────────────────────────────────────────────────────┤
-│                       Crypto (RFC 9001)                       │
-│  TLS Handshake │ Key Derivation │ Packet Protection          │
-│  Header Protection │ Retry Integrity │ Initial Secrets         │
-├─────────────────────────────────────────────────────────────────┤
-│                       Wire Format                               │
-│  VarInt │ Packet Headers │ Frames │ Coalesced Packets         │
-├─────────────────────────────────────────────────────────────────┤
-│                         I/O                                     │
-│                    UdpSocket │ QuicEndpoint                    │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                             quic_lib                                 │
+├──────────────┬──────────────┬──────────────┬────────────────────────┤
+│    HTTP/3    │ WebTransport │    libp2p    │       QUIC Core        │
+│  (RFC 9114)  │  (RFC 9220)  │              │      (RFC 9000)        │
+├──────────────┴──────────────┴──────────────┴────────────────────────┤
+│                         Recovery (RFC 9002)                          │
+│  LossDetector │ SentPacketTracker │ CongestionController            │
+│  RttEstimator │ PtoScheduler      │ AckGenerator                    │
+│  AckFrequencyPolicy (RFC 9298) │ PacingTimer (RFC 9002 §7.7)        │
+├──────────────────────────────────────────────────────────────────────┤
+│               Congestion Control (pluggable)                         │
+│  CubicCongestionController │ BbrCongestionController                │
+│  Hystart (RFC 8312 Appendix B)                                       │
+├──────────────────────────────────────────────────────────────────────┤
+│                         Crypto (RFC 9001)                            │
+│  TLS Handshake │ Key Derivation │ Packet Protection                 │
+│  Header Protection │ Retry Integrity │ Initial Secrets              │
+│  RevocationParser │ RevocationPolicy │ KeyUpdate (RFC 9001 §6)      │
+│  Peer Certificate Capture                                            │
+├──────────────────────────────────────────────────────────────────────┤
+│                          Wire Format                                 │
+│  VarInt │ Packet Headers │ Frames │ Coalesced Packets               │
+├──────────────────────────────────────────────────────────────────────┤
+│                             I/O                                      │
+│                   UdpSocket │ QuicEndpoint                          │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -39,13 +46,16 @@
 | Directory | Purpose | Key Classes |
 |-----------|---------|-------------|
 | `lib/src/connection/` | Connection lifecycle, CID management, migration | `QuicConnection`, `ConnectionStateMachine`, `ConnectionIdManager`, `MigrationHelper` |
-| `lib/src/recovery/` | Loss detection, congestion control, RTT estimation | `LossDetector`, `CongestionController`, `RttEstimator`, `PtoScheduler`, `SentPacketTracker` |
+| `lib/src/connection/congestion_control/` | Pluggable congestion controllers | `CongestionController` (abstract), `CubicCongestionController`, `BbrCongestionController`, `Hystart` |
+| `lib/src/recovery/` | Loss detection, congestion, RTT, pacing, ACK policy | `LossDetector`, `RecoveryManager`, `RttEstimator`, `PtoScheduler`, `SentPacketTracker`, `AckGenerator`, `AckFrequencyPolicy`, `PacingTimer` |
 | `lib/src/streams/` | QUIC stream lifecycle and flow control | `StreamId`, `SendStateMachine`, `ReceiveStateMachine`, `ReassemblyBuffer`, `FlowController` |
-| `lib/src/crypto/` | TLS, key derivation, packet protection | `DefaultCryptoBackend`, `InitialSecrets`, `PacketProtector`, `HeaderProtection` |
-| `lib/src/wire/` | Packet and frame serialization | `VarInt`, `PacketHeader`, `FrameCodec`, `CoalescedPacket` |
-| `lib/src/http3/` | HTTP/3 frames and QPACK | `Http3Frame`, `Http3SettingsFrame`, `QpackEncoder` |
-| `lib/src/webtransport/` | WebTransport session and capsules | `WebTransportSession`, `Capsule` |
-| `lib/src/libp2p/` | Multiaddr and PeerId | `Multiaddr`, `PeerId`, `DCUtRMessage` |
+| `lib/src/crypto/` | TLS, key derivation, packet protection | `DefaultCryptoBackend`, `InitialSecrets`, `KeyManager` |
+| `lib/src/crypto/packet/` | Per-packet crypto primitives | `PacketProtector`, `HeaderProtection`, `KeyUpdate`, `ProtectedPacketCodec`, `SpaceKeys` |
+| `lib/src/crypto/tls/` | TLS handshake subsystem | `HandshakeCoordinator`, `HandshakeKeyExchange`, `CryptoFrameHandler`, `CryptoFrameAssembler`, `CertificateChain`, `CertificateVerifier`, `RevocationParser`, `RevocationPolicy`, `X509Parser` |
+| `lib/src/wire/` | Packet and frame serialization | `VarInt`, `PacketHeader`, `FrameCodec`, `CoalescedPacket`, `V2LongHeader` |
+| `lib/src/http3/` | HTTP/3 frames, QPACK, capsule protocol | `Http3Connection`, `Http3Frame`, `Http3SettingsFrame`, `QpackEncoder`, `QpackDecoder`, `QpackDynamicTable`, `QpackEncoderStream` (`EncoderInstruction`), `QpackDecoderStream` (`DecoderInstruction`), `Capsule` |
+| `lib/src/webtransport/` | WebTransport session and capsules | `WebTransportSession`, `WebTransportCapsule`, `CapsuleRouter`, `WebTransportSessionManager` |
+| `lib/src/libp2p/` | Multiaddr, PeerId, DCUtR, libp2p QUIC | `Multiaddr`, `PeerId`, `DCUtRMessage`, `Libp2pQuicTransport`, `Libp2pQuicConnection` |
 | `lib/src/io/` | UDP socket and endpoint | `UdpSocket`, `QuicEndpoint` |
 | `lib/src/security/` | Defensive utilities | `RateLimiter`, `AntiAmplificationLimit` |
 | `lib/src/logging/` | Logging abstraction | `QuicLogger` |
@@ -66,7 +76,7 @@ final conn = QuicConnection(
   rttEstimator: RttEstimator(),
   lossDetector: LossDetector(),
   ptoScheduler: PtoScheduler(RttEstimator()),
-  congestionController: CongestionController(),
+  congestionController: CubicCongestionController(), // or BbrCongestionController()
   streamIdAllocator: StreamIdAllocator(),
 );
 
@@ -81,56 +91,87 @@ if (conn.isPtoExpired(nowUs)) { conn.onPtoFired(nowUs); }
 
 // Address validation (clears anti-amplification limit)
 conn.onAddressValidated();
+
+// Peer certificate capture (available after TLS handshake)
+final rawCert = conn.peerCertificate;         // Uint8List?
+final certVerify = conn.peerCertificateVerify; // Uint8List?
 ```
 
-**Current status:** Subsystems are wired. `QuicConnection` now provides:
-- `buildPacket()` — builds and tracks outgoing packets via `PacketSender` + `RecoveryManager`
-- `processIncomingDatagram()` — splits coalesced packets, parses frames, dispatches to subsystems
-- Frame dispatch: CRYPTO → `CryptoFrameAssembler`, ACK → `RecoveryManager`, STREAM → `StreamManager`, CONNECTION_CLOSE → draining, HANDSHAKE_DONE → established
+**Current status:** All subsystems are wired and production-grade. `QuicConnection` provides:
+- `buildPacket()` / `buildEncryptedPacket()` — builds, encrypts, and tracks outgoing packets via `PacketSender` + `RecoveryManager`; pacing is enforced via `PacingTimer`
+- `processEncryptedDatagram()` — splits coalesced packets, decrypts (AEAD + header unprotection), parses frames, dispatches to subsystems
+- `processIncomingDatagram()` — plaintext path used in tests and pre-handshake contexts
+- Frame dispatch: CRYPTO → `CryptoFrameAssembler`, ACK → `RecoveryManager`, STREAM → `StreamManager`, CONNECTION_CLOSE → draining, HANDSHAKE_DONE → established, MAX_DATA/MAX_STREAM_DATA → `FlowController`, PATH_CHALLENGE/PATH_RESPONSE → `MigrationHelper`, NEW_CONNECTION_ID/RETIRE_CONNECTION_ID → `ConnectionIdManager`, ACK_FREQUENCY → `AckFrequencyPolicy`
+- Key phase bit monitoring: peer-initiated key updates (RFC 9001 §6.2) detected and forwarded to `KeyManager.onPeerKeyUpdateDetected()`
+- Congestion controller is pluggable via the `congestionController` setter
 
-### 2. Packet Pipeline (Partially Wired)
+### 2. Packet Pipeline
 
-The receive pipeline (plaintext frames — AEAD decryption is scaffolded for alpha.3):
+The receive pipeline (fully wired including AEAD):
 
 ```
 UdpSocket.incoming
   → CoalescedPacket.split (if coalesced)
   → PacketReceiver.processDatagram
-    → PacketReceiver.processPacket (header parse + frame parse)
+    → PacketReceiver.processPacket (header parse)
+    → ProtectedPacketCodec.unprotectAndDecrypt (header unprotection + AEAD)
     → QuicConnection._dispatchFrames
-      - CRYPTO → CryptoFrameAssembler → (pending: HandshakeStateMachine.onMessage)
+      - CRYPTO → CryptoFrameAssembler → HandshakeCoordinator.onMessage
       - STREAM → StreamManager → QuicStream.deliver
       - ACK → RecoveryManager.onAckReceived
       - CONNECTION_CLOSE → ConnectionStateMachine.transitionTo(draining)
-      - PATH_CHALLENGE / PATH_RESPONSE → MigrationHelper (pending)
-      - MAX_DATA / MAX_STREAM_DATA → FlowController (pending)
+      - PATH_CHALLENGE / PATH_RESPONSE → MigrationHelper
+      - MAX_DATA / MAX_STREAM_DATA → FlowController
+      - NEW_CONNECTION_ID / RETIRE_CONNECTION_ID → ConnectionIdManager
+      - ACK_FREQUENCY → AckFrequencyPolicy.processAckFrequencyFrame
+      - key phase change → KeyManager.onPeerKeyUpdateDetected
 ```
 
 The send pipeline:
 
 ```
-QuicConnection.buildPacket()
+QuicConnection.buildEncryptedPacket()
   → PacketSender.buildPacket (header + plaintext frames)
-  → (pending: PacketProtector.encrypt + HeaderProtection.apply)
+  → ProtectedPacketCodec.encryptAndProtect (AEAD + header protection)
+  → PacingTimer.timeUntilNextSend (enforce pacing interval)
   → RecoveryManager.onPacketSent (tracking)
+  → KeyManager.onPacketSent (key update confirmation)
 ```
 
-**Current status:** Frame dispatch is operational for CRYPTO, ACK, STREAM, CONNECTION_CLOSE, and HANDSHAKE_DONE. AEAD encryption/decryption and header protection removal are implemented as independent modules but not yet wired into the pipeline (alpha.3 target).
-
-### 3. Handshake Pipeline (Planned)
+### 3. Handshake Pipeline
 
 ```
 UdpSocket receives Initial packet
   → InitialSecrets.derive(DCID)
-  → PacketProtector.decrypt
+  → PacketProtector.decrypt + HeaderProtection.remove
   → FrameCodec.parse → CRYPTO frames
   → CryptoFrameAssembler.deliver
-  → TLS handshake messages → HandshakeStateMachine.onMessage
+  → HandshakeCoordinator.onMessage
+    → HandshakeKeyExchange (X25519 ephemeral keys)
+    → KeyManager.deriveHandshake() / .deriveApplication()
+    → CryptoFrameHandler → peer certificate extraction
+    → CertificateVerifier → CertificateChain.validateChain()
+    → RevocationParser → RevocationInfo (OCSP/CRL URLs extracted)
   → Handshake complete → ConnectionStateMachine.transitionTo(established)
   → Address validation → AntiAmplificationLimit.validateAddress()
 ```
 
-**Current status:** `InitialSecrets.derive`, `HandshakeStateMachine`, and `CryptoFrameAssembler` are all tested independently. Integration is pending.
+**Current status:** The full handshake pipeline is operational. `HandshakeCoordinator` processes ClientHello, ServerHello, EncryptedExtensions, Certificate, CertificateVerify, and Finished messages, derives all key epochs (Initial, Handshake, Application, 0-RTT), and discards superseded keys. Peer certificate bytes are captured from the TLS Certificate message and exposed via `QuicConnection.peerCertificate`.
+
+### 4. Key Update (RFC 9001 §6)
+
+```
+Peer sends 1-RTT packet with toggled key phase bit
+  → QuicConnection detects phase mismatch
+  → KeyManager.onPeerKeyUpdateDetected(packetNumber, keyPhase)
+    → derive new receive keys from current secret (proactive)
+    → reject non-monotonic / rollback attempts
+  → QuicConnection.onPacketSent (first 1-RTT send after detection)
+    → KeyManager.confirmKeyUpdate()
+    → schedule 3×PTO deadline for old-key discard
+```
+
+`KeyManager` also proactively derives next-generation send and receive keys ahead of time to avoid timing side-channels, reuses header protection keys across updates per RFC 9001 §5.4, and tracks confidentiality limits to initiate self-originated key updates (RFC 9001 §6.1).
 
 ---
 
@@ -148,6 +189,8 @@ All subsystems have been hardened through 7 audit loops (49 fixes):
 | **Amplification** | 3x anti-amplification limit before address validation |
 | **Timing** | Uniform error paths in crypto verification; no fast-path rejects |
 | **Info disclosure** | Generic error messages; toString() never dumps raw bytes |
+| **Capsule DoS** | Capsule payloads rejected above 1 MiB |
+| **Frame DoS** | DATAGRAM frames capped at 1 MiB |
 
 See `SECURITY_FIXES.md` for the complete list.
 
@@ -161,132 +204,104 @@ See `SECURITY_FIXES.md` for the complete list.
 | Custom frame types | Extend `FrameCodec.parse` switch statement |
 | HTTP/3 extensions | Add to `Http3FrameType` enum and parser |
 | New cipher suites | Add to `CipherSuite` enum and `DefaultCryptoBackend` |
+| Pluggable congestion controller | Implement `CongestionController`; assign via `QuicConnection.congestionController` |
 | Logging | Set `QuicLogger.setSink(yourHandler)` |
 
 ---
 
 ## Known Gaps
 
-### Completed in v0.5.0
+### Completed in v1.12.0
 
 | Gap | Status |
 |-----|--------|
-| Flow control frame handlers | **DONE** — `MAX_DATA`, `MAX_STREAM_DATA`, `MAX_STREAMS` wired in `_dispatchFrames`; `connectionFlowController` getter |
-| HTTP/3 SETTINGS | **DONE** — `Http3Connection.sendSettings()` returns default `Http3SettingsFrame`; `pendingSettings` getter |
-| PeerId encoding | **DONE** — `PeerId.encodeBase58()`/`decodeBase58()` and `encodeBase36()`/`decodeBase36()` |
-| Coverage gap closure | **DONE** — 57 coverage tests + 17 hardening tests for FrameCodec, PN spaces, streams, recovery, CID manager, anti-amplification |
+| Peer certificate capture | **DONE** — `CryptoFrameHandler` extracts raw X.509 bytes from TLS Certificate messages; exposed as `QuicConnection.peerCertificate` and `QuicConnection.peerCertificateVerify` |
 
-### Completed in v0.4.0
+### Completed in v1.11.0
 
 | Gap | Status |
 |-----|--------|
-| TLS certificate chain verification | **DONE** — `CertificateInfo`, `CertificateChain`, `parseCertificate()` with validity checks; `CertificateVerifier` delegates to `CertificateChain.validateChain()` |
-| DCUtR real hole punching | **DONE** — `test/libp2p/dcutr_nat_traversal_test.dart` completes two-peer UDP hole punch over loopback; `test/libp2p/dcutr_full_handshake_test.dart` validates Initial → Retry → Initial-with-token flow |
-| 0-RTT early data | **DONE** — `QuicConnection.canSendZeroRtt`, `buildZeroRttPacket()` builds encrypted 0-RTT packets |
-| Connection ID rotation | **DONE** — `QuicConnection.generateNewConnectionIdFrame()`, `activeConnectionIdCount`; `_dispatchFrames` wires `NewConnectionIdFrame`/`RetireConnectionIdFrame` |
-| Flow control integration | **DONE** — `StreamManager` per-stream `FlowController` instances; `canSendOnStream()`, `updateSendWindow()` |
-| Congestion control integration | **DONE** — `QuicConnection.pacingCalculator`, `pacingDelayUs`, `shouldPacePackets`; RTT/CW updates from `onAckReceived()` |
+| Fuzz coverage gaps | **DONE** — 121 new fuzz/error-path tests for VarInt, frames, QPACK, X.509, PacketReceiver, HTTP/3 frames |
 
-### Completed in v0.3.0
+### Completed in v1.10.0
 
 | Gap | Status |
 |-----|--------|
-| DCUtR real NAT hole punching | **DONE** — `DCUtRUdpCoordinator` wires `DCUtRStateMachine` into `UdpSocket` with magic-prefixed datagrams |
-| 0-RTT resumption | **DONE** — `PacketNumberSpace.zeroRtt`, `KeyManager.deriveZeroRtt()`, `SessionTicketStore` with expiry and eviction |
-| Connection migration (full) | **DONE** — `QuicEndpoint.migrateConnection()`, `QuicConnection.onPathValidated()`, remote address tracking |
-| HTTP/3 body streaming | **DONE** — `Http3BodyStream` with chunk delivery/EOF, `Http3Connection.sendBody()`/`getBody()` |
-| TLS certificate verification | **DONE** — `CertificateVerifier` with `verifySignature()` dispatch and `verifyCertificateChain()` scaffold |
-| Retry token generation | **DONE** — `RetryTokenGenerator` with HMAC-SHA256, timestamp validation, and tamper detection |
+| `Capsule` → `WebTransportCapsule` rename | **DONE** — WebTransport class renamed to `WebTransportCapsule`; deprecated `Capsule` typedef retained for backwards compatibility |
 
-### Completed in v0.2.0
+### Completed in v1.9.0
 
 | Gap | Status |
 |-----|--------|
-| Real TLS handshake key exchange | **DONE** — `HandshakeKeyExchange` with X25519 ephemeral keys, shared secret, and TLS 1.3-style handshake secret derivation |
-| HTTP/3 full request/response | **DONE** — `Http3Request`/`Http3Response` with QPACK header encoding/decoding; `Http3Connection` sends requests and decodes responses |
-| WebTransport datagram support | **DONE** — `CapsuleType.datagram`, `DatagramCapsule`, `WebTransportSession.sendDatagram()`/`receivedDatagrams` |
-| Connection migration | **DONE** — `MigrationHelper` wired into `QuicConnection._dispatchFrames()`; `PATH_CHALLENGE`/`PATH_RESPONSE` validates paths |
+| Revocation extension parsing (Phase 1) | **DONE** — `RevocationParser` extracts OCSP and CRL URLs from X.509 AIA/CDP extensions; `RevocationPolicy` enum (`disabled`, `softFail`, `hardFail`) controls verifier behavior |
 
-### Completed in Beta.1
+### Completed in v1.7.0
 
 | Gap | Status |
 |-----|--------|
-| Packet number reconstruction | **DONE** — `PacketNumber.reconstruct()` per RFC 9000 §17.1 |
-| TLS message construction | **DONE** — `TlsMessageBuilder` produces structurally valid ClientHello, ServerHello, Finished |
-| HTTP/3 request/response lifecycle | **DONE** — `Http3Connection.sendRequest()` allocates streams; `onStreamFrame()` dispatches frames |
-| QPACK dynamic table | **DONE** — `QpackDynamicTable` with insertions, evictions, capacity management, and dynamic→static→literal encoding |
-| WebTransport stream bridging | **DONE** — `CapsuleRouter` routes capsules to `WebTransportSession` by stream ID |
-| DCUtR protocol orchestration | **DONE** — `DCUtRStateMachine` with dialer/listener state transitions |
+| QPACK dynamic streams (RFC 9204 §4.2) | **DONE** — `QpackEncoderStream` (`EncoderInstruction`) and `QpackDecoderStream` (`DecoderInstruction`) implement encoder/decoder stream instructions; `Http3Connection` opens QPACK unidirectional streams and flushes instructions |
 
-### Completed in Alpha.4
+### Completed in v1.6.0
 
 | Gap | Status |
 |-----|--------|
-| Full header protection round-trip | **DONE** — `ProtectedPacketCodec` handles encrypt+protect / unprotect+decrypt for LongHeader and ShortHeader |
-| Handshake message parsing | **DONE** — `CryptoMessageParser` reads TLS type + payload; `CryptoFrameHandler` wires to `HandshakeStateMachine` |
-| Handshake key transition | **DONE** — `KeyManager.deriveHandshake()` and `.deriveApplication()` with `.discardInitialKeys()` / `.discardHandshakeKeys()` |
-| `QuicEndpoint.connect` | **DONE** — Scaffolds `QuicConnection` with all subsystems, transitions to handshaking |
+| Pacing timer enforcement | **DONE** — `PacingTimer` wired into `QuicConnection.buildPacket`/`buildEncryptedPacket`; ACK-only packets exempt per RFC 9002 §7.7 |
 
-### Completed in Alpha.3
+### Completed in v1.5.0
 
 | Gap | Status |
 |-----|--------|
-| AEAD encryption in pipeline | **DONE** — `QuicConnection.buildEncryptedPacket()` encrypts + protects headers |
-| AEAD decryption in pipeline | **DONE** — `QuicConnection.processEncryptedDatagram()` decrypts + dispatches |
-| Initial key derivation | **DONE** — `KeyManager.deriveInitial()` derives keys from DCID |
-| Per-space key management | **DONE** — `PacketNumberSpaceKeys` holds `PacketProtector` + `HeaderProtection` |
+| Key update detection | **DONE** — Peer-initiated key updates detected via key phase bit; `KeyManager.onPeerKeyUpdateDetected()` derives new keys, rejects rollbacks, sets 3×PTO discard deadline |
 
-### Completed in Alpha.2
+### Completed in v1.4.0 – v1.4.2
 
 | Gap | Status |
 |-----|--------|
-| Frame dispatch pipeline | **DONE** — `QuicConnection.processIncomingDatagram()` + `_dispatchFrames()` |
-| Stream manager | **DONE** — `StreamManager` routes STREAM frames to `QuicStream` instances |
-| Recovery manager coordination | **DONE** — `RecoveryManager` integrated into `QuicConnection` |
-| Fuzz harness scaffold | **DONE** — `test/fuzz/fuzz_harness.dart` |
-| Benchmark harness scaffold | **DONE** — `test/benchmark/benchmark_harness.dart` |
+| BBR congestion controller | **DONE** — `BbrCongestionController` (RFC 8382); STARTUP/DRAIN/PROBE_BW/PROBE_RTT state machine |
+| Hystart++ | **DONE** — `Hystart` (RFC 8312 Appendix B); ACK-train and delay-based slow-start exit |
+| ACK frequency policy | **DONE** — `AckFrequencyPolicy` processes ACK_FREQUENCY frames (RFC 9298); threshold-based ACK triggering wired into `AckGenerator` |
 
-### Completed in v1.1.0
+### Completed in v1.1.0 – v1.3.0
 
 | Gap | Status |
 |-----|--------|
-| TLS transcript hash tracking | **DONE** — `TranscriptHash` maintains running SHA-256 of handshake messages; `HandshakeCoordinator` adds ClientHello to transcript |
-| HTTP/3 GOAWAY frame sending | **DONE** — `Http3Connection.close()` records `Http3GoawayFrame`; `lastAcceptedStreamId` tracks highest stream ID; `hasSentGoaway`/`sentGoawayFrames` |
-| QUIC v2 long header format | **DONE** — `V2LongHeader` implements RFC 9369 v2 first-byte encoding; serialize/parse round-trip for all packet types |
-| WebTransport GOAWAY capsule | **DONE** — `CapsuleType.goaway(0x1d)`, `GoawayCapsule`, `WebTransportSession.receivedGoaway`/`sendGoaway()` |
-| Production connection migration scaffold | **DONE** — `QuicEndpoint.rebindToAddress()` validates path and updates stored remote address after PATH_CHALLENGE/RESPONSE |
-| X.509 certificate parser scaffold | **DONE** — `X509Certificate` with TBSCertificate, signature, issuer, subject, validity; `parseX509()` validates DER tag; wired into `CertificateChain` and `CertificateVerifier` |
+| TLS transcript hash tracking | **DONE** — `TranscriptHash` maintains running SHA-256 of handshake messages |
+| HTTP/3 GOAWAY frame | **DONE** — `Http3Connection.close()` sends `Http3GoawayFrame` |
+| QUIC v2 long header format | **DONE** — `V2LongHeader` (RFC 9369); serialize/parse for all packet types |
+| WebTransport GOAWAY capsule | **DONE** — `GoawayCapsule`, `WebTransportSession.sendGoaway()` |
+| Production connection migration scaffold | **DONE** — `QuicEndpoint.rebindToAddress()` validates path after PATH_CHALLENGE/RESPONSE |
+| X.509 parser scaffold | **DONE** — `X509Certificate` parses DER; wired into `CertificateChain` and `CertificateVerifier` |
 
 ### Completed in v1.0.0
 
 | Gap | Status |
 |-----|--------|
-| PeerId encoding fully wired | **DONE** — `fromBase58()`/`toBase58()`/`toBase36()` delegate to implemented encode/decode; no `UnimplementedError` stubs remain |
-| HTTP/3 server push | **DONE** — `Http3PushPromiseFrame`, `Http3CancelPushFrame`, `registerPushPromise()`/`hasPushPromise()` in `Http3Connection` |
-| WebTransport bidirectional streams | **DONE** — `StreamCapsule` (bi/uni), `CapsuleType.registerBidirectionalStream`/`registerUnidirectionalStream`, `WebTransportSession` tracks registered streams |
-| Real TLS handshake | **DONE** — `HandshakeCoordinator` wires `HandshakeKeyExchange` into CRYPTO-frame pipeline; generates keys, processes ClientHello, derives handshake/application secrets; `CryptoFrameHandler` uses coordinator |
-| Connection migration with real address change | **DONE** — `QuicEndpoint.changeConnectionAddress()` performs full PATH_CHALLENGE/PATH_RESPONSE over UDP; `QuicConnection.probeNewPath()`/`isProbingPath`/`lastProbePacket` |
-| QUIC v2 support | **DONE** — `QuicVersions` v1/v2 constants, `PacketReceiver` accepts v2, `VersionNegotiation` includes v2 |
+| Real TLS 1.3 handshake | **DONE** — `HandshakeCoordinator` wires `HandshakeKeyExchange` into the CRYPTO-frame pipeline; derives Initial → Handshake → Application key epochs |
+| HTTP/3 server push | **DONE** — `Http3PushPromiseFrame`, `Http3CancelPushFrame`, `Http3Connection.registerPushPromise()` |
+| Real network address migration | **DONE** — `QuicEndpoint.changeConnectionAddress()` performs full PATH_CHALLENGE/RESPONSE over UDP |
 
-### Completed in v0.5.0
+### Completed in v0.5.0 and earlier
 
 | Gap | Status |
 |-----|--------|
-| Flow control frame handlers | **DONE** — `MAX_DATA`, `MAX_STREAM_DATA`, `MAX_STREAMS` wired in `_dispatchFrames`; `connectionFlowController` getter |
-| HTTP/3 SETTINGS | **DONE** — `Http3Connection.sendSettings()` returns default `Http3SettingsFrame`; `pendingSettings` getter |
-| PeerId encoding | **DONE** — `PeerId.encodeBase58()`/`decodeBase58()` and `encodeBase36()`/`decodeBase36()` |
-| Coverage gap closure | **DONE** — 57 coverage tests + 17 hardening tests for FrameCodec, PN spaces, streams, recovery, CID manager, anti-amplification |
+| Flow control frame handlers | **DONE** — `MAX_DATA`, `MAX_STREAM_DATA`, `MAX_STREAMS` wired in `_dispatchFrames` |
+| HTTP/3 SETTINGS | **DONE** — `Http3Connection.sendSettings()` |
+| PeerId encoding | **DONE** — `encodeBase58()`/`decodeBase58()`/`encodeBase36()`/`decodeBase36()` |
+| TLS certificate chain verification | **DONE** — `CertificateChain.validateChain()`, `CertificateVerifier` |
+| 0-RTT early data | **DONE** — `QuicConnection.buildZeroRttPacket()`, `canSendZeroRtt` |
+| Connection ID rotation | **DONE** — `NEW_CONNECTION_ID`/`RETIRE_CONNECTION_ID` wired |
+| AEAD in pipeline | **DONE** — `ProtectedPacketCodec` in both send and receive pipelines |
 
-### Remaining
+### Remaining (Deferred)
 
-| Gap | Impact | ETA |
-|-----|--------|-----|
-| Full ASN.1/DER parser | `X509Certificate` is a scaffold; needs real BER/DER parser for production X.509 | Post-v1.1 |
-| Production TLS 1.3 handshake | `HandshakeCoordinator` scaffold needs transcript hash integration with Finished message, cert verification in handshake flow | Post-v1.1 |
-| HTTP/3 server push over network | `registerPushPromise()` scaffold needs actual stream transmission | Post-v1.1 |
-| Complete WebTransport spec | Bidirectional capsule types added; remaining spec features (flow control, pooling) | Post-v1.1 |
-| QUIC v2 full feature set | `V2LongHeader` format added; v2-specific frames and behaviors (e.g., new ACK format) | Post-v1.1 |
-| Real network address migration | `rebindToAddress()` is a scaffold; needs OS-level UDP socket rebind for production | Post-v1.1 |
+| Gap | Impact | Notes |
+|-----|--------|-------|
+| Full ASN.1/DER parser | `X509Certificate` uses the `asn1lib` and `x509` pub.dev packages for parsing; the internal `x509_parser.dart` scaffold provides a thin adapter layer | Post-v1.12 |
+| OCSP/CRL fetching and validation | `RevocationParser` extracts URLs (Phase 1 complete); actual HTTP fetch and CRL/OCSP response verification is not yet implemented; `RevocationPolicy.hardFail` should not be used in production until Phase 2 lands | Post-v1.12 |
+| HTTP/3 server push over network | `registerPushPromise()` tracks push state; actual stream transmission of the push response is scaffolded | Post-v1.12 |
+| Complete WebTransport spec | WebTransport flow-control capsules (`WtMaxStreamsCapsule`, etc.) are parsed and serialized; end-to-end WebTransport flow control enforcement is not yet wired | Post-v1.12 |
+| QUIC v2 full feature set | `V2LongHeader` format added; v2-specific ACK format changes and other v2 behaviors are not yet implemented | Post-v1.12 |
+| ECN (Explicit Congestion Notification) | Blocked on missing `IP_TOS`/`IPV6_TCLASS` socket options in Dart's `RawDatagramSocket`; deferred to v2.0.0 per ADR-001 | v2.0.0 |
 
 ---
 
@@ -295,12 +310,13 @@ See `SECURITY_FIXES.md` for the complete list.
 ```
 test/
   unit/           — Individual subsystem tests (per-class)
-  integration/    — Cross-subsystem tests (pending)
-  security/       — Hardening regression tests (36 fix suites)
-  fuzz/           — Chaos/fuzz tests (basic coverage)
+  integration/    — Cross-subsystem tests
+  security/       — Hardening regression tests (49 fix suites)
+  fuzz/           — Chaos/fuzz tests
   coverage/       — Coverage gap closure tests
+  benchmark/      — Benchmark harness scaffold
 ```
 
-**Current:** 1030 tests, ~96.28% line coverage.
+**Current:** 2188 tests, ~94.89% line coverage.
 
 **CI:** Run `dart test` and `dart analyze --fatal-infos` on every commit.

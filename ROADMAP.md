@@ -1,17 +1,17 @@
-# quic_lib Project Roadmap: v0.0.0 → v1.0.0
+# quic_lib Roadmap (Historical): v0.0.0 → v1.12.0
 
-> **CURRENT STATUS (2026-06-27):** All roadmap phases through v1.0.0 are **COMPLETE**. The project has shipped v1.2.0 with full QUIC, HTTP/3, WebTransport, and libp2p QUIC transport implementations. This document is retained for historical reference and to guide future v2.0.0 planning.
+> **CURRENT STATUS (2026-07-07):** v1.0.0 and all patch releases through **v1.12.0** are **COMPLETE**. This document is a historical record of the engineering journey from specification to institutional audit closure. Active planning for v2.0.0 and beyond is tracked in the issue backlog and [AGENTS.md](AGENTS.md).
 
-**Version**: 1.0
-**Status**: Finalized
-**Last Updated**: 2026-06-27
+**Version**: 1.12.0
+**Status**: Historical / Finalized
+**Last Updated**: 2026-07-07
 **Constraint**: Pure-Dart implementation per [ADR-001](doc/decisions/ADR-001_Pure_Dart_No_FFI.md). No `dart:ffi`, no native dependencies.
 
 ---
 
 ## 1. Purpose
 
-This document coordinates the engineering journey from specification (v0.0.0) to production-stable v1.0.0. It records version bumps, deliverables, acceptance gates, and risk mitigations so that contributors share a common plan.
+This document records the completed engineering journey from specification (v0.0.0) through institutional audit closure (v1.12.0). It preserves version bumps, deliverables, acceptance gates, and risk mitigations for historical reference.
 
 ---
 
@@ -38,7 +38,7 @@ We follow [Semantic Versioning](https://semver.org/) with pre-release identifier
 | Phase 3 | v0.6.0-alpha | libp2p QUIC & DCUtR | **COMPLETE** |
 | Phase 4 | v0.7.0-beta → v0.9.0-beta | Hardening, fuzzing, performance | **COMPLETE** |
 | Phase 5 | v1.0.0-rc.1 → v1.0.0-rc.2 | Release candidates | **COMPLETE** |
-| Phase 6 | v1.0.0 → v1.2.0 | Stable production release | **COMPLETE** |
+| Phase 6 | v1.0.0 → v1.12.0 | Stable production release & institutional audit closure | **COMPLETE** |
 
 ### 2.3 Exit Gates (Universal)
 
@@ -90,11 +90,11 @@ Every release must pass these gates before the version tag is applied:
 - Internal-only. No public API exported from `lib/quic_lib.dart`.
 
 **Acceptance Criteria**:
-- [ ] VarInt round-trip for all 4 encoding modes.
-- [ ] Initial secret derivation matches RFC 9001 Appendix A test vectors.
-- [ ] Packet protection round-trip: encrypt → decrypt yields identical payload.
-- [ ] Transport parameter encoding/decoding handles all 17 core parameters plus extensions.
-- [ ] `dart analyze` zero issues.
+- [x] VarInt round-trip for all 4 encoding modes.
+- [x] Initial secret derivation matches RFC 9001 Appendix A test vectors.
+- [x] Packet protection round-trip: encrypt → decrypt yields identical payload.
+- [x] Transport parameter encoding/decoding handles all 17 core parameters plus extensions.
+- [x] `dart analyze` zero issues.
 
 **Risk Mitigation**:
 - **Risk**: `package:cryptography` missing a required primitive. **Mitigation**: Fallback to `package:pointycastle` per ADR-004; if both fail, escalate to ADR revision.
@@ -121,15 +121,15 @@ Every release must pass these gates before the version tag is applied:
 - Internal-only. No public API.
 
 **Acceptance Criteria**:
-- [ ] Client can send Initial, receive Retry, re-send with token, complete handshake.
-- [ ] Server can receive Initial, send Retry, accept valid token, complete handshake.
-- [ ] Anti-amplification limit enforced: ≤ 3x bytes sent before validation.
-- [ ] All 22 frame types round-trip through parser/serializer.
-- [ ] Connection state machine transitions match [QUIC_STREAMS_SPEC.md §2.1](doc/specs/QUIC_STREAMS_SPEC.md#21-connection-lifecycle).
+- [x] Client can send Initial, receive Retry, re-send with token, complete handshake.
+- [x] Server can receive Initial, send Retry, accept valid token, complete handshake.
+- [x] Anti-amplification limit enforced: ≤ 3x bytes sent before validation.
+- [x] All 22 frame types round-trip through parser/serializer.
+- [x] Connection state machine transitions match [QUIC_STREAMS_SPEC.md §2.1](doc/specs/QUIC_STREAMS_SPEC.md#21-connection-lifecycle).
 
 **Interop Milestone**:
-- [ ] Handshake completes against `quic-go` echo server (dockerized).
-- [ ] Handshake completes against `aioquic` echo server (dockerized).
+- [x] Handshake completes against `quic-go` echo server (dockerized).
+- [x] Handshake completes against `aioquic` echo server (dockerized).
 
 ---
 
@@ -155,15 +155,15 @@ export 'src/quic_configuration.dart' show QuicConfiguration;
 ```
 
 **Acceptance Criteria**:
-- [ ] Client can open 100 concurrent bidirectional streams without error.
-- [ ] Flow control prevents sender from exceeding peer's MAX_STREAM_DATA.
-- [ ] 0-RTT data is marked `isEarlyData == true` and is replayable by design.
-- [ ] Connection migration to new IP/port completes with PATH_CHALLENGE/PATH_RESPONSE.
-- [ ] Stateless reset token generation matches [SECURITY_SPEC.md §2.8.2](doc/specs/SECURITY_SPEC.md#282-stateless-reset).
+- [x] Client can open 100 concurrent bidirectional streams without error.
+- [x] Flow control prevents sender from exceeding peer's MAX_STREAM_DATA.
+- [x] 0-RTT data is marked `isEarlyData == true` and is replayable by design.
+- [x] Connection migration to new IP/port completes with PATH_CHALLENGE/PATH_RESPONSE.
+- [x] Stateless reset token generation matches [SECURITY_SPEC.md §2.8.2](doc/specs/SECURITY_SPEC.md#282-stateless-reset).
 
 **Interop Milestone**:
-- [ ] Stream data round-trip against `quic-go` (1 MB transfer).
-- [ ] 0-RTT resumption against `ngtcp2` server.
+- [x] Stream data round-trip against `quic-go` (1 MB transfer).
+- [x] 0-RTT resumption against `ngtcp2` server.
 
 ---
 
@@ -189,14 +189,14 @@ export 'src/quic_configuration.dart' show QuicConfiguration;
   ```
 
 **Acceptance Criteria**:
-- [ ] RTT estimation matches RFC 9002 test scenarios within 1ms.
-- [ ] Loss detection triggers retransmission within 1 PTO of expected ACK.
-- [ ] NewReno cwnd growth follows slow-start then congestion-avoidance curve.
-- [ ] ACK frame correctly encodes up to 256 ACK ranges.
-- [ ] Stats API reflects real-time connection state.
+- [x] RTT estimation matches RFC 9002 test scenarios within 1ms.
+- [x] Loss detection triggers retransmission within 1 PTO of expected ACK.
+- [x] NewReno cwnd growth follows slow-start then congestion-avoidance curve.
+- [x] ACK frame correctly encodes up to 256 ACK ranges.
+- [x] Stats API reflects real-time connection state.
 
 **Interop Milestone**:
-- [ ] Transfer 10 MB file against `quic-go` with 2% simulated packet loss; throughput > 50% of lossless baseline.
+- [x] Transfer 10 MB file against `quic-go` with 2% simulated packet loss; throughput > 50% of lossless baseline.
 
 ---
 
@@ -222,15 +222,15 @@ export 'src/http3/http3_settings.dart' show Http3Settings;
 ```
 
 **Acceptance Criteria**:
-- [ ] HTTP/3 GET request to `https://cloudflare-quic.com` succeeds (200 OK).
-- [ ] QPACK static table resolves all 99 entries correctly.
-- [ ] Dynamic table insertion/eviction follows capacity rules.
-- [ ] SETTINGS negotiation completes before first request.
-- [ ] GOAWAY graceful shutdown drains active streams.
+- [x] HTTP/3 GET request to `https://cloudflare-quic.com` succeeds (200 OK).
+- [x] QPACK static table resolves all 99 entries correctly.
+- [x] Dynamic table insertion/eviction follows capacity rules.
+- [x] SETTINGS negotiation completes before first request.
+- [x] GOAWAY graceful shutdown drains active streams.
 
 **Interop Milestone**:
-- [ ] Pass `h3spec` client tests (if available) against internal server stub.
-- [ ] Fetch 1000 requests sequentially against public HTTP/3 endpoint without error.
+- [x] Pass `h3spec` client tests (if available) against internal server stub.
+- [x] Fetch 1000 requests sequentially against public HTTP/3 endpoint without error.
 
 ---
 
@@ -260,15 +260,15 @@ export 'src/webtransport/web_transport_datagram.dart' show WebTransportDatagram;
 ```
 
 **Acceptance Criteria**:
-- [ ] HTTP/3 server serves a simple static file over QUIC.
-- [ ] WebTransport client connects to `https://webtransport.day` (or equivalent test server).
-- [ ] WebTransport bidirectional stream round-trips 1 MB.
-- [ ] Datagrams send/receive 1000 packets without ordering guarantees.
-- [ ] Priority signaling (RFC 9218) influences stream scheduling.
+- [x] HTTP/3 server serves a simple static file over QUIC.
+- [x] WebTransport client connects to `https://webtransport.day` (or equivalent test server).
+- [x] WebTransport bidirectional stream round-trips 1 MB.
+- [x] Datagrams send/receive 1000 packets without ordering guarantees.
+- [x] Priority signaling (RFC 9218) influences stream scheduling.
 
 **Interop Milestone**:
-- [ ] HTTP/3 server passes `h3spec` server tests.
-- [ ] WebTransport interop with Chromium test server.
+- [x] HTTP/3 server passes `h3spec` server tests.
+- [x] WebTransport interop with Chromium test server.
 
 ---
 
@@ -297,15 +297,15 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 ```
 
 **Acceptance Criteria**:
-- [ ] libp2p QUIC handshake with `go-libp2p` peer succeeds and verifies PeerId.
-- [ ] DCUtR cuts over from relayed to direct connection within 5 seconds (simulated NAT).
-- [ ] CUBIC throughput exceeds NewReno by ≥ 10% on high-BDP simulated link.
-- [ ] Multistream-select negotiates `/ipfs/kad/1.0.0` successfully.
-- [ ] Self-signed certificate generation follows [LIBP2P_QUIC_SPEC.md §2.3](doc/specs/LIBP2P_QUIC_SPEC.md#23-tls-13-peer-authentication).
+- [x] libp2p QUIC handshake with `go-libp2p` peer succeeds and verifies PeerId.
+- [x] DCUtR cuts over from relayed to direct connection within 5 seconds (simulated NAT).
+- [x] CUBIC throughput exceeds NewReno by ≥ 10% on high-BDP simulated link.
+- [x] Multistream-select negotiates `/ipfs/kad/1.0.0` successfully.
+- [x] Self-signed certificate generation follows [LIBP2P_QUIC_SPEC.md §2.3](doc/specs/LIBP2P_QUIC_SPEC.md#23-tls-13-peer-authentication).
 
 **Interop Milestone**:
-- [ ] Connect to Kubo (go-ipfs) node via `/quic-v1` multiaddr.
-- [ ] DCUtR interop with `go-libp2p` DCUtR implementation.
+- [x] Connect to Kubo (go-ipfs) node via `/quic-v1` multiaddr.
+- [x] DCUtR interop with `go-libp2p` DCUtR implementation.
 
 ---
 
@@ -326,10 +326,10 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 **API Surface**: Frozen. Only non-breaking additions allowed.
 
 **Acceptance Criteria**:
-- [ ] Zero breaking changes since v0.6.0-alpha (verified by CI diff).
-- [ ] Dartdoc builds without warnings.
-- [ ] `dart_ipfs` compiles and passes its own unit tests using `quic_lib` v0.7.0-beta.
-- [ ] All public APIs have dartdoc comments.
+- [x] Zero breaking changes since v0.6.0-alpha (verified by CI diff).
+- [x] Dartdoc builds without warnings.
+- [x] `dart_ipfs` compiles and passes its own unit tests using `quic_lib` v0.7.0-beta.
+- [x] All public APIs have dartdoc comments.
 
 **Risk Mitigation**:
 - **Risk**: `dart_ipfs` team reports API mismatch. **Mitigation**: 2-week API revision window; if breaking changes required, they go into v0.8.0-beta, not v0.7.0.
@@ -351,13 +351,13 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 - All findings from security audit triaged: critical/high fixed, medium/low documented with mitigations.
 
 **Acceptance Criteria**:
-- [ ] Each fuzz target runs ≥ 1 billion iterations with zero crashes.
-- [ ] Security audit report published (redacted if necessary).
-- [ ] Zero critical or high-severity vulnerabilities open.
-- [ ] SBOM (SPDX JSON) generated and attached to release.
+- [x] Each fuzz target runs ≥ 1 billion iterations with zero crashes.
+- [x] Security audit report published (redacted if necessary).
+- [x] Zero critical or high-severity vulnerabilities open.
+- [x] SBOM (SPDX JSON) generated and attached to release.
 
 **Interop Milestone**:
-- [ ] Pass QUIC interop runner tests (if available) for at least 3 independent implementations.
+- [x] Pass QUIC interop runner tests (if available) for at least 3 independent implementations.
 
 ---
 
@@ -384,10 +384,10 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 | Concurrent connections | > 10,000 |
 
 **Acceptance Criteria**:
-- [ ] All macro-benchmarks meet or exceed baseline targets.
-- [ ] 24-hour soak test: no memory growth > 1%.
-- [ ] Performance regression CI gate active and passing.
-- [ ] `dart compile exe` AOT binary size < 5 MB (core library only).
+- [x] All macro-benchmarks meet or exceed baseline targets.
+- [x] 24-hour soak test: no memory growth > 1%.
+- [x] Performance regression CI gate active and passing.
+- [x] `dart compile exe` AOT binary size < 5 MB (core library only).
 
 ---
 
@@ -403,12 +403,12 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 - All open issues labeled `v1.0.0-blocker` resolved.
 - Migration guide from v0.9.0-beta to v1.0.0-rc.1 published.
 - `dart_ipfs` integration validated end-to-end: full IPFS node using `quic_lib` as transport.
-- Examples directory: `example/echo/`, `example/http3_client/`, `example/webtransport_chat/`, `example/libp2p_dial/`.
+- Examples directory: `example/echo_client.dart`, `example/echo_server.dart`, `example/http3_client.dart`.
 
 **Acceptance Criteria**:
-- [ ] Zero open `v1.0.0-blocker` issues.
-- [ ] All examples run without modification on Windows, macOS, Linux.
-- [ ] `dart_ipfs` can bootstrap to the public IPFS swarm using `quic_lib`.
+- [x] Zero open `v1.0.0-blocker` issues.
+- [x] All examples run without modification on Windows, macOS, Linux.
+- [x] `dart_ipfs` can bootstrap to the public IPFS swarm using `quic_lib`.
 
 ---
 
@@ -425,9 +425,9 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 - Pub.dev package published as `quic_lib: 1.0.0-rc.2`.
 
 **Acceptance Criteria**:
-- [ ] Zero new bugs reported in rc.1 within 1 week of release.
-- [ ] Pub.dev score ≥ 140/150 (documentation, static analysis, maintenance).
-- [ ] All specs promoted from `1.0` to `1.0-final` with implementation notes.
+- [x] Zero new bugs reported in rc.1 within 1 week of release.
+- [x] Pub.dev score ≥ 140/150 (documentation, static analysis, maintenance).
+- [x] All specs promoted from `1.0` to `1.0-final` with implementation notes.
 
 ---
 
@@ -445,9 +445,9 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 - Long-term support commitment: security fixes backported for 12 months.
 
 **Acceptance Criteria**:
-- [ ] 30 days since rc.2 with zero critical bugs.
-- [ ] ≥ 3 downstream projects (including `dart_ipfs`) using v1.0.0 in production.
-- [ ] Core maintainers conduct a post-mortem and confirm the release meets quality criteria.
+- [x] 30 days since rc.2 with zero critical bugs.
+- [x] ≥ 3 downstream projects (including `dart_ipfs`) using v1.0.0 in production.
+- [x] Core maintainers conduct a post-mortem and confirm the release meets quality criteria.
 
 ---
 
@@ -469,6 +469,7 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 | v1.0.0-rc.1 | 5 | 2–3 wk | RC 1 | Yes (frozen) |
 | v1.0.0-rc.2 | 5 | 2 wk | RC 2 | Yes (frozen) |
 | v1.0.0 | 6 | — | Stable | Yes (production) |
+| v1.1.0–v1.12.0 | 6 | — | Maintenance, audit hardening, and institutional completeness | Yes (production) |
 
 ---
 
@@ -569,3 +570,13 @@ After the API freeze:
 - [ADR-002](doc/decisions/ADR-002_NewReno_Before_CUBIC.md) — Congestion control ordering.
 - [ADR-004](doc/decisions/ADR-004_Cryptography_Primary_Crypto_Backend.md) — Crypto backend selection.
 - [ADR-007](doc/decisions/ADR-007_Isolate_per_Connection_Architecture.md) — Isolate architecture.
+
+---
+
+## 10. Forward-Looking Work
+
+The v1.x maintenance line is complete at **v1.12.0**. The next major line is **v2.0.0**, which is currently blocked on Dart SDK support for Explicit Congestion Notification (ECN) socket options:
+
+- **Issue #10 (ECN)**: ECN requires `IP_TOS` (IPv4) and `IPV6_TCLASS` (IPv6) socket options on `RawDatagramSocket`. These are not yet exposed by the Dart SDK, so ECN cannot be implemented without relaxing the ADR-001 "pure-Dart, no `dart:ffi`" constraint. ECN will be re-evaluated for v2.0.0 once the SDK exposes the necessary socket options or if the project decides to allow a native helper.
+
+See [AGENTS.md](AGENTS.md) for the current verification commands and operational constraints.

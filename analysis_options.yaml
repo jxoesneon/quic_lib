@@ -8,9 +8,11 @@ analyzer:
     implicit-casts: false
     implicit-dynamic: false
   errors:
+    dead_code: warning
     missing_required_param: error
     missing_return: error
     invalid_assignment: warning
+    unused_import: warning
   exclude:
     - test/** # Allow looser types in tests while still enforcing recommended lints
 

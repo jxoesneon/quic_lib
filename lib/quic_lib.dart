@@ -65,7 +65,7 @@
 /// * `http3.dart` — HTTP/3 client and server.
 /// * `webtransport.dart` — WebTransport sessions.
 /// * `libp2p.dart` — libp2p QUIC transport.
-library quic_lib;
+library;
 
 // ---------------------------------------------------------------------------
 // Wire format exports

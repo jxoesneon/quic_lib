@@ -889,12 +889,12 @@ class QuicConnection {
       return true;
     }
     // Fallback to migration helper for probeNewPath compatibility.
-    final originalData =
-        (_migrationHelper as _QuicMigrationHelper).lookupChallenge(frame.data);
+    final concreteHelper = _migrationHelper as _QuicMigrationHelper;
+    final originalData = concreteHelper.lookupChallenge(frame.data);
     if (originalData != null) {
       final response = PathResponseFrame(data: originalData);
       if (_migrationHelper.onResponseReceived(response)) {
-        (_migrationHelper as _QuicMigrationHelper).removeChallenge(frame.data);
+        concreteHelper.removeChallenge(frame.data);
         onAddressValidated();
         onPathValidated();
         if (_probeCompleter != null && !_probeCompleter!.isCompleted) {

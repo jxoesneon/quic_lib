@@ -2,10 +2,9 @@ name: quic_lib
 description: >-
   A pure-Dart QUIC, HTTP/3, WebTransport, and libp2p transport stack.
 version: 1.12.0
-homepage: https://github.com/jxoesneon/quic_lib
 repository: https://github.com/jxoesneon/quic_lib
 issue_tracker: https://github.com/jxoesneon/quic_lib/issues
-documentation: https://github.com/jxoesneon/quic_lib/tree/main/doc
+documentation: https://pub.dev/documentation/quic_lib/latest/
 license: MIT
 
 topics:
@@ -16,7 +15,7 @@ topics:
   - libp2p
 
 environment:
-  sdk: ^3.0.0
+  sdk: ">=3.5.0 <4.0.0"
 
 dependencies:
   asn1lib: ^1.6.0
@@ -29,7 +28,7 @@ dependencies:
 dev_dependencies:
   benchmark: ^0.3.0
   coverage: ^1.15.1
-  lints: ^4.0.0
+  lints: ^6.0.0
   mocktail: ^1.0.0
   test: ^1.24.0
 
@@ -39,3 +38,5 @@ platforms:
   linux:
   macos:
   windows:
+  # web is intentionally excluded: this package uses dart:io UDP sockets
+  # (RawDatagramSocket) which are unavailable in browser environments.

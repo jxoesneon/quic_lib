@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.12.2] - 2026-07-07
+
+### Changed
+- Harden `analysis_options.yaml` by treating `unused_import` and `dead_code` as analyzer warnings.
+
+### Documentation
+- Add dartdoc to HTTP/3 capsule classes, QPACK encoder/decoder instructions, HTTP/3 frame classes, WebTransport session classes, and DCUtR message types.
+- Fix unresolved dartdoc references in `CryptoFrame` and `DCUtRUdpCoordinator`.
+- Raise pub.dev documentation coverage from 79.1% to 82.6%.
+
+### Fixed
+- Correct incorrect pinned GitHub Actions SHAs in `publish.yml` that caused the v1.12.1 publish workflow to fail on runner setup.
+
 ## [1.12.1] - 2026-07-07
 
 ### Added

@@ -98,12 +98,20 @@ class WebTransportSession {
 }
 
 /// Extended CONNECT request for WebTransport.
-/// Method: CONNECT, Protocol: :protocol = webtransport, :scheme, :authority, :path
+///
+/// Method: `CONNECT`, Protocol: `:protocol = webtransport`, plus `:scheme`,
+/// `:authority`, and `:path` pseudo-headers.
 class WebTransportConnectRequest {
+  /// The `:authority` pseudo-header (e.g., `"example.com"`).
   final String authority;
+
+  /// The `:path` pseudo-header (e.g., `"/session"`).
   final String path;
+
+  /// Optional `Origin` header value, if provided by the client.
   final String? origin;
 
+  /// Creates a WebTransport CONNECT request for [authority] and [path].
   WebTransportConnectRequest({
     required this.authority,
     required this.path,

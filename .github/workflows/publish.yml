@@ -110,5 +110,19 @@ jobs:
       - name: Install dependencies
         run: dart pub get
 
+      - name: Check if version already exists on pub.dev
+        id: pubdev
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Checking pub.dev for quic_lib version $VERSION..."
+          ALREADY_PUBLISHED=$(curl -s https://pub.dev/api/packages/quic_lib | python3 -c "import json,sys; v='${VERSION}'; print('true' if any(e.get('version')==v for e in json.load(sys.stdin).get('versions',[])) else 'false')")
+          echo "already_published=$ALREADY_PUBLISHED"
+          echo "already_published=$ALREADY_PUBLISHED" >> "$GITHUB_OUTPUT"
+
       - name: Publish to pub.dev
+        if: steps.pubdev.outputs.already_published != 'true'
         run: dart pub publish --force
+
+      - name: Skip publish (already on pub.dev)
+        if: steps.pubdev.outputs.already_published == 'true'
+        run: echo "quic_lib ${GITHUB_REF_NAME#v} is already on pub.dev; skipping publish."

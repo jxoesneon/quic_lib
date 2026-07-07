@@ -9,10 +9,12 @@
 
 ## Reporting a Vulnerability
 
-Please report security vulnerabilities via the repository's private vulnerability reporting feature on GitHub, or by emailing the maintainers directly.
+Please report security vulnerabilities privately. Do **not** open a public GitHub issue.
 
-- **GitHub**: Use the repository's Security > Advisories > Report a vulnerability
-- **Email**: security@quic-lib.dev (PGP key: https://quic-lib.dev/pgp-security.asc)
+- **Primary — GitHub Private Vulnerability Reporting**: Use the [Security Advisories page](https://github.com/jxoesneon/quic_lib/security/advisories/new) to submit a private vulnerability report. This is the preferred channel.
+- **Secondary — Email**: security@quic-lib.dev
+
+Please include a description of the issue, steps to reproduce, and any known impact. We will acknowledge receipt within 48 hours.
 
 ## Severity Levels
 

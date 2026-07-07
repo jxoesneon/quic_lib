@@ -8,6 +8,11 @@ class HeaderProtection {
   final List<int> _hpKey;
   final bool _isChaCha20;
 
+  /// Creates header protection for the given header-protection key.
+  ///
+  /// [hpKey] is the 16-byte AES key or 32-byte ChaCha20 key derived via HKDF.
+  /// [isChaCha20] selects ChaCha20-Poly1305 header protection when `true`,
+  /// otherwise AES-ECB header protection is used.
   HeaderProtection({
     required List<int> hpKey,
     required bool isChaCha20,

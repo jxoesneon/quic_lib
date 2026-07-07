@@ -41,6 +41,7 @@ class X509Certificate {
   /// extension value bytes (the OCTET STRING contents).
   final Map<String, List<int>> extensions;
 
+  /// Creates a parsed X.509 certificate value object.
   X509Certificate({
     required this.tbsCertificate,
     required this.signatureAlgorithm,

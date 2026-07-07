@@ -27,6 +27,13 @@ class NewSessionTicket {
   /// Optional extensions (commonly `early_data` for 0-RTT).
   final List<TlsExtension> extensions;
 
+  /// Creates a NewSessionTicket message.
+  ///
+  /// [ticketLifetime] is the ticket lifetime in seconds.
+  /// [ticketAgeAdd] is the random age-add value used to obfuscate ticket age.
+  /// [ticketNonce] is the per-ticket nonce used for PSK derivation.
+  /// [ticket] is the opaque ticket data.
+  /// [extensions] commonly contains the `early_data` extension for 0-RTT.
   NewSessionTicket({
     required this.ticketLifetime,
     required this.ticketAgeAdd,
@@ -35,6 +42,7 @@ class NewSessionTicket {
     this.extensions = const [],
   });
 
+  /// Serializes the ticket to bytes per RFC 8446 §4.6.1.
   Uint8List serialize() {
     final bb = BytesBuilder();
     // uint32 ticket_lifetime

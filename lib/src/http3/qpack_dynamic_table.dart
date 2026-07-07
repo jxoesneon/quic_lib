@@ -15,6 +15,7 @@ class QpackDynamicTable {
   final List<({String name, String value})> _entries = [];
   int _requiredInsertCount = 0;
 
+  /// Creates an empty dynamic table with the given [capacity].
   QpackDynamicTable({int capacity = 0}) : _capacity = capacity;
 
   /// Maximum capacity of the dynamic table in bytes.

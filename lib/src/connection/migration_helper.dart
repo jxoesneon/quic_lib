@@ -9,8 +9,14 @@ import 'package:quic_lib/src/wire/frame.dart';
 /// RFC 9000 Section 8.2: A path is considered validated when a PATH_RESPONSE
 /// frame is received that echoes the data sent in a PATH_CHALLENGE frame.
 class MigrationHelper {
+  /// Creates a migration helper with no validated paths.
+  MigrationHelper();
+
   // SECURITY: Limits to prevent memory exhaustion DoS.
+  /// Maximum number of pending PATH_CHALLENGE frames to retain.
   static const int maxPendingChallenges = 8;
+
+  /// Maximum number of validated paths to remember.
   static const int maxValidatedPaths = 16;
 
   /// Active path challenges: hex(challenge_data) → sent_time_us.

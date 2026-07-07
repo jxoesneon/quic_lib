@@ -2,6 +2,9 @@ import 'crypto_backend.dart';
 
 /// AES-128-GCM AEAD algorithm constants.
 class Aes128Gcm implements AeadAlgorithm {
+  /// Creates an AES-128-GCM algorithm descriptor.
+  const Aes128Gcm();
+
   @override
   String get name => 'AES-128-GCM';
 
@@ -17,6 +20,9 @@ class Aes128Gcm implements AeadAlgorithm {
 
 /// AES-256-GCM AEAD algorithm constants.
 class Aes256Gcm implements AeadAlgorithm {
+  /// Creates an AES-256-GCM algorithm descriptor.
+  const Aes256Gcm();
+
   @override
   String get name => 'AES-256-GCM';
 
@@ -32,6 +38,9 @@ class Aes256Gcm implements AeadAlgorithm {
 
 /// ChaCha20-Poly1305 AEAD algorithm constants.
 class ChaCha20Poly1305 implements AeadAlgorithm {
+  /// Creates a ChaCha20-Poly1305 algorithm descriptor.
+  const ChaCha20Poly1305();
+
   @override
   String get name => 'ChaCha20-Poly1305';
 
@@ -47,6 +56,9 @@ class ChaCha20Poly1305 implements AeadAlgorithm {
 
 /// SHA-256 hash algorithm constants.
 class Sha256 implements HashAlgorithm {
+  /// Creates a SHA-256 hash algorithm descriptor.
+  const Sha256();
+
   @override
   String get name => 'SHA-256';
 
@@ -56,6 +68,9 @@ class Sha256 implements HashAlgorithm {
 
 /// SHA-384 hash algorithm constants.
 class Sha384 implements HashAlgorithm {
+  /// Creates a SHA-384 hash algorithm descriptor.
+  const Sha384();
+
   @override
   String get name => 'SHA-384';
 

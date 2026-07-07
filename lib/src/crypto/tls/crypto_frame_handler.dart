@@ -25,6 +25,8 @@ class CryptoFrameHandler {
   /// Raw bytes of the peer's most recent TLS CertificateVerify message, if any.
   Uint8List? _peerCertificateVerify;
 
+  /// Creates a handler that assembles CRYPTO frames and forwards handshake
+  /// messages to [handshakeMachine].
   CryptoFrameHandler({
     required CryptoFrameAssembler assembler,
     required HandshakeStateMachine handshakeMachine,

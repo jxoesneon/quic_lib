@@ -20,6 +20,9 @@ import 'dart:typed_data';
 /// - [NewConnectionIdFrame] — carries the stateless reset token
 /// - RFC 9000 Section 10.3
 class StatelessResetGenerator {
+  /// Creates a stateless reset generator (all methods are static).
+  StatelessResetGenerator();
+
   static final Random _random = Random.secure();
 
   /// Generate a stateless reset packet.

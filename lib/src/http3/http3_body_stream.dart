@@ -13,6 +13,7 @@ class Http3BodyStream {
   final List<Uint8List> _bufferedChunks = [];
   bool _isComplete = false;
 
+  /// Creates a body stream with an empty buffer.
   Http3BodyStream()
       : _chunkController = StreamController<Uint8List>.broadcast();
 

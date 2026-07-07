@@ -6,6 +6,9 @@
 /// this interface allows custom schedulers to be injected into
 /// StreamManager.
 abstract class StreamScheduler {
+  /// Creates a stream scheduler (subclasses only; this class is abstract).
+  StreamScheduler();
+
   /// Select the next stream ID to process from [activeStreamIds].
   ///
   /// [activeStreamIds] is guaranteed to be non-empty.

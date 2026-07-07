@@ -40,6 +40,7 @@ enum Http3SettingsId {
   /// GREASE value for interoperability testing (0x1f * 2 + 0x21 = 0x5f).
   grease1(0x5f);
 
+  /// Wire value of the setting identifier.
   final int value;
   const Http3SettingsId(this.value);
 }
@@ -49,8 +50,13 @@ enum Http3SettingsId {
 /// RFC 9114 Section 7.2.4: the payload is a sequence of
 /// VarInt(identifier), VarInt(value) pairs.
 class Http3SettingsFrame {
+  /// Raw map of setting identifier values to setting values.
   final Map<int, int> settings;
 
+  /// Creates a SETTINGS frame.
+  ///
+  /// [settings] maps raw setting identifier values to their values.
+  /// Use [Http3SettingsFrame.from] for a typed convenience constructor.
   Http3SettingsFrame({this.settings = const {}});
 
   /// Serialize settings as a sequence of VarInt(id), VarInt(value) pairs.

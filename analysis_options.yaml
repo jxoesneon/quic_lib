@@ -117,3 +117,4 @@ linter:
     cancel_subscriptions: true
     close_sinks: true
     unnecessary_await_in_return: true
+    public_member_api_docs: true

@@ -15,15 +15,19 @@ import '../connection/quic_connection.dart';
 /// - Isolate -> Supervisor: `{ 'type': 'packet', 'data': Uint8List, ... }`
 /// - Isolate -> Supervisor: `{ 'type': 'close', 'connectionId': String }`
 class ConnectionIsolate {
+  /// The QUIC connection running inside this isolate.
   final QuicConnection connection;
 
   /// Port back to the supervisor isolate.
   final SendPort? sendPort;
+
+  /// Stable identifier for this connection.
   final String connectionId;
   final ReceivePort _receivePort = ReceivePort();
   StreamSubscription<dynamic>? _subscription;
   bool _running = false;
 
+  /// Creates an isolate-backed connection wrapper.
   ConnectionIsolate({
     required this.connection,
     required this.sendPort,

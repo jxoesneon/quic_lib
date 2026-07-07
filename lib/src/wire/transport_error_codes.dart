@@ -55,6 +55,7 @@ enum QuicTransportErrorCode {
   /// No viable path (0x10). No network path available to the peer.
   noViablePath(0x10);
 
+  /// Wire value of the transport error code.
   final int value;
   const QuicTransportErrorCode(this.value);
 
@@ -74,7 +75,10 @@ enum QuicTransportErrorCode {
 /// handler can catch this exception and emit a CONNECTION_CLOSE frame with
 /// [QuicTransportErrorCode.frameEncodingError].
 class FrameEncodingError implements Exception {
+  /// Description of the encoding error.
   final String message;
+
+  /// Creates a frame encoding error with [message].
   FrameEncodingError(this.message);
   @override
   String toString() => 'FrameEncodingError: $message';

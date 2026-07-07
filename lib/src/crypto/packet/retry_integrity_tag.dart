@@ -6,6 +6,9 @@ import 'package:quic_lib/src/crypto/initial_secrets.dart';
 
 /// QUIC Retry Integrity Tag computation and verification per RFC 9001 §5.8.
 class RetryIntegrityTag {
+  /// Creates a Retry integrity tag helper (all methods are static).
+  RetryIntegrityTag();
+
   /// QUIC v1 retry integrity key and nonce (RFC 9001 §5.8).
   static const List<int> retryKey = [
     0xbe,
@@ -25,6 +28,8 @@ class RetryIntegrityTag {
     0xc8,
     0x4e,
   ];
+
+  /// QUIC v1 retry integrity nonce (RFC 9001 §5.8).
   static const List<int> retryNonce = [
     0x46,
     0x15,

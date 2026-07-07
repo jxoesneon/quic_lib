@@ -1,17 +1,26 @@
 /// Opaque handle to a secret key.
 abstract class SecretKey {
+  /// Creates a secret key handle (subclasses only; this class is abstract).
+  SecretKey();
+
   /// Extracts the raw key bytes synchronously.
   List<int> extractSync();
 }
 
 /// Opaque handle to a public key.
 abstract class PublicKey {
+  /// Creates a public key handle (subclasses only; this class is abstract).
+  PublicKey();
+
   /// Raw public key bytes.
   List<int> get bytes;
 }
 
 /// Opaque handle to a key pair.
 abstract class KeyPair {
+  /// Creates a key pair handle (subclasses only; this class is abstract).
+  KeyPair();
+
   /// The secret (private) key.
   Future<SecretKey> get secretKey;
 
@@ -21,6 +30,9 @@ abstract class KeyPair {
 
 /// AEAD algorithm descriptor.
 abstract class AeadAlgorithm {
+  /// Creates an AEAD algorithm descriptor (subclasses only; this class is abstract).
+  AeadAlgorithm();
+
   /// Human-readable name, e.g. 'AES-128-GCM'.
   String get name;
 
@@ -36,6 +48,9 @@ abstract class AeadAlgorithm {
 
 /// Hash algorithm descriptor.
 abstract class HashAlgorithm {
+  /// Creates a hash algorithm descriptor (subclasses only; this class is abstract).
+  HashAlgorithm();
+
   /// Human-readable name, e.g. 'SHA-256'.
   String get name;
 
@@ -45,6 +60,9 @@ abstract class HashAlgorithm {
 
 /// Result of an AEAD encryption operation.
 abstract class AeadResult {
+  /// Creates an AEAD result (subclasses only; this class is abstract).
+  AeadResult();
+
   /// Ciphertext including the authentication tag.
   List<int> get ciphertext;
 
@@ -59,6 +77,9 @@ abstract class AeadResult {
 /// package:cryptography, package:pointycastle, and future backends without
 /// rewriting protocol logic.
 abstract class CryptoBackend {
+  /// Creates a crypto backend (subclasses only; this class is abstract).
+  CryptoBackend();
+
   /// Human-readable backend name (e.g. 'cryptography', 'pointycastle').
   String get name;
 

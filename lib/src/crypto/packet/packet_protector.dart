@@ -12,6 +12,14 @@ class PacketProtector {
   final SecretKey _key;
   final List<int> _iv;
 
+  /// Creates a packet protector for a single packet number space.
+  ///
+  /// [backend] provides the cryptographic primitives.
+  /// [aead] selects the AEAD algorithm (AES-128-GCM, AES-256-GCM, or
+  /// ChaCha20-Poly1305).
+  /// [key] is the packet protection key derived via HKDF.
+  /// [iv] is the initialization vector (nonce base) and must be exactly
+  /// `aead.nonceLength` bytes long.
   PacketProtector({
     required CryptoBackend backend,
     required AeadAlgorithm aead,

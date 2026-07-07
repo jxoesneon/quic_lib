@@ -3,11 +3,15 @@
 /// Tracks the number of calls within a time window and rejects
 /// calls that would exceed the configured maximum.
 class RateLimiter {
+  /// Maximum number of calls allowed within [windowMs].
   final int maxCalls;
+
+  /// Sliding window length in milliseconds.
   final int windowMs;
 
   final List<int> _timestamps = [];
 
+  /// Creates a rate limiter with the given [maxCalls] and [windowMs].
   RateLimiter({required this.maxCalls, required this.windowMs})
       : assert(maxCalls > 0),
         assert(windowMs > 0);

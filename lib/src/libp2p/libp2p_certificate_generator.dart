@@ -22,6 +22,7 @@ import 'libp2p_tls_extension.dart';
 class Libp2pCertificateGenerator {
   final CryptoBackend _backend;
 
+  /// Creates a generator that uses [backend] for cryptographic operations.
   Libp2pCertificateGenerator(this._backend);
 
   /// Creates an ephemeral certificate chain with the libp2p extension.

@@ -12,6 +12,11 @@ class PacingCalculator {
   /// Packet size in bytes (default 1200).
   final int packetSize;
 
+  /// Creates a pacing calculator.
+  ///
+  /// [smoothedRttUs] is the initial smoothed RTT in microseconds.
+  /// [congestionWindow] is the initial congestion window in bytes.
+  /// [packetSize] is the maximum datagram size used for interval calculation.
   PacingCalculator({
     int smoothedRttUs = 333000,
     int congestionWindow = 2400,

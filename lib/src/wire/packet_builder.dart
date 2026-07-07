@@ -41,6 +41,9 @@ class PacketBuilder {
   /// that minimum because the AEAD tag adds additional bytes.
   static const int _minInitialPacketSize = 1200;
 
+  /// Builds a complete QUIC packet from [header] and [frames].
+  ///
+  /// Automatically pads client Initial packets to the RFC 9000 minimum size.
   static Future<Uint8List> build(
       PacketHeader header, List<Frame> frames) async {
     final packet = await _buildOnce(header, frames);

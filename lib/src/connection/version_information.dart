@@ -11,10 +11,20 @@ import 'dart:typed_data';
 /// }
 /// ```
 class VersionInformation {
+  /// The QUIC version selected for this connection.
   final int chosenVersion;
+
+  /// Versions the endpoint is willing and able to negotiate.
   final List<int> availableVersions;
+
+  /// Additional versions included for greasing or future negotiation.
   final List<int> otherVersions;
 
+  /// Creates version information for the transport parameter.
+  ///
+  /// [chosenVersion] is the negotiated QUIC version.
+  /// [availableVersions] lists versions the endpoint supports.
+  /// [otherVersions] may contain reserved/greased versions.
   VersionInformation({
     required this.chosenVersion,
     required this.availableVersions,

@@ -10,9 +10,13 @@ import 'package:quic_lib/src/wire/varint.dart';
 ///   plaintext packet → split header/payload → AEAD encrypt → apply header mask
 ///   protected packet → remove header mask → AEAD decrypt → parse frames
 class ProtectedPacketCodec {
+  /// Packet protection keys for the target packet number space.
   final PacketNumberSpaceKeys keys;
+
+  /// Expected destination connection ID length for short-header packets.
   final int destinationConnectionIdLength;
 
+  /// Creates a codec with [keys] and an optional [destinationConnectionIdLength].
   ProtectedPacketCodec({
     required this.keys,
     this.destinationConnectionIdLength = 8,
@@ -107,6 +111,8 @@ class ProtectedPacketCodec {
     }
   }
 
+  /// Removes header protection and decrypts a packet, returning the header,
+  /// parsed frames, and short-header key phase.
   Future<({Uint8List header, List<Frame> frames, int? keyPhase})?>
       unprotectAndDecrypt(
     Uint8List protectedPacket,

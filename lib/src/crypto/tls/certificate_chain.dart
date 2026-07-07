@@ -9,12 +9,25 @@ import 'package:quic_lib/src/libp2p/peer_id.dart';
 
 /// Parsed certificate metadata used for chain validation.
 class CertificateInfo {
+  /// Raw DER-encoded certificate bytes.
   final List<int> rawBytes;
+
+  /// Subject public key bytes extracted from the certificate.
   final List<int> subjectPublicKey;
+
+  /// Signature algorithm identifier (e.g., 'ed25519').
   final String algorithm;
+
+  /// Start of the certificate validity period.
   final DateTime notBefore;
+
+  /// End of the certificate validity period.
   final DateTime notAfter;
+
+  /// Certificate subject name.
   final String subjectName;
+
+  /// Certificate issuer name.
   final String issuerName;
 
   /// Revocation URLs extracted from the certificate's X.509 extensions.
@@ -23,6 +36,7 @@ class CertificateInfo {
   /// performed in Phase 1.
   final RevocationInfo revocationInfo;
 
+  /// Creates parsed certificate metadata.
   CertificateInfo({
     required this.rawBytes,
     required this.subjectPublicKey,
@@ -65,8 +79,10 @@ bool isSelfSigned(CertificateInfo cert) {
 
 /// A chain of certificates ordered from end-entity to root-adjacent.
 class CertificateChain {
+  /// Certificates ordered from end-entity to root-adjacent.
   final List<CertificateInfo> certs;
 
+  /// Creates a certificate chain from the parsed [certs].
   CertificateChain(this.certs);
 
   /// Validates the chain:

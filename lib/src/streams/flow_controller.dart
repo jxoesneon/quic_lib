@@ -1,6 +1,7 @@
 /// QUIC flow controller for connection-level and stream-level flow control.
 class FlowController {
   // SECURITY: Cap window to prevent unbounded growth / integer issues.
+  /// Maximum allowed flow-control window in bytes (256 MB).
   static const int maxWindow = 256 * 1024 * 1024; // 256 MB
 
   int _maxData;
@@ -8,6 +9,7 @@ class FlowController {
   int _advertisedLimit;
   int _nextLimit;
 
+  /// Creates a flow controller with the given [initialLimit].
   FlowController({required int initialLimit})
       : _maxData = initialLimit,
         _advertisedLimit = initialLimit,

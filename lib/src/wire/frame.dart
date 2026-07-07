@@ -5,7 +5,13 @@ import 'varint.dart';
 
 /// Base class for all QUIC frames.
 abstract class Frame {
+  /// Creates a frame (subclasses only; this class is abstract).
+  Frame();
+
+  /// The QUIC frame type identifier (RFC 9000 Section 19).
   int get frameType;
+
+  /// Serializes the frame to its on-the-wire bytes.
   Uint8List serialize();
 
   /// Whether this frame is ack-eliciting per RFC 9000 Table 3.
@@ -23,29 +29,76 @@ abstract class Frame {
 /// This enum is used for type-safe frame identification. Individual [Frame]
 /// implementations also expose their type via the [frameType] getter.
 enum FrameType {
+  /// PADDING frame.
   padding(0x00),
+
+  /// PING frame.
   ping(0x01),
+
+  /// ACK frame.
   ack(0x02),
+
+  /// ACK_ECN frame.
   ackEcn(0x03),
+
+  /// RESET_STREAM frame.
   resetStream(0x04),
+
+  /// STOP_SENDING frame.
   stopSending(0x05),
+
+  /// CRYPTO frame.
   crypto(0x06),
+
+  /// NEW_TOKEN frame.
   newToken(0x07),
+
+  /// STREAM frame.
   stream(0x08),
+
+  /// MAX_DATA frame.
   maxData(0x10),
+
+  /// MAX_STREAM_DATA frame.
   maxStreamData(0x11),
+
+  /// MAX_STREAMS frame.
   maxStreams(0x12),
+
+  /// DATA_BLOCKED frame.
   dataBlocked(0x14),
+
+  /// STREAM_DATA_BLOCKED frame.
   streamDataBlocked(0x15),
+
+  /// STREAMS_BLOCKED frame.
   streamsBlocked(0x16),
+
+  /// NEW_CONNECTION_ID frame.
   newConnectionId(0x18),
+
+  /// RETIRE_CONNECTION_ID frame.
   retireConnectionId(0x19),
+
+  /// PATH_CHALLENGE frame.
   pathChallenge(0x1a),
+
+  /// PATH_RESPONSE frame.
   pathResponse(0x1b),
+
+  /// CONNECTION_CLOSE frame.
   connectionClose(0x1c),
+
+  /// APPLICATION_CLOSE frame.
   applicationClose(0x1d),
+
+  /// HANDSHAKE_DONE frame.
   handshakeDone(0x1e),
+
+  /// DATAGRAM frame without explicit length.
   datagram(0x30),
+
+  /// DATAGRAM frame with explicit length.
   datagramWithLength(0x31),
 
   /// ACK_FREQUENCY frame (RFC 9298).
@@ -54,6 +107,7 @@ enum FrameType {
   /// frequency, reducing overhead on high-bandwidth or asymmetric paths.
   ackFrequency(0xaf);
 
+  /// Wire value of the frame type.
   final int value;
   const FrameType(this.value);
 }
@@ -112,10 +166,22 @@ class PingFrame extends Frame {
 // ---------------------------------------------------------------------------
 /// An ACK frame (RFC 9000 Section 19.3).
 class AckFrame extends Frame {
+  /// Largest packet number acknowledged by this frame.
   final int largestAcknowledged;
+
+  /// ACK delay in microseconds.
   final int ackDelay;
+
+  /// ACK ranges describing contiguous acknowledged packets.
   final List<AckRange> ackRanges;
 
+  /// Creates an ACK frame.
+  ///
+  /// [largestAcknowledged] is the highest packet number being ACKed.
+  /// [ackDelay] is the delay between receiving the largest acknowledged packet
+  /// and sending this ACK, in microseconds.
+  /// [ackRanges] lists any non-contiguous ranges; an empty list means all
+  /// packets up to [largestAcknowledged] are acknowledged.
   AckFrame({
     required this.largestAcknowledged,
     this.ackDelay = 0,
@@ -934,9 +1000,16 @@ class HandshakeDoneFrame extends Frame {
 /// - `0x30`: DATAGRAM with no length field (data extends to end of packet).
 /// - `0x31`: DATAGRAM with a length prefix (allows coalescing with other frames).
 class DatagramFrame extends Frame {
+  /// Opaque datagram payload.
   final Uint8List data;
+
+  /// Whether the frame includes an explicit length prefix.
   final bool hasLength;
 
+  /// Creates a DATAGRAM frame.
+  ///
+  /// [data] is the unreliable payload. [hasLength] selects frame type `0x31`
+  /// (length-prefixed) when `true`; otherwise type `0x30` is used.
   DatagramFrame({required this.data, this.hasLength = false});
 
   @override
@@ -978,11 +1051,19 @@ class DatagramFrame extends Frame {
 /// }
 /// ```
 class AckFrequencyFrame extends Frame {
+  /// Frame sequence number for detecting stale ACK_FREQUENCY frames.
   final int sequenceNumber;
+
+  /// Requested number of ack-eliciting packets between ACKs.
   final int requestedAckElicitingThreshold;
+
+  /// Requested maximum ACK delay in microseconds.
   final int requestedMaxAckDelay;
+
+  /// Reordering threshold for sending immediate ACKs.
   final int reorderingThreshold;
 
+  /// Creates an ACK_FREQUENCY frame (RFC 9298).
   AckFrequencyFrame({
     required this.sequenceNumber,
     required this.requestedAckElicitingThreshold,
@@ -1039,6 +1120,9 @@ class AckFrequencyFrame extends Frame {
 /// - [PacketProtector] — encrypts packets containing serialized frames.
 /// - RFC 9000 Section 19 — frame types and formats.
 class FrameCodec {
+  /// Creates a frame codec (all methods are static).
+  FrameCodec();
+
   /// Serialize a frame to bytes.
   static Uint8List serialize(Frame frame) => frame.serialize();
 

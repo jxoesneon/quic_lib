@@ -21,6 +21,7 @@ import 'dart:typed_data';
 /// - [MultiaddrComponent] — a single protocol/value pair inside a multiaddr.
 /// - [Libp2pQuicTransport] — the transport that uses these addresses.
 class Multiaddr {
+  /// Ordered protocol/value pairs composing this address.
   final List<MultiaddrComponent> components;
 
   /// Creates a [Multiaddr] from an explicit list of [components].
@@ -177,7 +178,10 @@ class Multiaddr {
 /// See also:
 /// - [Multiaddr] — the aggregate address composed of these components.
 class MultiaddrComponent {
+  /// Protocol name (e.g., `ip4`, `udp`, `quic-v1`).
   final String protocol;
+
+  /// Protocol value, or `null` if the protocol has no value.
   final String? value;
 
   /// Creates a [MultiaddrComponent] for [protocol] with an optional [value].

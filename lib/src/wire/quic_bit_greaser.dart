@@ -3,6 +3,9 @@ import 'dart:typed_data';
 
 /// Implements RFC 9287 greasing of the QUIC bit.
 class QuicBitGreaser {
+  /// Creates a QUIC bit greaser (all methods are static).
+  QuicBitGreaser();
+
   static final _random = Random.secure();
 
   /// Returns true approximately 50% of the time.

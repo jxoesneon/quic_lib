@@ -1,10 +1,16 @@
 /// QUIC RTT Estimator per RFC 9002 Section 5.
 class RttEstimator {
+  /// Initial RTT estimate in microseconds (333 ms per RFC 9002).
   static const int kInitialRttUs = 333000; // 333 ms
+
+  /// Timer granularity in microseconds (1 ms).
   static const int kGranularity = 1000; // 1 ms
 
   // SECURITY: Cap RTT and ACK delay to prevent unbounded BigInt growth.
+  /// Maximum allowed RTT sample in microseconds (60 seconds).
   static const int maxRttUs = 60000000; // 60 seconds
+
+  /// Maximum allowed ACK delay in microseconds (~16 seconds).
   static const int maxAckDelayUs = 16383 * 1000; // max QUIC ACK delay (~16s)
 
   int _smoothedRtt;
@@ -16,6 +22,7 @@ class RttEstimator {
   /// Maximum ACK delay from peer in microseconds.
   int _maxAckDelay;
 
+  /// Creates an RTT estimator with RFC 9002 default values.
   RttEstimator()
       : _smoothedRtt = kInitialRttUs,
         _rttVar = kInitialRttUs ~/ 2,

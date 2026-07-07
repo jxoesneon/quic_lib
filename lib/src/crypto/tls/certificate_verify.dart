@@ -14,12 +14,25 @@ import 'dart:typed_data';
 /// performed here.
 class CertificateVerify {
   // Common signature schemes (RFC 8446 Appendix B.3.1.3).
+  /// RSA PKCS#1 v1.5 with SHA-256.
   static const int rsaPkcs1Sha256 = 0x0401;
+
+  /// RSA PKCS#1 v1.5 with SHA-384.
   static const int rsaPkcs1Sha384 = 0x0501;
+
+  /// RSA-PSS with SHA-256.
   static const int rsaPssRsaeSha256 = 0x0804;
+
+  /// RSA-PSS with SHA-384.
   static const int rsaPssRsaeSha384 = 0x0805;
+
+  /// ECDSA with secp256r1 and SHA-256.
   static const int ecdsaSecp256r1Sha256 = 0x0403;
+
+  /// ECDSA with secp384r1 and SHA-384.
   static const int ecdsaSecp384r1Sha384 = 0x0503;
+
+  /// Ed25519 signature scheme.
   static const int ed25519 = 0x0807;
 
   /// Signature scheme (RFC 8446 Appendix B.3.1.3).
@@ -28,6 +41,10 @@ class CertificateVerify {
   /// The digital signature.
   final List<int> signature;
 
+  /// Creates a CertificateVerify message.
+  ///
+  /// [signatureScheme] is the RFC 8446 signature scheme identifier.
+  /// [signature] is the opaque signature bytes.
   CertificateVerify({required this.signatureScheme, required this.signature});
 
   /// Serialize: uint16 scheme + uint16 length + signature bytes

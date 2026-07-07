@@ -2,9 +2,17 @@ import 'dart:typed_data';
 
 /// Reassembles out-of-order STREAM frame data into contiguous byte sequences.
 class ReassemblyBuffer {
+  /// Creates an empty reassembly buffer.
+  ReassemblyBuffer();
+
   // SECURITY: Limits to prevent memory exhaustion DoS.
+  /// Maximum total buffered bytes.
   static const int maxBufferSize = 16 * 1024 * 1024; // 16 MB
+
+  /// Maximum offset gap between the read offset and a new fragment.
   static const int maxOffsetGap = 16 * 1024 * 1024; // 16 MB
+
+  /// Maximum number of buffered fragments.
   static const int maxFragmentCount = 1024;
 
   final Map<int, List<int>> _buffer = {};

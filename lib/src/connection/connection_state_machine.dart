@@ -39,6 +39,9 @@ enum ConnectionState {
 /// Throws [StateError] for invalid state transitions and emits state changes
 /// via [onStateChanged].
 class ConnectionStateMachine {
+  /// Creates a connection state machine starting in [ConnectionState.idle].
+  ConnectionStateMachine();
+
   // SECURITY: Rate limit state transitions to prevent CPU exhaustion.
   static const int _maxTransitionsPerSecond = 100;
   final RateLimiter _transitionLimiter = RateLimiter(
@@ -50,19 +53,33 @@ class ConnectionStateMachine {
   final StreamController<ConnectionState> _stateController =
       StreamController<ConnectionState>.broadcast();
 
+  /// Current connection lifecycle state.
   ConnectionState get state => _state;
 
+  /// `true` while the connection has not yet started handshaking.
   bool get isIdle => _state == ConnectionState.idle;
+
+  /// `true` while the TLS handshake and address validation are in progress.
   bool get isHandshaking => _state == ConnectionState.handshaking;
+
+  /// `true` once the handshake has completed and application data may flow.
   bool get isEstablished => _state == ConnectionState.established;
+
+  /// `true` after this endpoint has initiated a graceful close.
   bool get isClosing => _state == ConnectionState.closing;
+
+  /// `true` once the connection has fully terminated.
   bool get isClosed => _state == ConnectionState.closed;
+
+  /// `true` after a CONNECTION_CLOSE was received from the peer.
   bool get isDraining => _state == ConnectionState.draining;
 
+  /// `true` when the endpoint is allowed to send application data.
   bool get canSendData =>
       _state == ConnectionState.established ||
       _state == ConnectionState.closing;
 
+  /// `true` when the endpoint is allowed to receive application data.
   bool get canReceiveData =>
       _state == ConnectionState.established ||
       _state == ConnectionState.handshaking;

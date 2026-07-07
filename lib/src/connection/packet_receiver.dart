@@ -10,6 +10,7 @@ class PacketReceiver {
   PacketReceiver._();
 
   // SECURITY: Max frames per packet to prevent DoS via tiny frames.
+  /// Maximum number of frames that will be parsed from a single packet.
   static const int maxFramesPerPacket = 256;
 
   /// Process a raw UDP datagram, splitting coalesced packets if needed.

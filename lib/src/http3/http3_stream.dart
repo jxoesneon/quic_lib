@@ -51,9 +51,13 @@ enum StreamType {
 /// - Push stream: server-initiated unidirectional (type bits = 0x03)
 /// - Request stream: client-initiated bidirectional (type bits = 0x00)
 class Http3StreamHandler {
+  /// QUIC stream ID to classify.
   final int streamId;
+
+  /// `true` if this endpoint is the server.
   final bool isServer;
 
+  /// Creates a stream classifier for [streamId].
   Http3StreamHandler(this.streamId, {this.isServer = false});
 
   /// Determine the HTTP/3 stream type from the QUIC stream ID.

@@ -15,6 +15,7 @@ import 'helpers/test_with_logging_test.dart' as test_with_logging_test;
 
 // Subsystem tests
 import 'crypto/crypto_backend_test.dart' as crypto_backend_test;
+import 'io/udp_rate_limiter_test.dart' as udp_rate_limiter_test;
 
 void main() {
   hex_test.main();
@@ -23,4 +24,5 @@ void main() {
   mock_crypto_backend_test.main();
   test_with_logging_test.main();
   crypto_backend_test.main();
+  udp_rate_limiter_test.main();
 }

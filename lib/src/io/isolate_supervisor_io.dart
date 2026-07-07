@@ -13,6 +13,9 @@ import 'connection_isolate.dart';
 /// [SendPort]s so that the supervisor can push packets into the
 /// isolates without re-spawning them.
 class IsolateSupervisor {
+  /// Creates an empty isolate supervisor.
+  IsolateSupervisor();
+
   final Map<String, ConnectionIsolate> _isolates = {};
   final Map<String, SendPort> _isolatePorts = {};
 

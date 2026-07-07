@@ -15,6 +15,10 @@ class Http3PushPromiseFrame {
   /// The encoded field section, i.e., a QPACK-encoded header block.
   final List<int> encodedFieldSection;
 
+  /// Creates a PUSH_PROMISE frame payload.
+  ///
+  /// [pushId] is the Push ID reserved for the server push.
+  /// [encodedFieldSection] is the QPACK-encoded request headers.
   Http3PushPromiseFrame({
     required this.pushId,
     required this.encodedFieldSection,

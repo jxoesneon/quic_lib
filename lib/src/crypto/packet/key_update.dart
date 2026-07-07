@@ -4,6 +4,9 @@ import 'package:quic_lib/src/crypto/initial_secrets.dart';
 
 /// QUIC Key Update derivation per RFC 9001 Section 6.
 class KeyUpdate {
+  /// Creates a key update helper (all methods are static).
+  KeyUpdate();
+
   /// Derive the next-generation application traffic secret.
   ///
   /// application_traffic_secret_N+1 = HKDF-Expand-Label(

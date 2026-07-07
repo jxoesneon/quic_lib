@@ -104,9 +104,16 @@ class HandshakeStateMachine {
   /// The initial state is [HandshakeState.idle].
   HandshakeStateMachine(this._role);
 
+  /// Current handshake state.
   HandshakeState get state => _state;
+
+  /// `true` when the handshake has completed successfully.
   bool get isComplete => _state == HandshakeState.handshakeComplete;
+
+  /// `true` when the handshake has failed.
   bool get hasFailed => _state == HandshakeState.handshakeFailed;
+
+  /// `true` while the handshake is ongoing (neither complete nor failed).
   bool get inProgress => !isComplete && !hasFailed;
 
   /// Transitions from [HandshakeState.idle] to [HandshakeState.clientStart] (client) or [HandshakeState.serverStart] (server).

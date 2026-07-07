@@ -9,6 +9,7 @@ import '../recovery/sent_packet_tracker.dart';
 class PacketSender {
   PacketSender._();
 
+  /// Default maximum UDP payload size in bytes used when building packets.
   static const int maxUdpPayloadSize = 1200;
 
   /// Build a packet for a given space.

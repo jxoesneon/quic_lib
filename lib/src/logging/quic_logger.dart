@@ -7,6 +7,7 @@
 class QuicLogger {
   static void Function(String message) _sink = _defaultSink;
 
+  /// The current log sink.
   static void Function(String message) get sink => _sink;
 
   /// Replace the default sink with a custom handler.

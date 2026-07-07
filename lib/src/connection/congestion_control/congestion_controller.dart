@@ -3,6 +3,9 @@
 /// Implementations must track bytes in flight and compute a congestion window
 /// in bytes. All [size] and [bytes] parameters are in bytes.
 abstract class CongestionController {
+  /// Creates a congestion controller interface.
+  CongestionController();
+
   /// Current congestion window in bytes.
   int get congestionWindow;
 

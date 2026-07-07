@@ -5,6 +5,9 @@ import 'stream_scheduler.dart';
 /// Cycles through active stream IDs in ascending order, wrapping back to
 /// the smallest ID after reaching the largest.
 class RoundRobinScheduler implements StreamScheduler {
+  /// Creates a round-robin scheduler with no previous selection.
+  RoundRobinScheduler();
+
   int? _lastStreamId;
 
   @override

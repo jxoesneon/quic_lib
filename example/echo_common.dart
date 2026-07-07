@@ -1,5 +1,4 @@
 import 'package:quic_lib/quic_lib.dart';
-import 'package:quic_lib/src/crypto/tls/handshake_key_exchange.dart' as hke;
 
 /// Shared configuration for the loopback echo example.
 ///
@@ -32,9 +31,8 @@ enum EchoRole { client, server }
 /// the server so that the directional send/receive keys line up correctly.
 Future<QuicConnection> createEchoConnection({required EchoRole role}) async {
   final backend = DefaultCryptoBackend();
-  final handshakeRole = role == EchoRole.client
-      ? hke.HandshakeRole.client
-      : hke.HandshakeRole.server;
+  final handshakeRole =
+      role == EchoRole.client ? HandshakeRole.client : HandshakeRole.server;
   final keyManager = await KeyManager.forTestWithKeys(
     role: handshakeRole,
     backend: backend,

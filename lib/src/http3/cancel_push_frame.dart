@@ -11,6 +11,7 @@ class Http3CancelPushFrame {
   /// The Push ID to cancel.
   final int pushId;
 
+  /// Creates a CANCEL_PUSH frame payload for [pushId].
   Http3CancelPushFrame({required this.pushId});
 
   /// Serialize payload: VarInt(pushId)

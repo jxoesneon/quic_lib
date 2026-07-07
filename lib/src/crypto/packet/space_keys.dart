@@ -5,9 +5,13 @@ import 'packet_protector.dart';
 
 /// Holds the AEAD and header-protection keys for a single packet number space.
 class PacketNumberSpaceKeys {
+  /// AEAD packet protector for this packet number space.
   final PacketProtector protector;
+
+  /// Header protection algorithm for this packet number space.
   final HeaderProtection headerProtection;
 
+  /// Creates the key pair for a packet number space.
   PacketNumberSpaceKeys({
     required this.protector,
     required this.headerProtection,

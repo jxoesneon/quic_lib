@@ -6,6 +6,9 @@ import 'package:quic_lib/src/crypto/crypto_backend.dart';
 /// Provides key derivation from a PSK and transport-parameter checks
 /// per RFC 9001 Section 4.6 / RFC 8446.
 class ZeroRttHelper {
+  /// Creates a 0-RTT helper (all methods are static).
+  ZeroRttHelper();
+
   /// Derive 0-RTT keys from a PSK (pre-shared key).
   ///
   /// Uses HKDF-Expand-Label with "quic key", "quic iv", and "quic hp"

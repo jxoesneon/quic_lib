@@ -8,6 +8,9 @@ import 'package:quic_lib/src/crypto/crypto_backend.dart';
 /// implementation uses SHA-256 (the hash for TLS_AES_128_GCM_SHA256, the
 /// mandatory QUIC cipher suite).
 class KeyDerivation {
+  /// Creates a key derivation helper (all methods are static).
+  KeyDerivation();
+
   /// Derive key, IV, and header protection key from a traffic secret.
   ///
   /// Uses HKDF-Expand-Label per RFC 9001 §5.1:

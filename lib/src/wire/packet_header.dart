@@ -19,6 +19,9 @@ import 'varint.dart';
 /// - [PacketHeaderParser] — for parsing raw bytes into headers
 /// - RFC 9000 Section 17
 abstract class PacketHeader {
+  /// Creates a packet header (subclasses only; this class is abstract).
+  PacketHeader();
+
   /// The header form: 1 for long header, 0 for short header.
   int get headerForm;
 
@@ -379,6 +382,9 @@ class VersionNegotiationPacket implements PacketHeader {
 /// - [LongHeader] — parsed long header type
 /// - [ShortHeader] — parsed short header type
 class PacketHeaderParser {
+  /// Creates a packet header parser (all methods are static).
+  PacketHeaderParser();
+
   /// Parse a [PacketHeader] from raw [bytes].
   ///
   /// [destinationConnectionIdLength] is required for short-header packets

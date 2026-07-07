@@ -64,6 +64,10 @@ class BbrCongestionController implements CongestionController {
   // Delivery tracking for bandwidth estimation.
   int _delivered = 0;
 
+  /// Creates a BBR congestion controller.
+  ///
+  /// [packetSize] is the maximum datagram size in bytes used to translate
+  /// between packet counts and byte counts for the congestion window.
   BbrCongestionController({int packetSize = 1200}) : _packetSize = packetSize;
 
   // ---------------------------------------------------------------------------
@@ -406,20 +410,37 @@ class BbrCongestionController implements CongestionController {
   // ---------------------------------------------------------------------------
   // Exposed for testing
   // ---------------------------------------------------------------------------
+  /// Current BBR state-machine phase.
   BbrState get state => _state;
+
+  /// Estimated bottleneck bandwidth in bytes per second.
   double get btlBw => _btlBw;
+
+  /// Minimum observed round-trip time in microseconds (RTprop).
   int get minRttUs => _minRttUs;
+
+  /// Current congestion window in packets.
   int get cwndInPackets => _cwnd;
+
+  /// Current pacing interval in microseconds between packet bursts.
   int get pacingIntervalUs => _pacingIntervalUs;
 }
 
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
+/// BBR state-machine phases.
 enum BbrState {
+  /// Rapid bandwidth discovery with a high pacing gain.
   startup,
+
+  /// Drain the queue built during startup.
   drain,
+
+  /// Steady-state bandwidth probing.
   probeBw,
+
+  /// Periodically drain the queue to refresh the minimum RTT estimate.
   probeRtt,
 }
 

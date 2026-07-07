@@ -15,11 +15,23 @@ typedef ConnectionIdRecord = ({
 /// Implements the server-side (or endpoint-side) CID issuance and retirement
 /// logic described in RFC 9000 Section 19.15 and 19.16.
 class ConnectionIdManager {
+  /// Creates a connection ID manager with an empty registry.
+  ConnectionIdManager();
+
+  /// Maximum number of active Connection IDs per RFC 9000 limits.
   static const int maxActiveIds = 8;
+
+  /// Minimum allowed Connection ID length in bytes.
   static const int minConnectionIdLength = 8;
+
+  /// Maximum allowed Connection ID length in bytes.
   static const int maxConnectionIdLength = 20;
+
+  /// Length of a stateless reset token in bytes.
   static const int statelessResetTokenLength = 16;
+
   // SECURITY: Cap retired CID history to prevent unbounded growth.
+  /// Maximum number of retired Connection IDs to retain for duplicate detection.
   static const int maxRetiredIds = 32;
 
   final _random = Random.secure();

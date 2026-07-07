@@ -5,6 +5,7 @@ import 'crypto_backend.dart';
 class SimpleSecretKey implements SecretKey {
   final List<int> _bytes;
 
+  /// Creates an in-memory secret key wrapping the raw [bytes].
   SimpleSecretKey(this._bytes);
 
   @override
@@ -13,6 +14,9 @@ class SimpleSecretKey implements SecretKey {
 
 /// QUIC Initial Secret derivation per RFC 9001 Section 5.2.
 class InitialSecrets {
+  /// Creates an Initial secrets helper (all methods are static).
+  InitialSecrets();
+
   /// QUIC v1 fixed initial salt (RFC 9001 Section 5.2).
   static final List<int> initialSalt = [
     0x38,

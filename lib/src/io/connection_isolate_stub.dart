@@ -8,15 +8,19 @@ import '../connection/quic_connection.dart';
 /// Stub implementation for platforms without isolate support.
 /// Runs all connection processing synchronously in the main thread.
 class ConnectionIsolate {
+  /// The QUIC connection running inside this wrapper.
   final QuicConnection connection;
 
   /// Port back to the supervisor (ignored in stub).
   final dynamic sendPort;
+
+  /// Stable identifier for this connection.
   final String connectionId;
   final StreamController<dynamic> _controller = StreamController<dynamic>();
   StreamSubscription<dynamic>? _subscription;
   bool _running = false;
 
+  /// Creates a stub connection wrapper for platforms without isolate support.
   ConnectionIsolate({
     required this.connection,
     required this.sendPort,

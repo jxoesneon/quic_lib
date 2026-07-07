@@ -6,8 +6,10 @@ import 'package:quic_lib/src/wire/varint.dart';
 ///
 /// Datagram capsules have type 0x00 and carry an opaque payload.
 class DatagramCapsule {
+  /// Opaque datagram payload.
   final Uint8List payload;
 
+  /// Creates a datagram capsule carrying [payload].
   DatagramCapsule(this.payload);
 
   /// Serialize to bytes: VarInt(type) + payload.

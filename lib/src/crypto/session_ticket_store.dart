@@ -12,6 +12,10 @@ class _TicketEntry {
 /// SECURITY: Enforces a maximum of 100 tickets. When the store overflows,
 /// the oldest ticket (by insertion order) is evicted.
 class SessionTicketStore {
+  /// Creates an empty in-memory session ticket store.
+  SessionTicketStore();
+
+  /// Maximum number of tickets retained before oldest is evicted.
   static const int maxTickets = 100;
 
   final _tickets = <String, _TicketEntry>{};

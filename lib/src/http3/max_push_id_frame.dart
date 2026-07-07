@@ -11,6 +11,7 @@ class Http3MaxPushIdFrame {
   /// The maximum Push ID.
   final int pushId;
 
+  /// Creates a MAX_PUSH_ID frame with the given [pushId].
   Http3MaxPushIdFrame({required this.pushId});
 
   /// Serialize payload: VarInt(pushId)

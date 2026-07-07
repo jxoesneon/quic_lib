@@ -1,7 +1,12 @@
 /// A single entry in the QPACK static table.
 class QpackStaticTableEntry {
+  /// Header field name.
   final String name;
+
+  /// Header field value, or `null` for name-only entries.
   final String? value;
+
+  /// Creates a static table entry.
   const QpackStaticTableEntry(this.name, [this.value]);
 
   @override
@@ -10,6 +15,10 @@ class QpackStaticTableEntry {
 
 /// QPACK static table per RFC 9204 Appendix A.
 class QpackStaticTable {
+  /// Creates a QPACK static table helper (all members are static).
+  QpackStaticTable();
+
+  /// All static table entries in RFC 9204 Appendix A order.
   static const List<QpackStaticTableEntry> entries = [
     QpackStaticTableEntry(':authority'),
     QpackStaticTableEntry(':path', '/'),

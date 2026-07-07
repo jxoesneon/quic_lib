@@ -2,11 +2,9 @@ import 'package:quic_lib/src/crypto/cipher_suites.dart';
 import 'package:quic_lib/src/crypto/crypto_backend.dart';
 import 'package:quic_lib/src/crypto/initial_secrets.dart';
 
-/// Role of the endpoint in the TLS handshake.
-enum HandshakeRole {
-  client,
-  server,
-}
+import 'handshake_state_machine.dart' show HandshakeRole;
+
+export 'handshake_state_machine.dart' show HandshakeRole;
 
 /// TLS 1.3 handshake key exchange using X25519.
 ///
@@ -14,7 +12,10 @@ enum HandshakeRole {
 /// computation, and handshake/traffic secret derivation that occur during
 /// a TLS 1.3 key exchange per RFC 8446.
 class HandshakeKeyExchange {
+  /// Crypto backend used for key generation and HKDF operations.
   final CryptoBackend backend;
+
+  /// Role (client or server) for this handshake.
   final HandshakeRole role;
 
   SecretKey? _privateKey;

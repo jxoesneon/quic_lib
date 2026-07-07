@@ -18,6 +18,7 @@ class RevocationInfo {
   /// extension (OID 2.5.29.31).
   final List<Uri> crlUrls;
 
+  /// Creates revocation info with optional [ocspUrls] and [crlUrls].
   const RevocationInfo({this.ocspUrls = const [], this.crlUrls = const []});
 
   /// Returns `true` if no revocation pointers were found.

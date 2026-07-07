@@ -4,6 +4,9 @@ import 'dart:typed_data';
 ///
 /// nonce = iv XOR pad_left(packet_number, 12)
 class NonceGenerator {
+  /// Creates a nonce generator (all methods are static).
+  NonceGenerator();
+
   /// Build a 12-byte nonce from the IV and packet number.
   ///
   /// [iv] must be exactly 12 bytes.

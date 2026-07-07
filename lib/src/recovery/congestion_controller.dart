@@ -6,6 +6,9 @@ import 'package:quic_lib/src/connection/congestion_control/hystart.dart';
 ///
 /// Implements slow start, congestion avoidance, and recovery.
 class CongestionController implements cc.CongestionController {
+  /// Creates a NewReno congestion controller with the default initial window.
+  CongestionController();
+
   /// Initial congestion window in bytes (RFC 9002: 2 * max_datagram_size, default 1200).
   static const int initialWindow = 2400;
 

@@ -5,9 +5,14 @@ import 'package:quic_lib/src/wire/frame.dart';
 /// Assembles out-of-order CRYPTO frames into contiguous TLS message bytes.
 class CryptoFrameAssembler {
   // SECURITY: Limits to prevent memory exhaustion DoS via pathological CRYPTO frames.
+  /// Maximum buffered CRYPTO bytes before eviction.
   static const int maxBufferSize =
       4 * 1024 * 1024; // 4 MB for TLS handshake data
+
+  /// Maximum gap between current read offset and a new fragment.
   static const int maxOffsetGap = 4 * 1024 * 1024; // 4 MB
+
+  /// Maximum number of buffered CRYPTO fragments.
   static const int maxFragmentCount = 256;
 
   /// Buffer of received CRYPTO data, keyed by offset.

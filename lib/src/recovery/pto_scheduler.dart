@@ -9,6 +9,7 @@ class PtoScheduler {
   int _ptoCount = 0;
   int? _lastPtoTime;
 
+  /// Creates a PTO scheduler backed by the given [RttEstimator].
   PtoScheduler(this._rttEstimator);
 
   /// Compute the current PTO duration in microseconds.

@@ -50,6 +50,9 @@ enum SendStreamState {
 /// - [ReceiveStateMachine] — the corresponding receive-side state machine.
 /// - RFC 9000 Section 3.1 — QUIC stream states.
 class SendStateMachine {
+  /// Creates a send-side stream state machine in [SendStreamState.ready].
+  SendStateMachine();
+
   SendStreamState _state = SendStreamState.ready;
 
   /// The current state of the send side.

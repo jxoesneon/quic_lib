@@ -18,6 +18,9 @@ enum DCUtRState {
 
 /// Finite state machine that tracks DCUtR handshake progress.
 class DCUtRStateMachine {
+  /// Creates a DCUtR state machine in [DCUtRState.idle].
+  DCUtRStateMachine();
+
   DCUtRState _state = DCUtRState.idle;
 
   /// Current state of the DCUtR handshake.

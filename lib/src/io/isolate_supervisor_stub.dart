@@ -6,6 +6,9 @@ import 'connection_isolate.dart';
 ///
 /// Stub implementation for platforms without isolate support.
 class IsolateSupervisor {
+  /// Creates a stub isolate supervisor.
+  IsolateSupervisor();
+
   final Map<String, ConnectionIsolate> _isolates = {};
   final Map<String, dynamic> _isolatePorts = {};
 

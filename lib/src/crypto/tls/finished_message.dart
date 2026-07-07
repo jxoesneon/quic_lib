@@ -21,6 +21,7 @@ class FinishedMessage {
   /// The verify_data field. Length = Hash.length (32 for SHA-256, 48 for SHA-384).
   final List<int> verifyData;
 
+  /// Creates a Finished message with the given [verifyData].
   FinishedMessage({required this.verifyData});
 
   /// Serialize: uint8 array of verify_data field length, followed by verify_data.

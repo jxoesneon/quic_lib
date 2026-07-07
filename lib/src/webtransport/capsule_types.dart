@@ -5,19 +5,36 @@ import 'package:quic_lib/src/wire/varint.dart';
 
 /// Capsule types for WebTransport over HTTP/3 (RFC 9220).
 enum CapsuleType {
+  /// Unreliable datagram capsule.
   datagram(0x00),
+
+  /// Close WebTransport session capsule.
   closeWebTransportSession(0x2843),
+
+  /// Drain WebTransport session capsule.
   drainWebTransportSession(0x78ae),
+
+  /// Register a bidirectional stream capsule.
   registerBidirectionalStream(0x41),
+
+  /// Register a unidirectional stream capsule.
   registerUnidirectionalStream(0x42),
+
+  /// GOAWAY capsule.
   goaway(0x1d),
+
   // Extension capsules (GREASE)
+  /// Reserved GREASE capsule type.
   grease0(0x1b),
+
+  /// Reserved GREASE capsule type.
   grease1(0x2a);
 
+  /// Wire value of the capsule type.
   final int value;
   const CapsuleType(this.value);
 
+  /// Looks up a capsule type by its wire [value].
   static CapsuleType? fromValue(int value) {
     for (final type in values) {
       if (type.value == value) {
@@ -35,9 +52,13 @@ enum CapsuleType {
 /// name and were both exported from `quic_lib.dart`, causing a public API
 /// ambiguity. The WebTransport class is now named `WebTransportCapsule`.
 class WebTransportCapsule {
+  /// Capsule type.
   final CapsuleType type;
+
+  /// Capsule payload bytes.
   final List<int> payload;
 
+  /// Creates a WebTransport capsule of [type] carrying [payload].
   WebTransportCapsule({required this.type, required this.payload});
 
   /// Serialize: VarInt(type) + VarInt(length) + payload

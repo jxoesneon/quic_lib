@@ -8,6 +8,7 @@ import 'qpack_static_table.dart';
 /// QPACK field line encoder per RFC 9204 Section 4.3.
 /// Supports both static and dynamic table lookups.
 class QpackEncoder {
+  /// Creates an empty QPACK encoder with a zero-capacity dynamic table.
   QpackEncoder();
 
   /// Dynamic table for this encoder.
@@ -163,7 +164,9 @@ class QpackEncoder {
     return current > dynamicIndex + 1 ? current : dynamicIndex + 1;
   }
 
-  // Post-base indexed representation: 0000 + 4-bit prefix (Section 4.5.3)
+  /// Encodes a post-base indexed representation (RFC 9204 Section 4.5.3).
+  ///
+  /// [postBaseIndex] is the index relative to the dynamic table base.
   static Uint8List encodePostBaseIndexed(int postBaseIndex) {
     final encoded = QpackInteger.encode(postBaseIndex, 4);
     // First nibble must be 0000 — QpackInteger already writes the value into
@@ -171,7 +174,11 @@ class QpackEncoder {
     return encoded;
   }
 
-  // Post-base literal with name reference: 0001 + 4-bit prefix + value
+  /// Encodes a post-base literal with name reference
+  /// (RFC 9204 Section 4.5.5).
+  ///
+  /// [postBaseNameIndex] is the dynamic table name index relative to the base.
+  /// [value] is the literal header value to encode.
   static Uint8List encodePostBaseLiteralNameRef(
       int postBaseNameIndex, String value) {
     final builder = BytesBuilder();

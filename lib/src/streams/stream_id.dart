@@ -8,9 +8,19 @@
 ///   0b10 = client-initiated unidirectional
 ///   0b11 = server-initiated unidirectional
 class StreamId {
+  /// Creates a stream ID helper (all methods are static).
+  StreamId();
+
+  /// Client-initiated bidirectional stream type bits.
   static const int typeClientBidi = 0x00;
+
+  /// Server-initiated bidirectional stream type bits.
   static const int typeServerBidi = 0x01;
+
+  /// Client-initiated unidirectional stream type bits.
   static const int typeClientUni = 0x02;
+
+  /// Server-initiated unidirectional stream type bits.
   static const int typeServerUni = 0x03;
 
   /// Encode stream type and sequence into a stream ID.
@@ -69,12 +79,15 @@ class StreamId {
 
 /// Allocates stream IDs for each of the four QUIC stream categories.
 class StreamIdAllocator {
+  /// Creates a stream ID allocator with all sequence numbers at zero.
+  StreamIdAllocator();
+
   int _clientBidiNext = 0;
   int _serverBidiNext = 0;
   int _clientUniNext = 0;
   int _serverUniNext = 0;
 
-  /// Maximum stream ID allowed (2^62 - 1).
+  /// Maximum stream ID allowed (2^62 - 1) per RFC 9000.
   static const int maxStreamId = 4611686018427387903;
 
   /// Allocate the next client-initiated bidirectional stream ID.

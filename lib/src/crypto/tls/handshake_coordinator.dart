@@ -26,9 +26,15 @@ class _SimplePublicKey implements PublicKey {
 /// 4. Computes and verifies Finished messages.
 /// 5. Installs Handshake- and Application-space keys into a [KeyManager].
 class HandshakeCoordinator {
+  /// Crypto backend used for key derivation and signatures.
   final CryptoBackend backend;
+
+  /// Role (client or server) for this handshake.
   final HandshakeRole role;
+
+  /// Key manager where derived keys are installed.
   final KeyManager keyManager;
+
   final HandshakeKeyExchange _keyExchange;
   final TranscriptHash _transcriptHash;
 

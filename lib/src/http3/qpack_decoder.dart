@@ -7,9 +7,13 @@ import 'qpack_string.dart';
 
 /// A decoded QPACK field line.
 class QpackFieldLine {
+  /// Header field name.
   final String name;
+
+  /// Header field value.
   final String value;
 
+  /// Creates a field line with [name] and [value].
   const QpackFieldLine(this.name, this.value);
 
   @override
@@ -20,6 +24,7 @@ class QpackFieldLine {
 ///
 /// Supports both static and dynamic table lookups.
 class QpackDecoder {
+  /// Creates an empty QPACK decoder with an initial zero-capacity dynamic table.
   QpackDecoder();
 
   /// Dynamic table for this decoder.

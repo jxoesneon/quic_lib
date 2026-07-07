@@ -7,6 +7,9 @@ import 'package:quic_lib/src/webtransport/webtransport_session.dart';
 /// stream for which no session exists, a new [WebTransportSession] is
 /// created automatically.
 class CapsuleRouter {
+  /// Creates an empty capsule router.
+  CapsuleRouter();
+
   final Map<int, WebTransportSession> _sessions = {};
 
   /// Route a [capsule] received on the given [streamId].

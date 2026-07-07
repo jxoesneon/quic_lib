@@ -45,6 +45,7 @@ class AeadResultImpl implements AeadResult {
   @override
   final List<int> tag;
 
+  /// Creates an AEAD encryption result from [ciphertext] and authentication [tag].
   AeadResultImpl(this.ciphertext, this.tag);
 }
 
@@ -118,6 +119,9 @@ pc.RSAPublicKey _parseRsaPublicKey(List<int> bytes) {
 /// Default implementation of [CryptoBackend] using
 /// `package:cryptography` and `package:pointycastle`.
 class DefaultCryptoBackend implements CryptoBackend {
+  /// Creates the default crypto backend backed by `package:cryptography`.
+  DefaultCryptoBackend();
+
   final _sha256 = crypto.Sha256();
   final _sha384 = crypto.Sha384();
   final _x25519 = crypto.X25519();

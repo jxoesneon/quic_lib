@@ -25,6 +25,15 @@ class SentPacketInfo {
   /// Packet number space: 0=Initial, 1=Handshake, 2=Application Data.
   final int space;
 
+  /// Creates metadata for a sent packet.
+  ///
+  /// [packetNumber] identifies the packet in its [space].
+  /// [sentTimeUs] is the send timestamp in microseconds.
+  /// [sizeInBytes] is the wire-format packet size.
+  /// [ackEliciting] indicates whether the packet elicits an ACK.
+  /// [inFlight] indicates whether the packet is still in flight.
+  /// [frames] lists frame type constants carried in the packet.
+  /// [space] is the packet number space index (0, 1, or 2).
   SentPacketInfo({
     required this.packetNumber,
     required this.sentTimeUs,
@@ -38,13 +47,20 @@ class SentPacketInfo {
 
 /// Tracks sent packets per packet number space.
 class SentPacketTracker {
+  /// Creates an empty sent-packet tracker.
+  SentPacketTracker();
+
   // SECURITY: Max packets per space to prevent memory exhaustion DoS.
+  /// Maximum number of sent packets tracked per packet number space.
   static const int maxPacketsPerSpace = 10000;
 
   final Map<int, Map<int, SentPacketInfo>> _spaces = {};
   final Map<int, int> _largestAcked = {};
   final Map<int, int> _highestSent = {};
 
+  /// Records a sent packet for tracking.
+  ///
+  /// If the per-space tracking limit is reached, the oldest packet is evicted.
   void track(SentPacketInfo info) {
     final spaceMap = _spaces.putIfAbsent(info.space, () => {});
     // SECURITY: Evict oldest packet if at capacity.

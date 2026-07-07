@@ -1,5 +1,8 @@
 /// QUIC loss detector per RFC 9002 Section 6.
 class LossDetector {
+  /// Creates an empty loss detector.
+  LossDetector();
+
   /// Largest sent packet number that has been acked.
   int get largestAcked => _largestAcked;
   int _largestAcked = -1;
@@ -14,6 +17,7 @@ class LossDetector {
   static const int kGranularity = 1000;
 
   // SECURITY: Max tracked packets to prevent memory exhaustion DoS.
+  /// Maximum number of sent packets tracked for loss detection.
   static const int maxTrackedPackets = 10000;
 
   final Map<int, int> _sentTimes = {};

@@ -28,6 +28,11 @@ class CubicCongestionController implements CongestionController {
   bool _appLimited = false;
   final Hystart _hystart = Hystart();
 
+  /// Creates a CUBIC congestion controller.
+  ///
+  /// [initialCwnd] is the starting congestion window in packets.
+  /// [packetSize] is the maximum datagram size in bytes used to convert
+  /// between packet counts and byte counts.
   CubicCongestionController({int initialCwnd = 2, int packetSize = 1200})
       : _cwnd = initialCwnd,
         _packetSize = packetSize;

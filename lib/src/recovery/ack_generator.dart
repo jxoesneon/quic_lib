@@ -13,6 +13,9 @@ class _IntRange {
 /// Controls when the endpoint should send ACK frames based on
 /// peer-requested parameters.
 class AckFrequencyPolicy {
+  /// Creates an ACK frequency policy with default RFC 9000 parameters.
+  AckFrequencyPolicy();
+
   /// Maximum value for max_ack_delay in milliseconds (2^14 per RFC 9000 §18.2).
   static const int _maxAckDelayMs = 16384;
 
@@ -112,8 +115,13 @@ class AckFrequencyPolicy {
     _largestReceived = -1;
   }
 
+  /// Maximum ACK delay requested by the peer, in microseconds.
   int get maxAckDelayUs => _maxAckDelayUs;
+
+  /// Reordering threshold for sending immediate ACKs.
   int get reorderingThreshold => _reorderingThreshold;
+
+  /// Sequence number of the most recently processed ACK_FREQUENCY frame.
   int get sequenceNumber => _sequenceNumber;
 }
 
@@ -122,6 +130,9 @@ class AckFrequencyPolicy {
 /// Implements ACK range tracking per RFC 9000 Section 13.2.1
 /// and ACK_FREQUENCY policy per RFC 9298.
 class AckGenerator {
+  /// Creates an empty ACK generator with default policy.
+  AckGenerator();
+
   int _largestAcked = -1;
   int _largestAckReceivedTime = 0;
   final Set<int> _receivedPackets = {};
@@ -227,5 +238,6 @@ class AckGenerator {
     _frequencyPolicy.reset();
   }
 
+  /// Largest packet number that has been acknowledged.
   int get largestAcked => _largestAcked;
 }

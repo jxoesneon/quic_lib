@@ -4,9 +4,17 @@ import '../utils/hex.dart';
 ///
 /// Uses hex-encoded keys for fast string-based lookup in a [Map].
 class ConnectionRegistry {
+  /// Creates an empty connection registry.
+  ConnectionRegistry();
+
   // SECURITY: Limits per RFC 9000.
+  /// Maximum number of connection ID mappings the registry will hold.
   static const int maxConnections = 65536;
+
+  /// Minimum valid Connection ID length in bytes.
   static const int minCidLength = 1;
+
+  /// Maximum valid Connection ID length in bytes.
   static const int maxCidLength = 20;
 
   final Map<String, Object> _registry = {};

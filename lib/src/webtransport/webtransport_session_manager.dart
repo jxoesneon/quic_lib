@@ -6,6 +6,9 @@ import 'webtransport_session.dart';
 /// Each session is identified by its bidirectional stream ID. The manager
 /// creates sessions, routes incoming capsules, and tracks session lifecycle.
 class WebTransportSessionManager {
+  /// Creates an empty WebTransport session manager.
+  WebTransportSessionManager();
+
   final Map<int, WebTransportSession> _sessions = {};
 
   /// All currently active sessions.

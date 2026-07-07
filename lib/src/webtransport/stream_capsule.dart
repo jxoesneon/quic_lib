@@ -5,9 +5,13 @@ import 'package:quic_lib/src/wire/varint.dart';
 
 /// A WebTransport capsule that registers a stream for a session.
 class StreamCapsule {
+  /// QUIC stream ID being registered.
   final int streamId;
+
+  /// Capsule type (register bidirectional or unidirectional stream).
   final CapsuleType type;
 
+  /// Creates a stream-registration capsule.
   StreamCapsule({
     required this.streamId,
     required this.type,

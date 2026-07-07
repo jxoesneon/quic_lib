@@ -5,7 +5,13 @@ import '../wire/varint.dart';
 
 /// libp2p multistream-select / protocol negotiation.
 class MultistreamSelect {
+  /// Creates a multistream-select helper (all methods are static).
+  MultistreamSelect();
+
+  /// Multistream-select protocol identifier.
   static const String protocolId = '/multistream/1.0.0';
+
+  /// Newline delimiter used in multistream-select messages.
   static const String newline = '\n';
 
   /// The multistream header: `<protocolId>\n` as UTF-8 bytes.

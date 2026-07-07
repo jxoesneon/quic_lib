@@ -46,6 +46,10 @@ class WebTransportSession {
   bool _isClosed = false;
   bool _receivedGoaway = false;
 
+  /// Creates a WebTransport session identified by [sessionId].
+  ///
+  /// [sessionId] is the QUIC stream ID of the bidirectional control stream
+  /// on which capsules are exchanged.
   WebTransportSession(this._sessionId);
 
   /// The QUIC stream ID that serves as this session's identifier.

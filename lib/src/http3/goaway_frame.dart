@@ -14,6 +14,10 @@ class Http3GoawayFrame {
   /// For server: push ID.
   final int lastStreamIdOrPushId;
 
+  /// Creates a GOAWAY frame payload.
+  ///
+  /// [lastStreamIdOrPushId] is the last client-initiated bidirectional stream
+  /// ID the server will accept, or a push ID when sent by a server.
   Http3GoawayFrame({required this.lastStreamIdOrPushId});
 
   /// Serialize payload: VarInt(lastStreamIdOrPushId)

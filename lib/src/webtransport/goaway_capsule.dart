@@ -8,8 +8,10 @@ import 'package:quic_lib/src/wire/varint.dart';
 /// on the current connection, and optionally specifies the last stream ID
 /// that will be accepted.
 class GoawayCapsule {
+  /// Last stream ID the sender will accept, or `null` for a bare GOAWAY.
   final int? streamId;
 
+  /// Creates a GOAWAY capsule optionally carrying [streamId].
   GoawayCapsule({this.streamId});
 
   /// Serialize to bytes: VarInt(type) + optional VarInt(streamId).

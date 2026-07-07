@@ -4,11 +4,19 @@
 /// packet number sequences. This prevents retransmissions of a packet
 /// in one space from being acknowledged by packets in another space.
 enum PacketNumberSpace {
+  /// Initial packet number space.
   initial(0),
+
+  /// Handshake packet number space.
   handshake(1),
+
+  /// Application data packet number space.
   application(2),
+
+  /// 0-RTT packet number space.
   zeroRtt(3);
 
+  /// Stable integer index for the packet number space.
   final int spaceIndex;
   const PacketNumberSpace(this.spaceIndex);
 }
@@ -28,6 +36,7 @@ class PacketNumberSpaceManager {
   /// Tracks recently received packet numbers to reject duplicates.
   final Map<PacketNumberSpace, int> _receivedWindow = {};
 
+  /// Creates a manager with all packet number spaces initialized to zero.
   PacketNumberSpaceManager() {
     for (final space in PacketNumberSpace.values) {
       _nextPacketNumber[space] = 0;

@@ -27,6 +27,7 @@ class RecoveryManager {
   /// -1 means no packet has been acknowledged yet.
   int _largestAckedSentTimeUs = -1;
 
+  /// Creates a recovery manager coordinating the given subsystems.
   RecoveryManager({
     required CongestionController congestionController,
     required LossDetector lossDetector,
@@ -154,9 +155,18 @@ class RecoveryManager {
   }
 
   // Convenience getters for monitoring.
+  /// The congestion controller used by this recovery manager.
   CongestionController get congestionController => _congestionController;
+
+  /// The loss detector used by this recovery manager.
   LossDetector get lossDetector => _lossDetector;
+
+  /// The PTO scheduler used by this recovery manager.
   PtoScheduler get ptoScheduler => _ptoScheduler;
+
+  /// The RTT estimator used by this recovery manager.
   RttEstimator get rttEstimator => _rttEstimator;
+
+  /// The sent packet tracker used by this recovery manager.
   SentPacketTracker get sentPacketTracker => _sentPacketTracker;
 }

@@ -31,6 +31,9 @@ import 'package:quic_lib/src/streams/receive_state_machine.dart';
 /// - [QuicConnection.openBidirectionalStream] — allocates a new stream ID.
 /// - RFC 9000 Section 2 — Streams.
 abstract class QuicStream {
+  /// Creates a QUIC stream (subclasses only; this class is abstract).
+  QuicStream();
+
   /// The QUIC stream ID.
   ///
   /// Stream IDs encode both the initiator (client vs server) and the

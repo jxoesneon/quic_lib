@@ -42,6 +42,13 @@ class ClientHello {
   /// automatically appended to the serialized extension list.
   final List<int> supportedGroups;
 
+  /// Creates a TLS 1.3 ClientHello.
+  ///
+  /// [random] is the 32-byte client random.
+  /// [cipherSuites] lists the supported cipher suites.
+  /// [extensions] contains manually-provided extensions; ALPN, SNI, and
+  /// supported_groups extensions are appended automatically when their
+  /// corresponding fields are set.
   ClientHello({
     required this.random,
     required this.cipherSuites,
@@ -216,18 +223,30 @@ class ClientHello {
 
 /// TLS cipher suite identifier (2 bytes).
 class CipherSuite {
+  /// 2-byte cipher suite identifier.
   final int id;
+
+  /// Creates a cipher suite identifier from [id].
   const CipherSuite(this.id);
 
+  /// TLS_AES_128_GCM_SHA256.
   static const tlsAes128GcmSha256 = CipherSuite(0x1301);
+
+  /// TLS_AES_256_GCM_SHA384.
   static const tlsAes256GcmSha384 = CipherSuite(0x1302);
+
+  /// TLS_CHACHA20_POLY1305_SHA256.
   static const tlsChacha20Poly1305Sha256 = CipherSuite(0x1303);
 }
 
 /// TLS extension as a generic type + opaque data block.
 class TlsExtension {
+  /// Extension type (e.g., `0x0000` for SNI, `0x0010` for ALPN).
   final int type;
+
+  /// Extension payload bytes.
   final List<int> data;
 
+  /// Creates a generic TLS extension.
   TlsExtension({required this.type, required this.data});
 }

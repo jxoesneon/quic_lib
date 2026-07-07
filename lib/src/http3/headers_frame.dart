@@ -11,6 +11,7 @@ class Http3HeadersFrame {
   /// The encoded field section (QPACK-encoded header block).
   final List<int> encodedFieldSection;
 
+  /// Creates a HEADERS frame payload from a QPACK-encoded field section.
   Http3HeadersFrame({required this.encodedFieldSection});
 
   /// Build a complete Http3Frame of type HEADERS.

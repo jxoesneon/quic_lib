@@ -5,18 +5,40 @@ import 'package:quic_lib/src/wire/varint.dart';
 
 /// HTTP/3 frame types per RFC 9114 Section 7.2.
 enum Http3FrameType {
+  /// DATA frame.
   data(0x00),
+
+  /// HEADERS frame.
   headers(0x01),
+
+  /// CANCEL_PUSH frame.
   cancelPush(0x03),
+
+  /// SETTINGS frame.
   settings(0x04),
+
+  /// PUSH_PROMISE frame.
   pushPromise(0x05),
+
+  /// GOAWAY frame.
   goaway(0x07),
+
+  /// ORIGIN frame.
   origin(0x0c),
+
+  /// MAX_PUSH_ID frame.
   maxPushId(0x0d),
+
+  /// Reserved frame type for greasing.
   reserved(0x21), // GREASE
+
+  /// PRIORITY_UPDATE frame.
   priorityUpdate(0xF0700),
+
+  /// PRIORITY_UPDATE frame for pushed streams.
   priorityUpdatePush(0xF0701);
 
+  /// Wire value of the frame type.
   final int value;
   const Http3FrameType(this.value);
 
@@ -33,9 +55,13 @@ enum Http3FrameType {
 ///
 /// Wire format: VarInt(Type) + VarInt(Length) + Payload (Length bytes)
 class Http3Frame {
+  /// Frame type.
   final Http3FrameType type;
+
+  /// Frame payload bytes.
   final List<int> payload;
 
+  /// Creates an HTTP/3 frame of [type] carrying [payload].
   Http3Frame({required this.type, required this.payload});
 
   /// Serializes this frame into its on-the-wire representation.

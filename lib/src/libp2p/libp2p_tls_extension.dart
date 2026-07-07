@@ -29,14 +29,23 @@ int _varintLength(int value) {
 ///
 /// Values match the protobuf enum used in the libp2p PublicKey message.
 enum Libp2pKeyType {
+  /// RSA public key.
   rsa(0),
+
+  /// Ed25519 public key.
   ed25519(1),
+
+  /// secp256k1 public key.
   secp256k1(2),
+
+  /// ECDSA public key.
   ecdsa(3);
 
+  /// Protobuf enum value.
   final int value;
   const Libp2pKeyType(this.value);
 
+  /// Looks up a key type by its protobuf [value].
   static Libp2pKeyType? fromValue(int value) {
     for (final type in values) {
       if (type.value == value) return type;
@@ -55,11 +64,16 @@ enum Libp2pKeyType {
 /// }
 /// ```
 class Libp2pPublicKey {
+  /// Public key type.
   final Libp2pKeyType type;
+
+  /// Raw public key bytes.
   final Uint8List data;
 
+  /// Creates a protobuf public key of [type] with [data].
   Libp2pPublicKey({required this.type, required this.data});
 
+  /// Serializes this public key to its protobuf representation.
   Uint8List serialize() {
     final typeLen = _varintLength(type.value);
     final dataLen = data.length;
@@ -81,6 +95,7 @@ class Libp2pPublicKey {
     return result;
   }
 
+  /// Parses a protobuf-encoded public key from [bytes].
   static Libp2pPublicKey parse(Uint8List bytes) {
     Libp2pKeyType? type;
     Uint8List? data;
@@ -150,6 +165,7 @@ class SignedKey {
   /// Signature of the libp2p TLS handshake message by the host identity key.
   final Uint8List signature;
 
+  /// Creates a signed key binding [publicKey] to the TLS handshake [signature].
   SignedKey({required this.publicKey, required this.signature});
 
   /// Encodes this [SignedKey] as a protobuf message.
@@ -238,6 +254,7 @@ class Libp2pExtension {
   /// The signed key embedded in this extension.
   final SignedKey signedKey;
 
+  /// Creates the libp2p TLS extension containing [signedKey].
   Libp2pExtension({required this.signedKey});
 
   /// Returns the protobuf-encoded [SignedKey] bytes.

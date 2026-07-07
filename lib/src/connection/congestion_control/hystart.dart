@@ -5,6 +5,9 @@
 /// 2. Delay-based: exit if the spacing between consecutive ACKs increases
 ///    significantly, indicating growing queuing delay.
 class Hystart {
+  /// Creates a Hystart helper in its initial state.
+  Hystart();
+
   static const int _ackTrainThreshold = 8;
   static const int _ackTrainMaxGapUs = 2000; // 2 ms
   static const int _spacingIncreaseFactor = 2;

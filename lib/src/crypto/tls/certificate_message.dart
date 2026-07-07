@@ -11,9 +11,13 @@ import 'package:quic_lib/src/crypto/tls/client_hello.dart' show TlsExtension;
 /// } CertificateEntry;
 /// ```
 class CertificateEntry {
+  /// DER-encoded certificate data.
   final List<int> certData;
+
+  /// Certificate-specific extensions.
   final List<TlsExtension> extensions;
 
+  /// Creates a certificate entry.
   CertificateEntry({required this.certData, this.extensions = const []});
 }
 
@@ -32,6 +36,10 @@ class CertificateMessage {
   /// List of certificate entries.
   final List<CertificateEntry> entries;
 
+  /// Creates a TLS Certificate message.
+  ///
+  /// [requestContext] is empty for server certificates and may contain data
+  /// for client certificates. [entries] is the ordered certificate chain.
   CertificateMessage({this.requestContext = const [], required this.entries});
 
   /// Serialize per RFC 8446 §4.4.2:

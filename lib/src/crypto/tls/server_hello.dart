@@ -32,6 +32,13 @@ class ServerHello {
   /// automatically included in the serialized ServerHello.
   final int? selectedGroup;
 
+  /// Creates a TLS 1.3 ServerHello.
+  ///
+  /// [random] is the 32-byte server random.
+  /// [cipherSuite] is the selected cipher suite.
+  /// [extensions] contains manually-provided extensions; the selected
+  /// `supported_groups` extension is appended automatically when [selectedGroup]
+  /// is non-null.
   ServerHello({
     required this.random,
     required this.cipherSuite,

@@ -8,6 +8,9 @@
 /// - [v1] — RFC 9000
 /// - [v2] — RFC 9369
 class QuicVersions {
+  /// Creates a QUIC version helper (all methods are static).
+  QuicVersions();
+
   /// QUIC version 1 (RFC 9000).
   static const int v1 = 0x00000001;
 

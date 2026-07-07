@@ -12,8 +12,10 @@ import 'package:quic_lib/src/crypto/tls/client_hello.dart';
 ///     Extension extensions<0..2^16-1>;
 /// } EncryptedExtensions;
 class EncryptedExtensions {
+  /// Extensions carried in the EncryptedExtensions message.
   final List<TlsExtension> extensions;
 
+  /// Creates EncryptedExtensions containing the given [extensions].
   EncryptedExtensions({required this.extensions});
 
   /// Serialize: uint16 extensions_length + Extension[]

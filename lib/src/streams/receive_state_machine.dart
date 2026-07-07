@@ -49,6 +49,9 @@ enum ReceiveStreamState {
 /// - [SendStateMachine] — the corresponding send-side state machine.
 /// - RFC 9000 Section 3.2 — receiving-side stream states.
 class ReceiveStateMachine {
+  /// Creates a receive-side stream state machine in [ReceiveStreamState.recv].
+  ReceiveStateMachine();
+
   ReceiveStreamState _state = ReceiveStreamState.recv;
   int? _finalSize;
 

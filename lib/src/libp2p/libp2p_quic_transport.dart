@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:meta/meta.dart';
+
 import '../connection/quic_connection.dart';
 import '../crypto/crypto_backend.dart';
 import '../crypto/tls/x509_parser.dart';
@@ -70,6 +72,15 @@ class Libp2pQuicTransport {
   /// [alpnProtocols] defaults to `['libp2p']` per the libp2p QUIC spec.
   Libp2pQuicTransport({this.alpnProtocols = const ['libp2p']});
 
+  /// Creates a transport that uses an already-bound [endpoint].
+  ///
+  /// This is intended for tests that need to control the [QuicEndpoint]
+  /// connections stream without performing real UDP I/O.
+  @visibleForTesting
+  Libp2pQuicTransport.forTesting(QuicEndpoint endpoint,
+      {this.alpnProtocols = const ['libp2p']})
+      : _endpoint = endpoint;
+
   /// Extract an [InternetAddress] and port from [multiaddr].
   static (InternetAddress? address, int? port) _parseMultiaddr(
       Multiaddr multiaddr) {
@@ -114,7 +125,7 @@ class Libp2pQuicTransport {
       throw FormatException('Multiaddr must contain IP and port');
     }
 
-    _endpoint = await QuicEndpoint.bind(address, port);
+    _endpoint ??= await QuicEndpoint.bind(address, port);
 
     // ignore: close_sinks
     final controller = StreamController<Libp2pQuicConnection>.broadcast();
@@ -319,7 +330,7 @@ class Libp2pQuicConnection {
 
   /// Verifies the peer using the certificate received during the handshake.
   ///
-  /// Reads [peerCertificate] from the underlying [QuicConnection] (or dynamic
+  /// Reads [QuicConnection.peerCertificate] from the underlying [QuicConnection] (or dynamic
   /// fallback) and delegates to [verifyPeerCertificate]. Returns `false` if no
   /// peer certificate has been captured yet.
   Future<bool> verifyPeerCertificateFromHandshake({

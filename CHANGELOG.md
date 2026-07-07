@@ -7,12 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.11.0] — 2026-06-29
+## [1.12.0] — 2026-07-07
 
 ### Added
 - Expose `peerCertificate` and `peerCertificateVerify` from `QuicConnection` after TLS handshake messages are received.
 - Add `Libp2pQuicConnection.verifyPeerCertificateFromHandshake()` to verify the peer using the captured handshake certificate.
 - Add `CryptoFrameHandler` tests for peer certificate capture.
+- Extract raw X.509 certificate from TLS Certificate handshake messages.
+- `Libp2pQuicTransport.forTesting(QuicEndpoint)` constructor for injecting mock endpoints in tests (marked `@visibleForTesting`).
+- Direct runtime dependency on `meta: ^1.0.0` to support `@visibleForTesting`.
+- Extensive libp2p transport tests covering invalid multiaddrs, ALPN negotiation, certificate verification, and stream-manager fallbacks.
+
+### Fixed
+- Malformed TLS Certificate messages are now logged instead of propagating exceptions.
+
+### Documentation
+- Improved dartdoc on `Libp2pQuicTransport` and `Libp2pQuicConnection` public members.
+
+## [1.11.0] — 2026-06-29
+
+### Added
 - **121 new tests** for fuzzing, error paths, and coverage gaps:
   - `test/wire/varint_fuzz_test.dart` — truncated varints, invalid offsets, overflow attempts.
   - `test/wire/frame_fuzz_test.dart` — unknown frame types, truncated length-prefixed frames, malformed ACK ranges.

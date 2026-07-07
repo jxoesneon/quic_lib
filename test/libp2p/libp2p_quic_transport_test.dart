@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:mocktail/mocktail.dart';
 import 'package:quic_lib/src/connection/connection_id_manager.dart';
 import 'package:quic_lib/src/connection/connection_state_machine.dart';
 import 'package:quic_lib/src/connection/congestion_control/congestion_controller.dart';
@@ -11,6 +12,7 @@ import 'package:quic_lib/src/crypto/tls/certificate_message.dart';
 import 'package:quic_lib/src/crypto/tls/crypto_frame_assembler.dart';
 import 'package:quic_lib/src/crypto/tls/handshake_state_machine.dart';
 import 'package:quic_lib/src/crypto/tls/tls_handshake_types.dart';
+import 'package:quic_lib/src/io/quic_endpoint.dart';
 import 'package:quic_lib/src/libp2p/libp2p_certificate_generator.dart';
 import 'package:quic_lib/src/libp2p/libp2p_quic_transport.dart';
 import 'package:quic_lib/src/libp2p/multiaddr.dart';
@@ -24,6 +26,9 @@ import 'package:quic_lib/src/recovery/rtt_estimator.dart';
 import 'package:quic_lib/src/streams/stream_id.dart';
 import 'package:quic_lib/src/wire/frame.dart';
 import 'package:test/test.dart';
+
+import '../helpers/minimal_cert.dart';
+import '../helpers/mock_crypto_backend.dart';
 
 QuicConnection _createQuicConnection() {
   return QuicConnection(
@@ -466,8 +471,179 @@ void main() {
       final conn = Libp2pQuicConnection(quicConn);
       expect(conn.negotiatedAlpn, equals('libp2p'));
     });
+
+    test('listen wraps raw QuicConnection into Libp2pQuicConnection', () async {
+      final mockEndpoint = MockQuicEndpoint();
+      final endpointController = StreamController<Object>.broadcast();
+      when(() => mockEndpoint.connections)
+          .thenAnswer((_) => endpointController.stream);
+      when(() => mockEndpoint.close()).thenReturn(null);
+
+      final transport = Libp2pQuicTransport.forTesting(mockEndpoint);
+      final addr = Multiaddr.parse('/ip4/127.0.0.1/udp/0');
+      final stream = await transport.listen(addr);
+
+      final rawConn = _createQuicConnection();
+      final future = stream.first;
+      endpointController.add(rawConn);
+      final wrapped = await future;
+
+      expect(wrapped, isA<Libp2pQuicConnection>());
+      expect(wrapped.quicConnection, same(rawConn));
+      expect(rawConn.alpnProtocols, equals(transport.alpnProtocols));
+
+      await transport.close();
+      await endpointController.close();
+    });
+
+    test('listen does not re-wrap Libp2pQuicConnection', () async {
+      final mockEndpoint = MockQuicEndpoint();
+      final endpointController = StreamController<Object>.broadcast();
+      when(() => mockEndpoint.connections)
+          .thenAnswer((_) => endpointController.stream);
+      when(() => mockEndpoint.close()).thenReturn(null);
+
+      final transport = Libp2pQuicTransport.forTesting(mockEndpoint);
+      final addr = Multiaddr.parse('/ip4/127.0.0.1/udp/0');
+      final stream = await transport.listen(addr);
+
+      final existing = Libp2pQuicConnection(_createQuicConnection());
+      final future = stream.first;
+      endpointController.add(existing);
+      final emitted = await future;
+
+      expect(emitted, same(existing));
+      expect(emitted, isA<Libp2pQuicConnection>());
+
+      await transport.close();
+      await endpointController.close();
+    });
+
+    test('listen preserves ALPN protocols when wrapping raw connection',
+        () async {
+      final mockEndpoint = MockQuicEndpoint();
+      final endpointController = StreamController<Object>.broadcast();
+      when(() => mockEndpoint.connections)
+          .thenAnswer((_) => endpointController.stream);
+      when(() => mockEndpoint.close()).thenReturn(null);
+
+      final transport = Libp2pQuicTransport.forTesting(
+        mockEndpoint,
+        alpnProtocols: ['custom'],
+      );
+      final addr = Multiaddr.parse('/ip4/127.0.0.1/udp/0');
+      final stream = await transport.listen(addr);
+
+      final rawConn = _createQuicConnection();
+      final future = stream.first;
+      endpointController.add(rawConn);
+      await future;
+
+      expect(rawConn.alpnProtocols, equals(['custom']));
+
+      await transport.close();
+      await endpointController.close();
+    });
+
+    test('Libp2pQuicConnection.send on dynamic object with streamManager', () {
+      final fakeConn = _FakeQuicConnectionWithStreamManager();
+      final conn = Libp2pQuicConnection(fakeConn);
+      conn.send(Uint8List.fromList([0x01]));
+      expect(fakeConn.openUniCalled, isTrue);
+    });
+
+    test(
+        'negotiateProtocol falls back to openUnidirectionalStream '
+        'and streamManager.getStream', () async {
+      final response = MultistreamSelect.encodeLengthPrefixed(
+        MultistreamSelect.encodeProtocol('/ipfs/1.0.0'),
+      );
+      final fakeConn = _FakeConnForSendRawFallback(response);
+      final conn = Libp2pQuicConnection(fakeConn);
+      final selected = await conn.negotiateProtocol(['/ipfs/1.0.0']);
+
+      expect(selected, equals('/ipfs/1.0.0'));
+      expect(fakeConn.openUniCalled, isTrue);
+      expect(fakeConn.streamManager.streams, isNotEmpty);
+      expect(fakeConn.streamManager.streams.first.written, isNotEmpty);
+    });
+
+    test('readRaw returns null on incomingData timeout', () async {
+      final controller = StreamController<Uint8List>();
+      addTearDown(controller.close);
+      final fakeConn = _FakeConnForReadRawFallback(controller.stream);
+      final conn = Libp2pQuicConnection(fakeConn);
+      final selected = await conn.negotiateProtocol(['/ipfs/1.0.0']);
+      expect(selected, isNull);
+    });
+
+    test('readRaw returns null on empty incomingData stream', () async {
+      final controller = StreamController<Uint8List>()..close();
+      final fakeConn = _FakeConnForReadRawFallback(controller.stream);
+      final conn = Libp2pQuicConnection(fakeConn);
+      final selected = await conn.negotiateProtocol(['/ipfs/1.0.0']);
+      expect(selected, isNull);
+    });
+
+    test('readRaw reads data from incomingData stream manager fallback',
+        () async {
+      final response = MultistreamSelect.encodeLengthPrefixed(
+        MultistreamSelect.encodeProtocol('/ipfs/1.0.0'),
+      );
+      final incomingData = Stream<Uint8List>.fromFuture(Future.value(response));
+      final fakeConn = _FakeConnForReadRawFallback(incomingData);
+      final conn = Libp2pQuicConnection(fakeConn);
+      final selected = await conn.negotiateProtocol(['/ipfs/1.0.0']);
+      expect(selected, equals('/ipfs/1.0.0'));
+    });
+
+    test('verifyPeerCertificate returns false when cert lacks libp2p extension',
+        () async {
+      final backend = MockCryptoBackend();
+      final conn = Libp2pQuicConnection('test');
+      final valid = await conn.verifyPeerCertificate(
+        buildMinimalCert(),
+        backend: backend,
+      );
+      expect(valid, isFalse);
+    });
+
+    test(
+        'verifyPeerCertificate fails when signature verification returns false',
+        () async {
+      final realBackend = DefaultCryptoBackend();
+      final hostKeyPair = await realBackend.ed25519GenerateKeyPair();
+      final hostPublicKey = await hostKeyPair.publicKey;
+      final generator = Libp2pCertificateGenerator(realBackend);
+      final chain = await generator.generate(
+        hostIdentityPrivateKey: await hostKeyPair.secretKey,
+        hostPublicKeyBytes: hostPublicKey.bytes,
+      );
+
+      final backend = _RejectingCryptoBackend();
+
+      final conn = Libp2pQuicConnection('test');
+      final valid = await conn.verifyPeerCertificate(
+        chain.certs.first.rawBytes,
+        backend: backend,
+      );
+      expect(valid, isFalse);
+    });
+
+    test(
+        'verifyPeerCertificateFromHandshake ignores non-Uint8List '
+        'peerCertificate', () async {
+      final backend = MockCryptoBackend();
+      final conn = Libp2pQuicConnection(_FakeConnWithNonUint8ListCertificate());
+      final valid = await conn.verifyPeerCertificateFromHandshake(
+        backend: backend,
+      );
+      expect(valid, isFalse);
+    });
   });
 }
+
+class MockQuicEndpoint extends Mock implements QuicEndpoint {}
 
 class _FakeQuicConnection {
   bool openUniCalled = false;
@@ -509,4 +685,88 @@ class _FakeQuicConnectionForReadSequence {
     if (_index >= _responses.length) return null;
     return _responses[_index++];
   }
+}
+
+class _FakeQuicConnectionWithStreamManager {
+  bool openUniCalled = false;
+
+  int openUnidirectionalStream() {
+    openUniCalled = true;
+    return 0;
+  }
+
+  final _FakeStreamManager streamManager = _FakeStreamManager();
+}
+
+class _FakeStreamManager {
+  final List<_FakeStream> streams = [];
+
+  _FakeStreamManager([List<_FakeStream>? initial]) {
+    if (initial != null) streams.addAll(initial);
+  }
+
+  _FakeStream? getStream(int id) =>
+      id >= 0 && id < streams.length ? streams[id] : null;
+}
+
+class _FakeStream {
+  final Stream<Uint8List> incomingData;
+  final List<Uint8List> written = [];
+
+  _FakeStream({required this.incomingData});
+
+  void write(Uint8List data) => written.add(Uint8List.fromList(data));
+}
+
+class _FakeConnForSendRawFallback {
+  final Uint8List? _response;
+  final _FakeStreamManager streamManager = _FakeStreamManager();
+  bool openUniCalled = false;
+  // Null function field so _sendRaw falls back to openUnidirectionalStream.
+  void Function(Uint8List)? write;
+
+  _FakeConnForSendRawFallback(this._response);
+
+  int openUnidirectionalStream() {
+    openUniCalled = true;
+    streamManager.streams.add(_FakeStream(incomingData: _emptyStream()));
+    return streamManager.streams.length - 1;
+  }
+
+  Future<Uint8List?> read() async => _response;
+}
+
+class _FakeConnForReadRawFallback {
+  final Stream<Uint8List> _incomingData;
+  final _FakeStreamManager streamManager = _FakeStreamManager();
+  // Null function field so _sendRaw falls back to openUnidirectionalStream.
+  void Function(Uint8List)? write;
+  // Null function field so _readRaw falls back to streamManager.incomingData.
+  Future<Uint8List?> Function()? read;
+
+  _FakeConnForReadRawFallback(this._incomingData);
+
+  int openUnidirectionalStream() {
+    streamManager.streams.add(_FakeStream(incomingData: _incomingData));
+    return streamManager.streams.length - 1;
+  }
+}
+
+class _FakeConnWithNonUint8ListCertificate {
+  List<int>? get peerCertificate => [1, 2, 3];
+}
+
+class _RejectingCryptoBackend extends MockCryptoBackend {
+  @override
+  Future<bool> ed25519Verify(
+    PublicKey publicKey,
+    List<int> message,
+    List<int> signature,
+  ) =>
+      Future.value(false);
+}
+
+Stream<Uint8List> _emptyStream() {
+  final controller = StreamController<Uint8List>()..close();
+  return controller.stream;
 }

@@ -171,6 +171,18 @@ export 'src/crypto/tls/certificate_verify.dart' show CertificateVerify;
 export 'src/crypto/tls/finished_message.dart' show FinishedMessage;
 export 'src/crypto/tls/handshake_state_machine.dart'
     show HandshakeStateMachine, HandshakeState, HandshakeRole;
+export 'src/crypto/tls/revocation_policy.dart' show RevocationPolicy;
+export 'src/crypto/tls/revocation_parser.dart'
+    show RevocationInfo, extractRevocationInfo;
+export 'src/crypto/tls/ocsp_fetcher.dart'
+    show
+        OcspFetcher,
+        OcspVerdict,
+        OcspCertStatus,
+        OcspException,
+        buildOcspRequest,
+        sha1Digest;
+export 'src/crypto/tls/crl_fetcher.dart' show CrlFetcher, CrlException;
 
 // ---------------------------------------------------------------------------
 // Connection exports

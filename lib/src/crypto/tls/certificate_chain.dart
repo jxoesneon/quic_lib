@@ -36,6 +36,11 @@ class CertificateInfo {
   /// performed in Phase 1.
   final RevocationInfo revocationInfo;
 
+  /// The certificate's serial number as raw DER INTEGER value bytes.
+  ///
+  /// Used by CRL revocation lookups and OCSP request construction.
+  final List<int> serialNumber;
+
   /// Creates parsed certificate metadata.
   CertificateInfo({
     required this.rawBytes,
@@ -46,6 +51,7 @@ class CertificateInfo {
     required this.subjectName,
     this.issuerName = '',
     this.revocationInfo = const RevocationInfo(),
+    this.serialNumber = const [],
   });
 }
 
@@ -64,6 +70,7 @@ CertificateInfo parseCertificate(List<int> rawBytes) {
     subjectName: String.fromCharCodes(x509.subject),
     issuerName: String.fromCharCodes(x509.issuer),
     revocationInfo: extractRevocationInfo(x509.extensions),
+    serialNumber: Uint8List.fromList(x509.serialNumber),
   );
 }
 

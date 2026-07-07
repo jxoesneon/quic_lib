@@ -15,7 +15,9 @@ import 'helpers/test_with_logging_test.dart' as test_with_logging_test;
 
 // Subsystem tests
 import 'crypto/crypto_backend_test.dart' as crypto_backend_test;
+import 'crypto/tls/ocsp_crl_test.dart' as ocsp_crl_test;
 import 'io/udp_rate_limiter_test.dart' as udp_rate_limiter_test;
+import 'wire/quic_v2_test.dart' as quic_v2_test;
 
 // End-to-end tests
 import 'e2e/http3_e2e_test.dart' as http3_e2e_test;
@@ -36,7 +38,9 @@ void main() {
   mock_crypto_backend_test.main();
   test_with_logging_test.main();
   crypto_backend_test.main();
+  ocsp_crl_test.main();
   udp_rate_limiter_test.main();
+  quic_v2_test.main();
   http3_e2e_test.main();
   server_push_test.main();
   interop_test.main();

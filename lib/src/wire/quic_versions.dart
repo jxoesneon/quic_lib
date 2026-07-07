@@ -22,6 +22,12 @@ class QuicVersions {
   /// Currently supports [v1] and [v2].
   static bool isSupported(int version) => version == v1 || version == v2;
 
+  /// Returns `true` if [version] is QUIC version 1 ([v1]).
+  static bool isV1(int version) => version == v1;
+
+  /// Returns `true` if [version] is QUIC version 2 ([v2], RFC 9369).
+  static bool isV2(int version) => version == v2;
+
   /// Returns a human-readable name for [version].
   ///
   /// Returns `'v1'` for [v1], `'v2'` for [v2], or `'unknown'` otherwise.

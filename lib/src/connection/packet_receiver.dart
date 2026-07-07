@@ -3,6 +3,7 @@ import '../wire/packet_header.dart';
 import '../wire/quic_versions.dart';
 import '../wire/coalesced_packet.dart';
 import '../wire/frame.dart';
+import '../wire/v2_header.dart';
 import '../recovery/packet_number_space.dart';
 
 /// Processes incoming QUIC packets from raw UDP datagrams.
@@ -103,6 +104,19 @@ class PacketReceiver {
         default:
           return null;
       }
+    } else if (header is V2LongHeader) {
+      switch (header.packetType) {
+        case V2LongHeader.typeInitial:
+          return PacketNumberSpace.initial;
+        case V2LongHeader.typeHandshake:
+          return PacketNumberSpace.handshake;
+        case V2LongHeader.typeZeroRtt:
+          return PacketNumberSpace.zeroRtt;
+        case V2LongHeader.typeRetry:
+          return null;
+        default:
+          return null;
+      }
     } else if (header is ShortHeader) {
       return PacketNumberSpace.application;
     }
@@ -134,6 +148,29 @@ class PacketReceiver {
         }
       }
       // Length varint (worst case 2 bytes for small packets) + packet number
+      final pnLen = _pnLengthFromValue(header.packetNumber);
+      final payloadLen = pnLen + header.payload.length;
+      len += _varIntLength(payloadLen) + pnLen;
+      return len;
+    } else if (header is V2LongHeader) {
+      // V2 long header has the same field layout as v1 (first byte + version
+      // + DCID len/val + SCID len/val + optional token + length + PN).
+      var len = 7 +
+          header.destinationConnectionId.length +
+          header.sourceConnectionId.length;
+      if (header.isInitial) {
+        final token = header.token;
+        if (token != null && token.isNotEmpty) {
+          len += _varIntLength(token.length) + token.length;
+        } else {
+          len += 1; // zero-length varint
+        }
+      }
+      if (header.isRetry) {
+        // Retry: token + 16-byte integrity tag, no length/packet-number field.
+        len += header.payload.length + 16;
+        return len;
+      }
       final pnLen = _pnLengthFromValue(header.packetNumber);
       final payloadLen = pnLen + header.payload.length;
       len += _varIntLength(payloadLen) + pnLen;

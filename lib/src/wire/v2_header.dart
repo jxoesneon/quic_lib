@@ -152,6 +152,7 @@ class V2LongHeader implements PacketHeader {
         originalDestinationConnectionId: destinationConnectionId,
         retryPacketWithoutTag: retryPacketWithoutTag,
         backend: backend!,
+        version: QuicVersions.v2,
       );
       builder.add(tag);
     }

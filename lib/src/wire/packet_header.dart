@@ -3,7 +3,9 @@ import 'dart:typed_data';
 import '../crypto/crypto_backend.dart';
 import '../crypto/packet/retry_integrity_tag.dart';
 import 'quic_bit_greaser.dart';
+import 'quic_versions.dart';
 import 'varint.dart';
+import 'v2_header.dart';
 
 /// Base class for all QUIC packet headers.
 ///
@@ -416,6 +418,13 @@ class PacketHeaderParser {
         (bytes[offset + 2] << 8) |
         bytes[offset + 3];
     offset += 4;
+
+    // QUIC version 2 (RFC 9369) uses a different long header bit layout, so
+    // dispatch to the dedicated v2 parser instead of falling through to the
+    // v1 long-header parser below.
+    if (version == QuicVersions.v2) {
+      return V2LongHeader.parse(bytes);
+    }
 
     if (version == 0) {
       // Version negotiation

@@ -28,6 +28,7 @@ import 'package:quic_lib/src/wire/frame.dart';
 import 'package:quic_lib/src/wire/packet_builder.dart';
 import 'package:quic_lib/src/wire/packet_header.dart';
 import 'package:quic_lib/src/wire/quic_versions.dart';
+import 'package:quic_lib/src/wire/v2_header.dart';
 
 /// Integration tests for quic_lib v1.0.0 features.
 void main() {
@@ -163,9 +164,12 @@ void main() {
 
   group('PacketReceiver v2 scaffold', () {
     test('processes a v2 Initial packet the same way as v1', () async {
-      final header = LongHeader(
-        version: QuicVersions.v2,
-        packetType: LongHeader.typeInitial,
+      // A v2 Initial packet uses the V2LongHeader wire format. The parser
+      // dispatches v2-version packets to V2LongHeader.parse, and the
+      // receiver maps the packet to the Initial packet-number space just
+      // like a v1 Initial.
+      final header = V2LongHeader(
+        packetType: V2LongHeader.typeInitial,
         destinationConnectionId: [0x01],
         sourceConnectionId: [0x02],
         packetNumber: 0,
@@ -179,9 +183,9 @@ void main() {
 
       final result = PacketReceiver.processPacket(packet);
       expect(result, isNotNull);
-      expect(result!.header, isA<LongHeader>());
-      final longHeader = result.header as LongHeader;
-      expect(longHeader.version, equals(QuicVersions.v2));
+      expect(result!.header, isA<V2LongHeader>());
+      final v2Header = result.header as V2LongHeader;
+      expect(v2Header.version, equals(QuicVersions.v2));
       expect(result.frames.length, greaterThanOrEqualTo(1));
     });
   });

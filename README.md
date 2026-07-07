@@ -1,11 +1,11 @@
 # quic_lib
 
 [![pub package](https://img.shields.io/pub/v/quic_lib.svg)](https://pub.dev/packages/quic_lib)
+![pub points](https://img.shields.io/pub/points/quic_lib)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/jxoesneon/quic_lib/ci.yml)](https://github.com/jxoesneon/quic_lib/actions)
-[![Coverage](https://img.shields.io/codecov/c/github/jxoesneon/quic_lib/main)](https://codecov.io/gh/jxoesneon/quic_lib)
 [![License: MIT](https://img.shields.io/badge/license-MIT-purple.svg)](https://opensource.org/licenses/MIT)
 
-A comprehensive, pure-Dart QUIC protocol stack specification and architecture.
+A pure-Dart implementation of QUIC, HTTP/3, WebTransport, and libp2p QUIC transport.
 
 `quic_lib` is a pure-Dart implementation of [QUIC](https://www.rfc-editor.org/rfc/rfc9000.html) (RFC 9000), [HTTP/3](https://www.rfc-editor.org/rfc/rfc9114.html) (RFC 9114), [WebTransport](https://www.rfc-editor.org/rfc/rfc9220.html) (RFC 9220), and libp2p QUIC transport. The codebase is fully implemented with comprehensive tests and security hardening — zero native dependencies, zero `dart:ffi`.
 
@@ -24,6 +24,7 @@ A comprehensive, pure-Dart QUIC protocol stack specification and architecture.
 - [API documentation](#api-documentation)
 - [Testing](#testing)
 - [Contributing](#contributing)
+- [Changelog](CHANGELOG.md)
 - [License](#license)
 
 ## Features
@@ -69,7 +70,7 @@ Add `quic_lib` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  quic_lib: ^1.4.0
+  quic_lib: ^1.12.0
 ```
 
 Then run `dart pub get`.
@@ -159,7 +160,7 @@ Future<void> main() async {
   final request = Http3Request(
     method: 'GET',
     path: '/',
-    headers: {'host': 'example.com', 'user-agent': 'quic_lib/1.2.0'},
+    headers: {'host': 'example.com', 'user-agent': 'quic_lib/1.12.0'},
   );
   final streamId = await http3.sendRequest(request);
   print('Sent request on stream $streamId');
@@ -298,6 +299,10 @@ Contributions are welcome. Please read the architecture overview in `ARCHITECTUR
 The following item is tracked for a future release and does not affect typical short-lived connections:
 
 1. **HTTP/3 `Capsule` vs WebTransport `Capsule` naming** — as of v1.10.0, the WebTransport class is renamed to `WebTransportCapsule` to avoid ambiguity with the HTTP/3 `Capsule` class. The old `Capsule` name remains available as a deprecated alias for backwards compatibility and will be removed in a future major release.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a complete history of releases and fixes.
 
 ## License
 

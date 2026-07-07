@@ -20,6 +20,12 @@ import 'io/udp_rate_limiter_test.dart' as udp_rate_limiter_test;
 // End-to-end tests
 import 'e2e/http3_e2e_test.dart' as http3_e2e_test;
 
+// HTTP/3 server push tests
+import 'http3/server_push_test.dart' as server_push_test;
+
+// Interop tests
+import 'interop/interop_test.dart' as interop_test;
+
 void main() {
   hex_test.main();
   varint_test_cases_test.main();
@@ -29,4 +35,5 @@ void main() {
   crypto_backend_test.main();
   udp_rate_limiter_test.main();
   http3_e2e_test.main();
+  interop_test.main();
 }

@@ -1,6 +1,6 @@
 # quic_lib Architecture
 
-**Version:** 1.12.0  
+**Version:** 1.12.3  
 **Last updated:** 2026-07-07
 
 ---
@@ -45,20 +45,21 @@
 
 | Directory | Purpose | Key Classes |
 |-----------|---------|-------------|
-| `lib/src/connection/` | Connection lifecycle, CID management, migration | `QuicConnection`, `ConnectionStateMachine`, `ConnectionIdManager`, `MigrationHelper` |
+| `lib/src/connection/` | Connection lifecycle, CID management, version negotiation, migration, packet receive/send | `QuicConnection`, `ConnectionStateMachine`, `ConnectionIdManager`, `ConnectionRegistry`, `MigrationHelper`, `PacketReceiver`, `PacketSender`, `VersionInformation`, `VersionNegotiation` |
 | `lib/src/connection/congestion_control/` | Pluggable congestion controllers | `CongestionController` (abstract), `CubicCongestionController`, `BbrCongestionController`, `Hystart` |
-| `lib/src/recovery/` | Loss detection, congestion, RTT, pacing, ACK policy | `LossDetector`, `RecoveryManager`, `RttEstimator`, `PtoScheduler`, `SentPacketTracker`, `AckGenerator`, `AckFrequencyPolicy`, `PacingTimer` |
-| `lib/src/streams/` | QUIC stream lifecycle and flow control | `StreamId`, `SendStateMachine`, `ReceiveStateMachine`, `ReassemblyBuffer`, `FlowController` |
-| `lib/src/crypto/` | TLS, key derivation, packet protection | `DefaultCryptoBackend`, `InitialSecrets`, `KeyManager` |
-| `lib/src/crypto/packet/` | Per-packet crypto primitives | `PacketProtector`, `HeaderProtection`, `KeyUpdate`, `ProtectedPacketCodec`, `SpaceKeys` |
-| `lib/src/crypto/tls/` | TLS handshake subsystem | `HandshakeCoordinator`, `HandshakeKeyExchange`, `CryptoFrameHandler`, `CryptoFrameAssembler`, `CertificateChain`, `CertificateVerifier`, `RevocationParser`, `RevocationPolicy`, `X509Parser` |
-| `lib/src/wire/` | Packet and frame serialization | `VarInt`, `PacketHeader`, `FrameCodec`, `CoalescedPacket`, `V2LongHeader` |
-| `lib/src/http3/` | HTTP/3 frames, QPACK, capsule protocol | `Http3Connection`, `Http3Frame`, `Http3SettingsFrame`, `QpackEncoder`, `QpackDecoder`, `QpackDynamicTable`, `QpackEncoderStream` (`EncoderInstruction`), `QpackDecoderStream` (`DecoderInstruction`), `Capsule` |
-| `lib/src/webtransport/` | WebTransport session and capsules | `WebTransportSession`, `WebTransportCapsule`, `CapsuleRouter`, `WebTransportSessionManager` |
-| `lib/src/libp2p/` | Multiaddr, PeerId, DCUtR, libp2p QUIC | `Multiaddr`, `PeerId`, `DCUtRMessage`, `Libp2pQuicTransport`, `Libp2pQuicConnection` |
-| `lib/src/io/` | UDP socket and endpoint | `UdpSocket`, `QuicEndpoint` |
+| `lib/src/recovery/` | Loss detection, congestion, RTT, pacing, ACK policy, packet-number spaces | `LossDetector`, `RecoveryManager`, `RttEstimator`, `PtoScheduler`, `SentPacketTracker`, `AckGenerator`, `AckFrequencyPolicy`, `PacingTimer`, `PacingCalculator`, `PacketNumberSpaceManager` |
+| `lib/src/streams/` | QUIC stream lifecycle, flow control, scheduling, reassembly | `QuicStream`, `StreamId`, `StreamManager`, `SendStateMachine`, `ReceiveStateMachine`, `ReassemblyBuffer`, `FlowController`, `StreamScheduler`, `RoundRobinScheduler` |
+| `lib/src/crypto/` | TLS key derivation, packet protection, retry tokens, 0-RTT, session tickets | `CryptoBackend`, `DefaultCryptoBackend`, `InitialSecrets`, `KeyManager`, `CipherSuite`, `RetryTokenGenerator`, `SessionTicketStore`, `ZeroRttHelper` |
+| `lib/src/crypto/packet/` | Per-packet crypto primitives | `PacketProtector`, `HeaderProtection`, `KeyDerivation`, `KeyUpdate`, `NonceGenerator`, `ProtectedPacketCodec`, `RetryIntegrityTag`, `SpaceKeys` |
+| `lib/src/crypto/tls/` | TLS handshake subsystem | `HandshakeCoordinator`, `HandshakeKeyExchange`, `HandshakeStateMachine`, `CryptoFrameHandler`, `CryptoFrameAssembler`, `CryptoFrameDeliverer`, `CryptoMessageParser`, `TlsMessageBuilder`, `TlsHandshakeTypes`, `TranscriptHash`, `CertificateChain`, `CertificateVerifier`, `CertificateMessage`, `CertificateVerify`, `ClientHello`, `ServerHello`, `EncryptedExtensions`, `FinishedMessage`, `NewSessionTicket`, `RevocationParser`, `RevocationPolicy`, `X509Parser` |
+| `lib/src/wire/` | Packet and frame serialization | `VarInt`, `PacketHeader`, `V2LongHeader`, `Frame`, `FrameCodec`, `CoalescedPacket`, `PacketBuilder`, `PacketNumber`, `QuicVersions`, `QuicBitGreaser`, `RetryPacketBuilder`, `StatelessResetGenerator`, `TransportErrorCodes`, `VersionNegotiationPacket` |
+| `lib/src/http3/` | HTTP/3 frames, QPACK, capsule protocol, WebTransport session | `Http3Connection`, `Http3Request`, `Http3Response`, `Http3Stream`, `Http3BodyStream`, `Http3DataFrame`, `HeadersFrame`, `SettingsFrame`, `GoawayFrame`, `CancelPushFrame`, `MaxPushIdFrame`, `PushPromiseFrame`, `OriginFrame`, `PriorityUpdateFrame`, `ExtendedConnectRequest`, `CapsuleProtocol`, `QpackEncoder`, `QpackDecoder`, `QpackDynamicTable`, `QpackEncoderStream`, `QpackDecoderStream`, `QpackInteger`, `QpackString`, `QpackStaticTable`, `Huffman`, `WebTransportSession` |
+| `lib/src/webtransport/` | WebTransport capsules and session management | `WebTransportSession`, `WebTransportCapsule`, `WebTransportSessionManager`, `CapsuleRouter`, `CapsuleType`, `DatagramCapsule`, `StreamCapsule`, `GoawayCapsule`, `WebTransportStreamType`, `WebTransportStreamId` |
+| `lib/src/libp2p/` | Multiaddr, PeerId, DCUtR, libp2p QUIC, TLS extension, certificate generation | `Multiaddr`, `PeerId`, `DCUtRMessage`, `DCUtRStateMachine`, `DCUtRUdpCoordinator`, `Libp2pQuicTransport`, `Libp2pQuicConnection`, `Libp2pCertificateGenerator`, `Libp2pTlsExtension`, `MultistreamSelect`, `Libp2pPublicKey`, `SignedKey`, `Libp2pExtension` |
+| `lib/src/io/` | UDP socket, endpoint, isolates, rate limiting | `UdpSocket`, `QuicEndpoint`, `UdpRateLimiter`, `ConnectionIsolate`, `IsolateSupervisor`, `PlatformAddress` |
 | `lib/src/security/` | Defensive utilities | `RateLimiter`, `AntiAmplificationLimit` |
 | `lib/src/logging/` | Logging abstraction | `QuicLogger` |
+| `lib/src/utils/` | Shared helpers (collections, hex formatting) | `collections` helpers, `hex` helpers |
 
 ---
 
@@ -210,6 +211,14 @@ See `SECURITY_FIXES.md` for the complete list.
 ---
 
 ## Known Gaps
+
+### Completed in v1.12.3
+
+| Gap | Status |
+|-----|--------|
+| UDP per-source rate limiting | **DONE** — extracted from `UdpSocket` into `UdpRateLimiter` with an injectable clock; per-remote-endpoint limits are enforced independently |
+| Test-only socket backdoors | **REMOVED** — `UdpSocket` `@visibleForTesting` backdoors (`ipTimestampsForTest`, `evictOldestIpForTest`) removed from the public API |
+| Example public-API alignment | **DONE** — `example/echo_common.dart` uses the public `HandshakeRole` API instead of importing `package:quic_lib/src/...` |
 
 ### Completed in v1.12.0
 

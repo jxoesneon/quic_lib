@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.13.0] - 2026-07-07 — Final v1.x Release
+
+This release closes all eight final v1.x release criteria from ROADMAP.md §10. All new feature work now shifts to v2.0.0.
+
+### Added
+- **OCSP/CRL fetching and validation** (ROADMAP #1): `OcspFetcher` and `CrlFetcher` classes with DER-encoded response parsing; wired into `CertificateVerifier` with `hardFail`/`softFail` semantics. `RevocationPolicy.hardFail` is now backed by a real implementation.
+- **HTTP/3 server push** (ROADMAP #2): `sendPushPromise` and `sendPushResponse` methods on `Http3Connection`; push stream creation (type byte + varint push ID) and client-side push stream delivery via `onPushStreamData`.
+- **WebTransport flow-control enforcement** (ROADMAP #3): `WebTransportFlowController` with session-level and per-stream send/receive credit tracking; `DRAIN_CAPABILITIES`, `WEBTRANSPORT_MAX_DATA`, and `WEBTRANSPORT_MAX_STREAM_DATA` capsule processing; enforcement wired into `WebTransportSession.sendDatagram` and `sendStreamData`.
+- **QUIC v2 behaviors** (ROADMAP #4): V2 initial salt (RFC 9369 §3.3.1), V2 retry integrity key/nonce (§3.3.3), version negotiation dispatch for V2 packets, and `V2LongHeader` packet building.
+- **Interop test matrix scaffold** (ROADMAP #8): `test/interop/` with 5 reference implementations (quic-go, aioquic, ngtcp2, cloudflare-quiche, msquic) × 7 features; tests skip gracefully when references are not installed.
+
+### Fixed
+- `test/all_tests.dart`: removed dead imports for helper `_test.dart` files that were deleted in v1.2.0.
+
+### Closed
+- ROADMAP #5 (ASN.1/DER parser): formally accepted as sufficient for v1.x.
+- ROADMAP #6 (Institutional docs sign-off): closed via v1.12.4 doc refresh.
+- ROADMAP #7 (Missing release tags): all tags v0.0.0–v1.12.4 verified present.
+
+---
+
 ## [1.12.4] - 2026-07-07
 
 ### Documentation

@@ -188,6 +188,45 @@
 
 ---
 
+## Security Fixes from v1.5.0 through v1.12.0
+
+### v1.12.0 — 2026-07-07
+- **Peer certificate exposure**: Added `peerCertificate` and `peerCertificateVerify` to `QuicConnection` for proper certificate verification after TLS handshake
+- **Malformed TLS Certificate handling**: Fixed to log malformed TLS Certificate messages instead of propagating exceptions
+
+### v1.11.0 — 2026-06-29
+- **QPACK integer overflow**: Fixed `QpackInteger.decode` to throw `ArgumentError` when continuation exceeds 62-bit limit instead of returning out-of-range value
+- **Packet parsing robustness**: `PacketReceiver.processPacket` now catches malformed header parsing and drops packets instead of propagating exceptions
+
+### v1.10.0 — 2026-06-29
+- **API ambiguity**: Renamed WebTransport `Capsule` class to `WebTransportCapsule` to resolve ambiguity with HTTP/3 `Capsule` class
+
+### v1.9.0 — 2026-06-29
+- **Certificate revocation parsing**: Added CRL/OCSP extension parsing with `RevocationInfo` extraction from X.509 extensions
+
+### v1.8.0 — 2026-06-29
+- **libp2p TLS signature compliance**: Fixed SignedKey signature to compute over proper handshake message per libp2p TLS spec
+
+### v1.7.0 — 2026-06-29
+- **QPACK stream management**: Added QPACK encoder/decoder streams for proper HTTP/3 header compression
+
+### v1.6.0 — 2026-06-29
+- **Packet pacing enforcement**: Added RFC 9002 §7.7 compliance with `PacingTimer` to prevent packet burst attacks
+
+### v1.5.0 — 2026-06-29
+- **Key update security**: Implemented peer-initiated key update detection with rollback protection and timing side-channel prevention
+- **Initial packet padding**: Enforced 1200-byte minimum padding for client Initial packets per RFC 9000
+- **0-RTT key management**: Added proper 0-RTT early-data flag handling and key cleanup
+- **Key phase protection**: Prevented non-monotonic key updates and enforced proper key phase transitions
+
+### v1.4.2 — 2026-06-29 (Security Patch)
+- **Unknown frame handling**: Fixed to treat unknown frame types as `FRAME_ENCODING_ERROR` per RFC 9000
+- **Capsule size limits**: Added 1 MiB limit to prevent DoS via memory exhaustion
+- **DATAGRAM frame limits**: Enforced 1 MiB upper bound on DATAGRAM frame payloads
+- **ACK_FREQUENCY validation**: Added proper validation per RFC 9298 to prevent malformed frames
+
+---
+
 ## Security Audit Amendments (Post-Audit)
 
 ### A1. QuicConnection Subsystem Wiring
@@ -257,10 +296,10 @@
 
 | Metric | Value |
 |--------|-------|
-| Total tests | 1030 |
-| Passing | 1030 |
+| Total tests | 2188 |
+| Passing | 2188 |
 | Failing | 0 |
-| Line coverage | 96.28%+ |
+| Line coverage | 94.89% |
 | Analyzer issues | 0 |
 
 ---

@@ -56,4 +56,6 @@
 
 ## Contributing
 
+- [Contributing Guidelines](../CONTRIBUTING.md)
+- [Code of Conduct](../CODE_OF_CONDUCT.md)
 - [Extension & Contribution Guide](EXTENSION_GUIDE.md)

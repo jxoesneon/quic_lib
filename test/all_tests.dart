@@ -17,6 +17,9 @@ import 'helpers/test_with_logging_test.dart' as test_with_logging_test;
 import 'crypto/crypto_backend_test.dart' as crypto_backend_test;
 import 'io/udp_rate_limiter_test.dart' as udp_rate_limiter_test;
 
+// End-to-end tests
+import 'e2e/http3_e2e_test.dart' as http3_e2e_test;
+
 void main() {
   hex_test.main();
   varint_test_cases_test.main();
@@ -25,4 +28,5 @@ void main() {
   test_with_logging_test.main();
   crypto_backend_test.main();
   udp_rate_limiter_test.main();
+  http3_e2e_test.main();
 }

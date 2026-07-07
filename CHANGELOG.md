@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.12.3] - 2026-07-07
+
+### Changed
+- Extract UDP per-source rate limiting from `UdpSocket` into a dedicated, testable `UdpRateLimiter` class with an injectable clock.
+- Remove `@visibleForTesting` backdoors from `UdpSocket` (`ipTimestampsForTest` and `evictOldestIpForTest`).
+- Align the echo example's `KeyManager.forTestWithKeys` usage with the public `HandshakeRole` API so `example/echo_common.dart` no longer imports from `package:quic_lib/src/...`.
+
+### Documentation
+- Add dartdoc comments to all remaining undocumented public API elements, raising pub.dev documentation coverage from 82.6% to 100.0%.
+- Enable the `public_member_api_docs` lint in `analysis_options.yaml`.
+
 ## [1.12.2] - 2026-07-07
 
 ### Changed

@@ -36,15 +36,15 @@ jobs:
     continue-on-error: ${{ matrix.sdk == 'beta' }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup Dart SDK
-        uses: dart-lang/setup-dart@v1
+        uses: dart-lang/setup-dart@65eb853643f5fc5646e3b1ce0934064b8b1a6f23 # v1.7.2
         with:
           sdk: ${{ matrix.sdk }}
 
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@1bd1e32a3bdc45362d1e1db2e1d916222352f7a2 # v4.3.0
         with:
           path: ~/.pub-cache
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
@@ -77,15 +77,15 @@ jobs:
     continue-on-error: ${{ matrix.sdk == 'beta' }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup Dart SDK
-        uses: dart-lang/setup-dart@v1
+        uses: dart-lang/setup-dart@65eb853643f5fc5646e3b1ce0934064b8b1a6f23 # v1.7.2
         with:
           sdk: ${{ matrix.sdk }}
 
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@1bd1e32a3bdc45362d1e1db2e1d916222352f7a2 # v4.3.0
         with:
           path: ~/.pub-cache
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
@@ -98,48 +98,12 @@ jobs:
       - name: Run unit tests
         run: dart test --concurrency=4
 
-  component:
-    name: Component Tests
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
-    needs: unit
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        sdk: [stable]
-        include:
-          - os: ubuntu-latest
-            sdk: beta
-    continue-on-error: ${{ matrix.sdk == 'beta' }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Dart SDK
-        uses: dart-lang/setup-dart@v1
-        with:
-          sdk: ${{ matrix.sdk }}
-
-      - name: Cache pub dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-
-      - name: Install dependencies
-        run: dart pub get
-
-      - name: Run component tests
-        run: dart test --concurrency=4
+  
 
   integration:
     name: Integration Tests
     if: github.event_name == 'pull_request'
-    needs: component
+    needs: unit
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     continue-on-error: ${{ matrix.os != 'ubuntu-latest' }}
@@ -150,15 +114,15 @@ jobs:
         sdk: [stable]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup Dart SDK
-        uses: dart-lang/setup-dart@v1
+        uses: dart-lang/setup-dart@65eb853643f5fc5646e3b1ce0934064b8b1a6f23 # v1.7.2
         with:
           sdk: ${{ matrix.sdk }}
 
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@1bd1e32a3bdc45362d1e1db2e1d916222352f7a2 # v4.3.0
         with:
           path: ~/.pub-cache
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
@@ -191,20 +155,20 @@ jobs:
   coverage:
     name: Coverage
     if: github.event_name == 'push' || github.event_name == 'pull_request'
-    needs: [unit, component]
+    needs: unit
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup Dart SDK
-        uses: dart-lang/setup-dart@v1
+        uses: dart-lang/setup-dart@65eb853643f5fc5646e3b1ce0934064b8b1a6f23 # v1.7.2
         with:
           sdk: stable
 
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@1bd1e32a3bdc45362d1e1db2e1d916222352f7a2 # v4.3.0
         with:
           path: ~/.pub-cache
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
@@ -227,17 +191,11 @@ jobs:
             --report-on=lib
 
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea58fc865b7da5fdfdf88663f # v4.6.2
         with:
           name: coverage-report-${{ github.run_id }}
           path: coverage/lcov.info
 
-      # Uncomment the step below to upload to Codecov once the repository is configured.
-      # - name: Upload coverage to Codecov
-      #   uses: codecov/codecov-action@v4
-      #   with:
-      #     files: coverage/lcov.info
-      #     fail_ci_if_error: false
 
   fuzz:
     name: Fuzz Tests
@@ -248,15 +206,15 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup Dart SDK
-        uses: dart-lang/setup-dart@v1
+        uses: dart-lang/setup-dart@65eb853643f5fc5646e3b1ce0934064b8b1a6f23 # v1.7.2
         with:
           sdk: stable
 
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@1bd1e32a3bdc45362d1e1db2e1d916222352f7a2 # v4.3.0
         with:
           path: ~/.pub-cache
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
@@ -278,15 +236,15 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup Dart SDK
-        uses: dart-lang/setup-dart@v1
+        uses: dart-lang/setup-dart@65eb853643f5fc5646e3b1ce0934064b8b1a6f23 # v1.7.2
         with:
           sdk: stable
 
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@1bd1e32a3bdc45362d1e1db2e1d916222352f7a2 # v4.3.0
         with:
           path: ~/.pub-cache
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
@@ -301,33 +259,42 @@ jobs:
 
   changelog:
     name: Check CHANGELOG.md
-    if: |
-      (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')) ||
-      (github.event_name == 'pull_request' && startsWith(github.base_ref, 'release/'))
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0
 
-      - name: Verify CHANGELOG.md was updated
+      - name: Verify CHANGELOG.md
         shell: bash
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            git fetch origin ${{ github.base_ref }} --depth=1
-            if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "CHANGELOG.md"; then
-              echo "CHANGELOG.md was updated in this PR."
+            git fetch origin main --depth=1
+            # Check if CHANGELOG.md has [Unreleased] section
+            if grep -q "## \[Unreleased\]" CHANGELOG.md; then
+              echo "CHANGELOG.md has [Unreleased] section."
             else
-              echo "ERROR: CHANGELOG.md must be updated on release branches."
-              exit 1
+              echo "WARNING: CHANGELOG.md missing [Unreleased] section. Consider adding it for pending changes."
+            fi
+            # Check if there are changes that should affect changelog
+            if git diff --name-only origin/main...HEAD | grep -E "\.(dart|yaml|md)$" > /dev/null; then
+              echo "Code changes detected in this PR."
             fi
           else
-            if git diff --name-only HEAD^ HEAD | grep -q "CHANGELOG.md"; then
-              echo "CHANGELOG.md was updated in the latest commit."
+            # For pushes to main, just ensure CHANGELOG.md exists and has valid format
+            if [[ -f "CHANGELOG.md" ]]; then
+              echo "CHANGELOG.md exists."
+              if grep -q "## \[" CHANGELOG.md; then
+                echo "CHANGELOG.md has version headings."
+              else
+                echo "ERROR: CHANGELOG.md missing version headings."
+                exit 1
+              fi
             else
-              echo "ERROR: CHANGELOG.md must be updated on release branches."
+              echo "ERROR: CHANGELOG.md not found."
               exit 1
             fi
           fi

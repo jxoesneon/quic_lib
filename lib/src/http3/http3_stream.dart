@@ -29,7 +29,10 @@ enum StreamType {
   /// QPACK decoder stream (RFC 9204 Section 4.2).
   qpackDecoder(0x03);
 
+  /// The varint-encoded wire value for this stream type.
   final int value;
+
+  /// Creates a stream type identifier with the given wire [value].
   const StreamType(this.value);
 
   /// Looks up a stream type by its wire value.

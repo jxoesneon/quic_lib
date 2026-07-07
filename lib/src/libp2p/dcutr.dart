@@ -8,12 +8,19 @@ import '../utils/collections.dart';
 ///
 /// Per libp2p DCUtR spec, used for NAT hole punching coordination.
 class DCUtRMessage {
+  /// DCUtR CONNECT message type (0x01).
   static const int typeConnect = 0x01;
+
+  /// DCUtR SYNC message type (0x02).
   static const int typeSync = 0x02;
 
+  /// The message type, either [typeConnect] or [typeSync].
   final int type;
+
+  /// The observed address of the peer, encoded as raw bytes.
   final List<int> observedAddr;
 
+  /// Creates a DCUtR message with the given [type] and [observedAddr].
   DCUtRMessage({required this.type, required this.observedAddr});
 
   /// Serialize to bytes: uint8 type + uint16 addr_length + addr_bytes.
@@ -62,8 +69,14 @@ class DCUtRMessage {
 
 /// Handler for producing and validating DCUtR messages.
 class DCUtRHandler {
+  /// DCUtR CONNECT message type.
   static const int typeConnect = DCUtRMessage.typeConnect;
+
+  /// DCUtR SYNC message type.
   static const int typeSync = DCUtRMessage.typeSync;
+
+  /// Creates a DCUtR message handler.
+  DCUtRHandler();
 
   /// Initiate a DCUtR handshake as the dialer.
   DCUtRMessage initiateConnect(List<int> observedAddr) {

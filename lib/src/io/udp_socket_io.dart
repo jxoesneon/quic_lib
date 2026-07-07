@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io' show RawDatagramSocket, RawSocketEvent;
 import 'dart:typed_data';
 
+import 'package:meta/meta.dart';
+
 import 'platform_address.dart';
 
 /// Wrapper around [RawDatagramSocket] for QUIC.
@@ -102,4 +104,16 @@ class UdpSocket {
 
   /// The local port this socket is bound to.
   int get localPort => _socket.port;
+
+  /// Exposes the per-source-IP timestamp table for testing purposes.
+  ///
+  /// Do not use in production code.
+  @visibleForTesting
+  Map<String, List<int>> get ipTimestampsForTest => _ipTimestamps;
+
+  /// Invokes the eviction algorithm for testing purposes.
+  ///
+  /// Do not use in production code.
+  @visibleForTesting
+  void evictOldestIpForTest() => _evictOldestIp();
 }

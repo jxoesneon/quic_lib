@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.12.1] - 2026-07-07
+
+### Added
+- `test/e2e/rfc9001_handshake_test.dart` — end-to-end RFC 9001 handshake test exercising ephemeral X25519 key exchange, handshake traffic secrets, and an encrypted STREAM frame round-trip between two in-process loopback endpoints.
+- UDP socket rate-limiting and eviction tests in `test/io/udp_socket_test.dart` covering per-IP thresholds, window pruning, and memory-bounds eviction.
+- `example/echo_common.dart` shared helper for the loopback echo examples.
+
+### Changed
+- Rewrote `example/echo_client.dart` and `example/echo_server.dart` to perform a real encrypted QUIC STREAM-frame echo round-trip over UDP loopback using deterministic test keys.
+- Updated `example/README.md` with accurate run instructions and removed references to non-existent WebTransport/libp2p examples.
+- Added or expanded dartdoc comments on public frame types (`lib/src/wire/frame.dart`), `ReceiveStateMachine`, `QuicConnection` anti-amplification methods, and congestion-control classes (`bbr.dart`, `cubic.dart`).
+
 ## [1.12.0] - 2026-07-07
 
 ### Added

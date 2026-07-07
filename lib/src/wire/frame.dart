@@ -62,8 +62,20 @@ enum FrameType {
 // 0x00 PADDING
 // ---------------------------------------------------------------------------
 /// A PADDING frame (RFC 9000 Section 19.1).
+///
+/// PADDING frames carry no semantic information; they simply increase the
+/// size of a packet. They are used to pad Initial packets to the minimum
+/// 1200-byte datagram size required by RFC 9000 Section 14.1, and to
+/// prevent traffic analysis by obscuring the true payload length.
 class PaddingFrame extends Frame {
+  /// The number of zero bytes this frame occupies on the wire.
   final int length;
+
+  /// Creates a [PaddingFrame] that serializes to [length] zero bytes.
+  ///
+  /// [length] defaults to 1. The [FrameCodec] parser automatically coalesces
+  /// consecutive 0x00 bytes into a single [PaddingFrame] with the appropriate
+  /// [length].
   PaddingFrame({this.length = 1});
   @override
   int get frameType => 0x00;
@@ -79,7 +91,15 @@ class PaddingFrame extends Frame {
 // 0x01 PING
 // ---------------------------------------------------------------------------
 /// A PING frame (RFC 9000 Section 19.2).
+///
+/// A PING frame elicits an ACK from the peer and can be used to:
+/// - Keep the connection alive when there is no application data to send.
+/// - Probe whether the path is still alive before a PTO fires.
+/// - Prevent the peer's idle timeout from expiring.
+///
+/// The frame carries no data beyond the 0x01 type byte.
 class PingFrame extends Frame {
+  /// Creates a [PingFrame].
   PingFrame();
   @override
   int get frameType => 0x01;
@@ -216,11 +236,25 @@ class AckEcnFrame extends AckFrame {
 // 0x04 RESET_STREAM
 // ---------------------------------------------------------------------------
 /// A RESET_STREAM frame (RFC 9000 Section 19.4).
+///
+/// Abruptly terminates the sending part of a stream. The receiver discards
+/// all buffered data for the stream and notifies the application.
+///
+/// See also:
+/// - [StopSendingFrame] — requests the peer to stop sending on a stream.
+/// - RFC 9000 Section 3.1 — stream send-side state machine.
 class ResetStreamFrame extends Frame {
+  /// The stream to reset.
   final int streamId;
+
+  /// Application-defined error code explaining why the stream is being reset.
   final int errorCode;
+
+  /// The final byte offset of the stream, used for flow-control accounting.
   final int finalSize;
 
+  /// Creates a [ResetStreamFrame] for [streamId] with the given [errorCode]
+  /// and [finalSize].
   ResetStreamFrame(
       {required this.streamId,
       required this.errorCode,
@@ -244,10 +278,24 @@ class ResetStreamFrame extends Frame {
 // 0x05 STOP_SENDING
 // ---------------------------------------------------------------------------
 /// A STOP_SENDING frame (RFC 9000 Section 19.5).
+///
+/// Requests the peer to stop sending data on [streamId]. The peer responds
+/// by sending a RESET_STREAM frame for that stream. This is used when the
+/// application is no longer interested in receiving data but the stream was
+/// opened by the remote side.
+///
+/// See also:
+/// - [ResetStreamFrame] — abruptly terminates a sending stream.
+/// - RFC 9000 Section 3.5 — receiving STOP_SENDING.
 class StopSendingFrame extends Frame {
+  /// The stream on which the sender should stop sending.
   final int streamId;
+
+  /// Application-defined error code passed to the peer in the resulting
+  /// RESET_STREAM frame.
   final int errorCode;
 
+  /// Creates a [StopSendingFrame] for [streamId] with [errorCode].
   StopSendingFrame({required this.streamId, required this.errorCode});
 
   @override
@@ -267,10 +315,22 @@ class StopSendingFrame extends Frame {
 // 0x06 CRYPTO
 // ---------------------------------------------------------------------------
 /// A CRYPTO frame (RFC 9000 Section 19.6).
+///
+/// Carries TLS handshake bytes within a QUIC packet. Unlike STREAM frames,
+/// CRYPTO frames have no stream-level flow control; they are constrained only
+/// by the packet number space they appear in (Initial, Handshake, or 1-RTT).
+///
+/// The [offset] and [data.length] together define a byte range in the
+/// cryptographic byte stream for that packet number space. Gaps or overlapping
+/// deliveries are reassembled by the [CryptoFrameAssembler].
 class CryptoFrame extends Frame {
+  /// Byte offset of [data] within the TLS handshake byte stream.
   final int offset;
+
+  /// TLS record bytes carried by this frame.
   final List<int> data;
 
+  /// Creates a [CryptoFrame] with the given [offset] and [data].
   CryptoFrame({required this.offset, required this.data});
 
   @override
@@ -291,9 +351,18 @@ class CryptoFrame extends Frame {
 // 0x07 NEW_TOKEN
 // ---------------------------------------------------------------------------
 /// A NEW_TOKEN frame (RFC 9000 Section 19.7).
+///
+/// Sent by the server to provide the client with a token that can be used in
+/// the Initial packet of a future connection to the same server. This allows
+/// the server to validate the client's address without a round trip.
+///
+/// See also:
+/// - RFC 9000 Section 8.1.3 — using tokens from NEW_TOKEN.
 class NewTokenFrame extends Frame {
+  /// An opaque token that the client can use in a future Initial packet.
   final List<int> token;
 
+  /// Creates a [NewTokenFrame] carrying [token].
   NewTokenFrame({required this.token});
 
   @override
@@ -313,13 +382,42 @@ class NewTokenFrame extends Frame {
 // 0x08-0x0f STREAM
 // ---------------------------------------------------------------------------
 /// A STREAM frame (RFC 9000 Section 19.8).
+///
+/// STREAM frames carry application data for a specific stream. The frame
+/// type byte encodes three flags in its low-order bits:
+/// - Bit 0 (0x01): **FIN** — this frame contains the final byte of the stream.
+/// - Bit 1 (0x02): **LEN** — an explicit length field precedes the data.
+/// - Bit 2 (0x04): **OFF** — an explicit offset field precedes the data.
+///
+/// The resulting type is in the range 0x08–0x0f depending on which flags
+/// are set.
 class StreamFrame extends Frame {
+  /// The QUIC stream identifier this frame belongs to.
   final int streamId;
+
+  /// The application payload bytes carried by this frame.
   final List<int> data;
+
+  /// Byte offset of [data] within the stream, or `null` if omitted.
+  ///
+  /// When `null`, the receiver treats the offset as 0 (allowed only for
+  /// the first STREAM frame on a stream when no offset field is present).
   final int? offset;
+
+  /// Whether this is the final frame on the stream.
+  ///
+  /// When `true`, the FIN bit (0x01) is set in [frameType] and the peer
+  /// knows the total number of bytes in the stream.
   final bool fin;
+
+  /// Whether a length prefix is included in the wire encoding.
+  ///
+  /// When `true` the LEN bit (0x02) is set and the data length is written
+  /// before the payload, allowing multiple frames to be coalesced into
+  /// a single packet. Defaults to `true`.
   final bool hasExplicitLength;
 
+  /// Creates a [StreamFrame] carrying [data] for [streamId].
   StreamFrame({
     required this.streamId,
     required this.data,
@@ -357,8 +455,16 @@ class StreamFrame extends Frame {
 // 0x10 MAX_DATA
 // ---------------------------------------------------------------------------
 /// A MAX_DATA frame (RFC 9000 Section 19.9).
+///
+/// Increases the connection-level flow-control limit. [maxData] is the
+/// maximum number of bytes the sender is permitted to send on the entire
+/// connection (the sum of all stream data). The receiver sends this frame
+/// to grant the peer more send credit.
 class MaxDataFrame extends Frame {
+  /// New connection-level send limit in bytes.
   final int maxData;
+
+  /// Creates a [MaxDataFrame] advertising [maxData] as the new limit.
   MaxDataFrame({required this.maxData});
   @override
   int get frameType => 0x10;
@@ -371,10 +477,18 @@ class MaxDataFrame extends Frame {
 // 0x11 MAX_STREAM_DATA
 // ---------------------------------------------------------------------------
 /// A MAX_STREAM_DATA frame (RFC 9000 Section 19.10).
+///
+/// Increases the per-stream flow-control limit for [streamId]. The sender
+/// must not transmit more bytes on [streamId] than the limit communicated
+/// by this frame.
 class MaxStreamDataFrame extends Frame {
+  /// The stream whose send limit is being updated.
   final int streamId;
+
+  /// New per-stream send limit in bytes.
   final int maxStreamData;
 
+  /// Creates a [MaxStreamDataFrame] for [streamId] with [maxStreamData].
   MaxStreamDataFrame({required this.streamId, required this.maxStreamData});
 
   @override
@@ -394,10 +508,21 @@ class MaxStreamDataFrame extends Frame {
 // 0x12 MAX_STREAMS (bidi), 0x13 MAX_STREAMS (uni)
 // ---------------------------------------------------------------------------
 /// A MAX_STREAMS frame (RFC 9000 Section 19.11).
+///
+/// Increases the peer's stream concurrency limit. Two subtypes exist:
+/// - Frame type 0x12: bidirectional streams.
+/// - Frame type 0x13: unidirectional streams.
+///
+/// [isUnidirectional] selects the subtype. [maxStreams] is the new cumulative
+/// count of streams the peer is allowed to open (not a delta).
 class MaxStreamsFrame extends Frame {
+  /// New cumulative stream-count limit.
   final int maxStreams;
+
+  /// `true` for unidirectional streams (0x13); `false` for bidirectional (0x12).
   final bool isUnidirectional;
 
+  /// Creates a [MaxStreamsFrame] for the given [maxStreams] and direction.
   MaxStreamsFrame({required this.maxStreams, required this.isUnidirectional});
 
   @override
@@ -416,8 +541,15 @@ class MaxStreamsFrame extends Frame {
 // 0x14 DATA_BLOCKED
 // ---------------------------------------------------------------------------
 /// A DATA_BLOCKED frame (RFC 9000 Section 19.12).
+///
+/// Sent by a sender to indicate it is blocked at the connection-level
+/// flow-control limit [maxData]. This serves as a hint to the receiver that
+/// it should send a [MaxDataFrame] to increase the limit.
 class DataBlockedFrame extends Frame {
+  /// The connection-level limit at which the sender is blocked.
   final int maxData;
+
+  /// Creates a [DataBlockedFrame] reporting [maxData] as the blocking limit.
   DataBlockedFrame({required this.maxData});
   @override
   int get frameType => 0x14;
@@ -430,10 +562,18 @@ class DataBlockedFrame extends Frame {
 // 0x15 STREAM_DATA_BLOCKED
 // ---------------------------------------------------------------------------
 /// A STREAM_DATA_BLOCKED frame (RFC 9000 Section 19.13).
+///
+/// Sent when a sender is blocked on a per-stream flow-control limit. The
+/// [maxStreamData] value is the limit that is blocking the sender, providing
+/// the receiver a hint to send a [MaxStreamDataFrame] to unblock it.
 class StreamDataBlockedFrame extends Frame {
+  /// The stream that is blocked.
   final int streamId;
+
+  /// The per-stream limit at which the sender is blocked.
   final int maxStreamData;
 
+  /// Creates a [StreamDataBlockedFrame] for [streamId] at [maxStreamData].
   StreamDataBlockedFrame({required this.streamId, required this.maxStreamData});
 
   @override
@@ -453,10 +593,19 @@ class StreamDataBlockedFrame extends Frame {
 // 0x16 STREAMS_BLOCKED (bidi), 0x17 STREAMS_BLOCKED (uni)
 // ---------------------------------------------------------------------------
 /// A STREAMS_BLOCKED frame (RFC 9000 Section 19.14).
+///
+/// Sent when a sender wants to open a stream but has reached the peer's
+/// stream concurrency limit. Two subtypes exist (bidirectional 0x16 and
+/// unidirectional 0x17). [maxStreams] is the limit that is blocking the
+/// sender. The receiver should respond with a [MaxStreamsFrame].
 class StreamsBlockedFrame extends Frame {
+  /// The stream-count limit at which the sender is blocked.
   final int maxStreams;
+
+  /// `true` for unidirectional streams (0x17); `false` for bidirectional (0x16).
   final bool isUnidirectional;
 
+  /// Creates a [StreamsBlockedFrame] for the given [maxStreams] and direction.
   StreamsBlockedFrame(
       {required this.maxStreams, required this.isUnidirectional});
 
@@ -476,12 +625,31 @@ class StreamsBlockedFrame extends Frame {
 // 0x18 NEW_CONNECTION_ID
 // ---------------------------------------------------------------------------
 /// A NEW_CONNECTION_ID frame (RFC 9000 Section 19.15).
+///
+/// Provides the peer with an additional connection ID that can be used to
+/// send packets to this endpoint. Multiple connection IDs improve privacy
+/// by preventing on-path observers from linking packets across path changes
+/// or migrations.
+///
+/// The [retirePriorTo] field instructs the peer to retire any connection IDs
+/// with a sequence number lower than the given value, bounding the number
+/// of active IDs.
 class NewConnectionIdFrame extends Frame {
+  /// Monotonically increasing identifier for this connection ID offer.
   final int sequenceNumber;
+
+  /// Sequence number below which the peer should retire connection IDs.
   final int retirePriorTo;
+
+  /// The new connection ID bytes (1–20 bytes per RFC 9000 Section 17.2).
   final List<int> connectionId;
+
+  /// 16-byte stateless reset token associated with [connectionId].
   final List<int> statelessResetToken; // 16 bytes
 
+  /// Creates a [NewConnectionIdFrame].
+  ///
+  /// Throws [ArgumentError] if [statelessResetToken] is not exactly 16 bytes.
   NewConnectionIdFrame({
     required this.sequenceNumber,
     required this.retirePriorTo,
@@ -513,8 +681,17 @@ class NewConnectionIdFrame extends Frame {
 // 0x19 RETIRE_CONNECTION_ID
 // ---------------------------------------------------------------------------
 /// A RETIRE_CONNECTION_ID frame (RFC 9000 Section 19.16).
+///
+/// Informs the peer that the sender will no longer use the connection ID with
+/// the given [sequenceNumber]. The peer may reuse the retired slot for a
+/// future [NewConnectionIdFrame]. Retiring a connection ID does not affect
+/// the current active connection ID.
 class RetireConnectionIdFrame extends Frame {
+  /// Sequence number of the connection ID to retire, as assigned by the peer
+  /// in the corresponding [NewConnectionIdFrame].
   final int sequenceNumber;
+
+  /// Creates a [RetireConnectionIdFrame] retiring [sequenceNumber].
   RetireConnectionIdFrame({required this.sequenceNumber});
   @override
   int get frameType => 0x19;
@@ -527,9 +704,24 @@ class RetireConnectionIdFrame extends Frame {
 // 0x1a PATH_CHALLENGE
 // ---------------------------------------------------------------------------
 /// A PATH_CHALLENGE frame (RFC 9000 Section 19.17).
+///
+/// Used to verify reachability of a path during connection migration.
+/// The sender chooses a random 8-byte [data] value. The peer must echo the
+/// same bytes in a [PathResponseFrame]. A matching response confirms
+/// bidirectional reachability on the new path.
+///
+/// See also:
+/// - [PathResponseFrame] — the required reply to a PATH_CHALLENGE.
+/// - RFC 9000 Section 8.2 — path validation procedure.
 class PathChallengeFrame extends Frame {
+  /// 8-byte random challenge value.
   final Uint8List data; // 8 bytes
 
+  /// Creates a [PathChallengeFrame].
+  ///
+  /// If [data] is omitted, a cryptographically random 8-byte value is
+  /// generated automatically. Throws [ArgumentError] if [data] is provided
+  /// but its length is not exactly 8 bytes.
   PathChallengeFrame({List<int>? data})
       : data = data is Uint8List
             ? data
@@ -545,6 +737,10 @@ class PathChallengeFrame extends Frame {
         List<int>.generate(8, (_) => random.nextInt(256)));
   }
 
+  /// Parses a PATH_CHALLENGE frame from [bytes] starting at offset 0.
+  ///
+  /// [bytes] must be at least 9 bytes: 1 type byte (0x1a) followed by 8 bytes
+  /// of challenge data. Throws [ArgumentError] if the buffer is too short.
   static PathChallengeFrame parse(Uint8List bytes) {
     if (bytes.length < 9) {
       throw ArgumentError('PATH_CHALLENGE frame requires at least 9 bytes');
@@ -558,6 +754,7 @@ class PathChallengeFrame extends Frame {
   @override
   Uint8List serialize() => Uint8List.fromList([0x1a, ...data]);
 
+  /// Wire-format byte length of this frame: 1 type byte + 8 data bytes = 9.
   int get byteLength => 1 + 8;
 }
 
@@ -565,9 +762,21 @@ class PathChallengeFrame extends Frame {
 // 0x1b PATH_RESPONSE
 // ---------------------------------------------------------------------------
 /// A PATH_RESPONSE frame (RFC 9000 Section 19.18).
+///
+/// Sent in reply to a [PathChallengeFrame] to confirm that the sender can
+/// reach the challenger on this path. The [data] field must equal the
+/// 8-byte value from the corresponding PATH_CHALLENGE.
+///
+/// See also:
+/// - [PathChallengeFrame] — the challenge that triggers this response.
+/// - RFC 9000 Section 8.2.2 — validating a path with PATH_RESPONSE.
 class PathResponseFrame extends Frame {
+  /// 8-byte echo of the corresponding [PathChallengeFrame.data].
   final Uint8List data; // 8 bytes
 
+  /// Creates a [PathResponseFrame] echoing [data] from the challenge.
+  ///
+  /// Throws [ArgumentError] if [data] is not exactly 8 bytes.
   PathResponseFrame({required List<int> data})
       : data = data is Uint8List ? data : Uint8List.fromList(data) {
     if (this.data.length != 8) {
@@ -575,6 +784,10 @@ class PathResponseFrame extends Frame {
     }
   }
 
+  /// Parses a PATH_RESPONSE frame from [bytes] starting at offset 0.
+  ///
+  /// [bytes] must be at least 9 bytes: 1 type byte (0x1b) followed by 8 bytes
+  /// of response data. Throws [ArgumentError] if the buffer is too short.
   static PathResponseFrame parse(Uint8List bytes) {
     if (bytes.length < 9) {
       throw ArgumentError('PATH_RESPONSE frame requires at least 9 bytes');
@@ -588,6 +801,7 @@ class PathResponseFrame extends Frame {
   @override
   Uint8List serialize() => Uint8List.fromList([0x1b, ...data]);
 
+  /// Wire-format byte length of this frame: 1 type byte + 8 data bytes = 9.
   int get byteLength => 1 + 8;
 }
 
@@ -595,11 +809,28 @@ class PathResponseFrame extends Frame {
 // 0x1c CONNECTION_CLOSE (transport)
 // ---------------------------------------------------------------------------
 /// A CONNECTION_CLOSE frame for transport errors (RFC 9000 Section 19.19).
+///
+/// Signals that the connection is being terminated due to a transport-level
+/// error. The [errorCode] identifies the error using QUIC transport error codes
+/// (RFC 9000 Section 20.1). The optional [offendingFrameType] names the frame
+/// type that triggered the error, and [reasonPhrase] carries a human-readable
+/// explanation.
+///
+/// See also:
+/// - [ApplicationCloseFrame] — terminates the connection due to an
+///   application-level error (frame type 0x1d).
+/// - RFC 9000 Section 10.2 — immediate connection close.
 class ConnectionCloseFrame extends Frame {
+  /// QUIC transport error code (RFC 9000 Section 20.1).
   final int errorCode;
+
+  /// Frame type that triggered the error, if known. May be `null`.
   final int? offendingFrameType;
+
+  /// Human-readable explanation of the error (UTF-8, may be empty).
   final String reasonPhrase;
 
+  /// Creates a [ConnectionCloseFrame].
   ConnectionCloseFrame({
     required this.errorCode,
     this.offendingFrameType,
@@ -630,10 +861,24 @@ class ConnectionCloseFrame extends Frame {
 // 0x1d CONNECTION_CLOSE (application)
 // ---------------------------------------------------------------------------
 /// A CONNECTION_CLOSE frame for application errors (RFC 9000 Section 19.19).
+///
+/// Terminates the connection due to an application-level error (frame type
+/// 0x1d). The [errorCode] is defined by the application protocol (e.g.,
+/// HTTP/3 error codes). Unlike [ConnectionCloseFrame], this variant does not
+/// carry an offending frame type.
+///
+/// See also:
+/// - [ConnectionCloseFrame] — transport-error variant (frame type 0x1c).
+/// - RFC 9000 Section 10.2.3 — immediate connection close for application errors.
 class ApplicationCloseFrame extends Frame {
+  /// Application protocol error code.
   final int errorCode;
+
+  /// Human-readable explanation of the error (UTF-8, may be empty).
   final String reasonPhrase;
 
+  /// Creates an [ApplicationCloseFrame] with the given [errorCode] and
+  /// optional [reasonPhrase].
   ApplicationCloseFrame({required this.errorCode, this.reasonPhrase = ''});
 
   @override
@@ -659,7 +904,15 @@ class ApplicationCloseFrame extends Frame {
 // 0x1e HANDSHAKE_DONE
 // ---------------------------------------------------------------------------
 /// A HANDSHAKE_DONE frame (RFC 9000 Section 19.20).
+///
+/// This frame is sent by the server immediately after the TLS handshake
+/// completes to signal to the client that handshake confirmation is finished
+/// and that Handshake keys may be discarded. Only the server sends this frame;
+/// receiving it from a client is a protocol violation.
+///
+/// The frame contains only the 0x1e type byte with no additional fields.
 class HandshakeDoneFrame extends Frame {
+  /// Creates a [HandshakeDoneFrame].
   HandshakeDoneFrame();
   @override
   int get frameType => 0x1e;

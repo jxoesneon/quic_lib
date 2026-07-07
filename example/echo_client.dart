@@ -1,67 +1,79 @@
-import 'dart:io';
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:quic_lib/quic_lib.dart';
 
-/// Minimal QUIC echo client example.
-///
-/// Demonstrates binding an endpoint, connecting to a server, opening a
-/// bidirectional stream, and writing data through the stream API. The raw
-/// packet path is also shown for callers that need low-level control.
-///
-/// This example uses the public QUIC API to stage data; a real end-to-end
-/// exchange requires the UDP send/recv path and TLS handshake to be wired.
-Future<void> main() async {
-  // 1. Create a QuicEndpoint bound to an ephemeral port.
-  final endpoint = await QuicEndpoint.bind(InternetAddress.loopbackIPv4, 0);
-  print(
-      'Endpoint bound to ${endpoint.localAddress.address}:${endpoint.localPort}');
+import 'echo_common.dart';
 
-  // 2. Connect to a server at 127.0.0.1:4433.
-  final remoteAddress = InternetAddress.loopbackIPv4;
-  const remotePort = 4433;
+/// QUIC echo client over loopback.
+///
+/// Sends an encrypted STREAM frame containing [echoMessage] to
+/// `127.0.0.1:12345` and waits for the server to echo it back. The client uses
+/// deterministic application keys from [createEchoConnection] so the example
+/// can run without a full TLS handshake.
+///
+/// Run with [echo_server.dart] listening first, then execute:
+/// ```bash
+/// dart run example/echo_client.dart
+/// ```
+Future<void> main() async {
+  final socket = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
+  print('Client bound to ${socket.address.address}:${socket.port}');
+
+  final connection = await createEchoConnection(role: EchoRole.client);
+  connection.stateMachine
+    ..transitionTo(ConnectionState.handshaking, reason: 'echo example')
+    ..transitionTo(ConnectionState.established, reason: 'echo example');
+  // Seed the anti-amplification budget so the first packet can be sent.
+  connection.onBytesReceived(1000);
+
+  // Pre-create the receive stream and listen so the echoed data is not lost
+  // when the response datagram is processed synchronously.
+  connection.streamManager.onStreamFrame(
+    StreamFrame(streamId: 0, data: Uint8List(0), fin: false, offset: 0),
+  );
+  final receiveStream =
+      connection.streamManager.getStream(0) as QuicReceiveStream;
+  final receivedChunks = <Uint8List>[];
+  receiveStream.incomingData.listen(receivedChunks.add);
+
+  final completer = Completer<String>();
+  final subscription = socket.listen((event) async {
+    if (event != RawSocketEvent.read) return;
+    final datagram = socket.receive();
+    if (datagram == null) return;
+
+    await connection.processEncryptedDatagram(datagram.data);
+
+    while (receivedChunks.isNotEmpty) {
+      final data = receivedChunks.removeAt(0);
+      if (data.isEmpty) continue;
+      completer.complete(utf8.decode(data));
+    }
+  });
+
+  final message = Uint8List.fromList(utf8.encode(echoMessage));
+  final packet = await connection.buildEncryptedPacket(
+    space: PacketNumberSpace.application,
+    frames: [
+      StreamFrame(streamId: 0, data: message, fin: false, offset: 0),
+    ],
+    dcid: echoTestDcid,
+  );
+
+  socket.send(packet, InternetAddress.loopbackIPv4, echoServerPort);
+  print('Sent: $echoMessage');
 
   try {
-    final connection = await endpoint.connect(remoteAddress, remotePort);
-    print('Connected: state=${connection.state}');
-
-    // Demonstrates custom stream scheduling (ADR-006).
-    connection.streamScheduler = RoundRobinScheduler();
-
-    // 3. Open a bidirectional stream.
-    final streamId = connection.openBidirectionalStream();
-    print('Opened bidirectional stream $streamId');
-
-    // 4. Write the message through the stream API.
-    final message = Uint8List.fromList(utf8.encode('Hello, QUIC!'));
-    final sendStream = connection.streamManager.getStream(streamId);
-    if (sendStream is QuicSendStream) {
-      sendStream.write(message);
-      sendStream.close();
-      print('Staged ${message.length} bytes on stream $streamId');
-    } else {
-      print('Could not obtain send stream for stream $streamId');
-    }
-
-    // 5. Alternatively, build an Application-space packet containing the frame.
-    final frame = StreamFrame(
-      streamId: streamId,
-      data: message,
-      fin: true,
-    );
-    final packet = await PacketSender.buildPacket(
-      frames: [frame],
-      space: PacketNumberSpace.application,
-      dcid: [],
-      packetNumber:
-          connection.allocatePacketNumber(PacketNumberSpace.application),
-    );
-    print('Prepared packet with ${packet.length} bytes');
-
-    print('Client scaffold complete — full wire send path not yet wired '
-        'end-to-end.');
-  } finally {
-    endpoint.close();
+    final echoed = await completer.future.timeout(const Duration(seconds: 5));
+    print('Received echo: $echoed');
+  } on TimeoutException {
+    print('Timed out waiting for echo. Is the server running?');
   }
+
+  await subscription.cancel();
+  socket.close();
+  connection.abort();
 }

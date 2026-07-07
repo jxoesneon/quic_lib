@@ -5,9 +5,11 @@ All notable changes to `quic_lib` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
 ---
 
-## [1.12.0] — 2026-07-07
+## [1.12.0] - 2026-07-07
 
 ### Added
 - Expose `peerCertificate` and `peerCertificateVerify` from `QuicConnection` after TLS handshake messages are received.
@@ -24,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 - Improved dartdoc on `Libp2pQuicTransport` and `Libp2pQuicConnection` public members.
 
-## [1.11.0] — 2026-06-29
+## [1.11.0] - 2026-06-29
 
 ### Added
 - **121 new tests** for fuzzing, error paths, and coverage gaps:
@@ -56,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.10.0] — 2026-06-29
+## [1.10.0] - 2026-06-29
 
 ### Changed
 - Renamed the WebTransport `Capsule` class to `WebTransportCapsule` to resolve the public API ambiguity with the HTTP/3 `Capsule` class in `lib/src/http3/capsule_protocol.dart`.
@@ -66,7 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.9.0] — 2026-06-29
+## [1.9.0] - 2026-06-29
 
 ### Added
 - **CRL/OCSP extension parsing (Phase 1)** — `CertificateInfo` now exposes a `revocationInfo` field containing OCSP responder URLs and CRL distribution point URLs extracted from the peer certificate's X.509 extensions.
@@ -79,7 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.8.0] — 2026-06-29
+## [1.8.0] - 2026-06-29
 
 ### Fixed
 - **libp2p TLS extension signature algorithm** — brought the SignedKey signature into compliance with the libp2p TLS spec. The signature is now computed over `UTF-8("libp2p-tls-handshake:") || SubjectPublicKeyInfo_DER` instead of the raw host public key bytes.
@@ -93,7 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.7.0] — 2026-06-29
+## [1.7.0] - 2026-06-29
 
 ### Added
 - **QPACK encoder/decoder streams (RFC 9204 Section 4.2)** — `Http3Connection` now owns a `QpackEncoder` and `QpackDecoder`, opens QPACK unidirectional streams, and flushes encoder/decoder instructions.
@@ -112,7 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.6.0] — 2026-06-29
+## [1.6.0] - 2026-06-29
 
 ### Added
 - **Packet pacing enforcement (RFC 9002 §7.7)** — added `PacingTimer` and wired it into `QuicConnection.buildPacket` / `buildEncryptedPacket`. Pacing is now enforced with a synchronous delay when the congestion window exceeds the burst threshold; ACK-only packets are skipped as recommended by the RFC.
@@ -122,7 +124,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.5.0] — 2026-06-29
+## [1.5.0] - 2026-06-29
 
 ### Added
 - **Peer-initiated key update detection (RFC 9001 §6.2)** — `QuicConnection` now detects key updates initiated by the peer via the 1-RTT key phase bit and updates local send keys to match
@@ -142,7 +144,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.4.2] — 2026-06-29
+## [1.4.2] - 2026-06-29
 
 ### Fixed
 - **RFC 9000 unknown frame handling** — `FrameCodec.parse` now treats unknown frame types as `FRAME_ENCODING_ERROR` per RFC 9000 Section 12.4 (1.4.1 incorrectly ignored them)
@@ -160,7 +162,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.4.1] — 2026-06-29
+## [1.4.1] - 2026-06-29
 
 ### Added
 - **RFC 9000 transport error codes** — `QuicTransportErrorCode` enum defines all 17 standard error codes (0x00–0x10) per RFC 9000 Section 20.1; includes `fromValue()` lookup helper
@@ -175,7 +177,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.4.0] — 2026-06-29
+## [1.4.0] - 2026-06-29
 
 ### Added
 - **BBR congestion control** — `BbrCongestionController` implements Bottleneck Bandwidth and RTT (BBR) congestion control algorithm; exported in `lib/quic.dart` and `lib/quic_lib.dart`
@@ -214,7 +216,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.3.0] — 2026-06-28
+## [1.3.0] - 2026-06-28
 
 ### Protocol Completeness
 - Fixed RFC 9000 errata (8240, 7861, 8410, 7702)
@@ -243,7 +245,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.2.3] — 2026-06-28
+## [1.2.3] - 2026-06-28
 
 ### Platform Support
 - **Honest platform declaration** — Removed `web:` from `pubspec.yaml` platforms. `quic_lib` is a native-only package; QUIC requires raw UDP sockets which browsers intentionally block for security reasons (DDoS amplification, port scanning, DNS poisoning).
@@ -254,7 +256,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `libp2p_quic_transport.dart` and `dcutr_udp_coordinator.dart` updated to use platform address abstraction
 - **Documentation** — Added `doc/WEB_AND_WASM.md` explaining why web is unsupported, the browser security model, and recommended alternatives (WebTransport API, WebRTC data channels)
 
-## [1.2.2] — 2026-06-28
+## [1.2.2] - 2026-06-28
 
 ### Fixes
 - **Static analysis clean** — Fixed 29 `curly_braces_in_flow_control_structures` info issues in `handshake_coordinator.dart`, `frame.dart`, and `packet_header.dart`
@@ -262,7 +264,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Updated dependencies** — Bumped `pointycastle` from `^3.7.0` to `^4.0.0`
 - **Example directory** — Added `example/README.md` and `example/pubspec.yaml` for pub.dev example detection
 
-## [1.2.1] — 2026-06-28
+## [1.2.1] - 2026-06-28
 
 ### Documentation
 - Comprehensive API documentation hardening for pub.dev
@@ -272,7 +274,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced README with TOC, feature matrix, platform support, and 4 complete examples
 - Added GitHub Actions automated publishing workflow
 
-## [1.2.0] — 2026-06-27
+## [1.2.0] - 2026-06-27
 
 ### Security (Security Hardening)
 - **Fixed certificate chain verification bug** — `CertificateVerifier` now uses `chain[i+1].publicKey` as issuer key for intermediate certificates instead of always using `trustedRoot`
@@ -316,7 +318,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.1.0] — 2026-06-27
+## [1.1.0] - 2026-06-27
 
 ### Added
 - **TLS transcript hash tracking** — `TranscriptHash` maintains a running SHA-256 hash of all handshake messages; `HandshakeCoordinator` adds ClientHello to transcript before shared secret computation
@@ -329,7 +331,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.0.0] — 2026-06-27
+## [1.0.0] - 2026-06-27
 
 ### Added
 - **PeerId encoding fully wired** — `fromBase58()`, `toBase58()`, `toBase36()` now delegate to the implemented `encodeBase58`/`decodeBase58`/`encodeBase36` methods; no remaining `UnimplementedError` stubs in PeerId
@@ -346,7 +348,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.5.0] — 2026-06-27
+## [0.5.0] - 2026-06-27
 
 ### Added
 - **Flow control frame handlers** — `QuicConnection._dispatchFrames` now handles `MAX_DATA` (connection-level), `MAX_STREAM_DATA` (stream-level via `StreamManager`), and `MAX_STREAMS` (scaffold comment); `connectionFlowController` getter exposed
@@ -358,7 +360,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.4.0] — 2026-06-27
+## [0.4.0] - 2026-06-27
 
 ### Added
 - **TLS certificate chain verification** — `CertificateInfo`, `CertificateChain`, `parseCertificate()` with validity date checks and algorithm filtering; `CertificateVerifier.verifyCertificateChain()` now delegates to `CertificateChain.validateChain()`
@@ -375,7 +377,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.3.0] — 2026-06-27
+## [0.3.0] - 2026-06-27
 
 ### Added
 - **DCUtR NAT hole punching** — `DCUtRUdpCoordinator` wires `DCUtRStateMachine` into `UdpSocket` for real UDP-based NAT hole punching with magic-prefixed datagrams
@@ -392,7 +394,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.2.0] — 2026-06-27
+## [0.2.0] - 2026-06-27
 
 ### Added
 - **`HandshakeKeyExchange`** — X25519 ephemeral key generation, shared secret computation, and TLS 1.3-style handshake secret derivation (scaffold for real TLS stack)
@@ -406,7 +408,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.1.0-beta.1] — 2026-06-27
+## [0.1.0-beta.1] - 2026-06-27
 
 ### Added
 - **`PacketNumberReconstructor`** — reconstructs full packet numbers from truncated short-header PNs per RFC 9000 §17.1
@@ -419,7 +421,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.1.0-alpha.4] — 2026-06-27
+## [0.1.0-alpha.4] - 2026-06-27
 
 ### Added
 - **`ProtectedPacketCodec`** — full header protection + AEAD round-trip codec for LongHeader and ShortHeader packets
@@ -436,7 +438,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.1.0-alpha.3] — 2026-06-27
+## [0.1.0-alpha.3] - 2026-06-27
 
 ### Added
 - **AEAD encryption/decryption wiring** in packet pipeline:
@@ -453,7 +455,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.1.0-alpha.2] — 2026-06-27
+## [0.1.0-alpha.2] - 2026-06-27
 
 ### Added
 - **Packet pipeline integration** in `QuicConnection`:
@@ -471,7 +473,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.1.0-alpha.1] — 2026-06-27
+## [0.1.0-alpha.1] - 2026-06-27
 
 ### Security
 - **36 security fixes** applied across 7 audit loops covering DoS, overflow, replay, info disclosure, timing side channels, and partial frame injection
@@ -518,7 +520,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.1.0-alpha.1-pre] — 2026-06-25
+## [0.1.0-alpha.1-pre] - 2026-06-25
 
 ### Added
 - Initial alpha release with modular QUIC, HTTP/3, WebTransport, and libp2p components
@@ -531,3 +533,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - WebTransport: Session state machine, capsule types
 - libp2p: Multiaddr parser, PeerId, DCUtR message scaffold
 - 1000+ tests with 96%+ line coverage
+
+<!-- Version comparison links -->
+[Unreleased]: https://github.com/jxoesneon/quic_lib/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/jxoesneon/quic_lib/compare/v1.11.0...v1.12.0
+[1.11.0]: https://github.com/jxoesneon/quic_lib/compare/v1.10.0...v1.11.0
+[1.10.0]: https://github.com/jxoesneon/quic_lib/compare/v1.9.0...v1.10.0
+[1.9.0]: https://github.com/jxoesneon/quic_lib/compare/v1.8.0...v1.9.0
+[1.8.0]: https://github.com/jxoesneon/quic_lib/compare/v1.7.0...v1.8.0
+[1.7.0]: https://github.com/jxoesneon/quic_lib/compare/v1.6.0...v1.7.0
+[1.6.0]: https://github.com/jxoesneon/quic_lib/compare/v1.5.0...v1.6.0
+[1.5.0]: https://github.com/jxoesneon/quic_lib/compare/v1.4.2...v1.5.0
+[1.4.2]: https://github.com/jxoesneon/quic_lib/compare/v1.4.1...v1.4.2
+[1.4.1]: https://github.com/jxoesneon/quic_lib/compare/v1.4.0...v1.4.1
+[1.4.0]: https://github.com/jxoesneon/quic_lib/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/jxoesneon/quic_lib/compare/v1.2.3...v1.3.0
+[1.2.3]: https://github.com/jxoesneon/quic_lib/compare/v1.2.2...v1.2.3
+[1.2.2]: https://github.com/jxoesneon/quic_lib/compare/v1.2.1...v1.2.2
+[1.2.1]: https://github.com/jxoesneon/quic_lib/compare/v1.2.0...v1.2.1
+[1.2.0]: https://github.com/jxoesneon/quic_lib/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/jxoesneon/quic_lib/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/jxoesneon/quic_lib/compare/v0.5.0...v1.0.0
+[0.5.0]: https://github.com/jxoesneon/quic_lib/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/jxoesneon/quic_lib/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/jxoesneon/quic_lib/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/jxoesneon/quic_lib/compare/v0.2.0-beta.1...v0.2.0
+[0.2.0-beta.1]: https://github.com/jxoesneon/quic_lib/compare/v0.1.0-alpha.4...v0.2.0-beta.1
+[0.1.0-beta.1]: https://github.com/jxoesneon/quic_lib/compare/v0.1.0-alpha.4...v0.1.0-beta.1
+[0.1.0-alpha.4]: https://github.com/jxoesneon/quic_lib/compare/v0.1.0-alpha.3...v0.1.0-alpha.4
+[0.1.0-alpha.3]: https://github.com/jxoesneon/quic_lib/compare/v0.1.0-alpha.2...v0.1.0-alpha.3
+[0.1.0-alpha.2]: https://github.com/jxoesneon/quic_lib/compare/v0.1.0-alpha.1...v0.1.0-alpha.2
+[0.1.0-alpha.1]: https://github.com/jxoesneon/quic_lib/compare/v0.1.0-alpha.1-pre...v0.1.0-alpha.1
+[0.1.0-alpha.1-pre]: https://github.com/jxoesneon/quic_lib/releases/tag/v0.0.0

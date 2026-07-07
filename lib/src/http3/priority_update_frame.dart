@@ -15,6 +15,7 @@ class PriorityUpdateFrame {
   /// The priority field value as an ASCII string (e.g., "u=3, i").
   final String priorityFieldValue;
 
+  /// Creates a PRIORITY_UPDATE frame for [streamId] with [priorityFieldValue].
   PriorityUpdateFrame({
     required this.streamId,
     required this.priorityFieldValue,
@@ -92,6 +93,8 @@ class PriorityUpdatePushFrame {
   /// The priority field value as an ASCII string (e.g., "u=3, i").
   final String priorityFieldValue;
 
+  /// Creates a PRIORITY_UPDATE frame for a push stream with [streamId] and
+  /// [priorityFieldValue].
   PriorityUpdatePushFrame({
     required this.streamId,
     required this.priorityFieldValue,

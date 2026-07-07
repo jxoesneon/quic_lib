@@ -320,9 +320,9 @@ class StopSendingFrame extends Frame {
 /// CRYPTO frames have no stream-level flow control; they are constrained only
 /// by the packet number space they appear in (Initial, Handshake, or 1-RTT).
 ///
-/// The [offset] and [data.length] together define a byte range in the
+/// The [offset] and length of [data] together define a byte range in the
 /// cryptographic byte stream for that packet number space. Gaps or overlapping
-/// deliveries are reassembled by the [CryptoFrameAssembler].
+/// deliveries are reassembled by the crypto frame assembler.
 class CryptoFrame extends Frame {
   /// Byte offset of [data] within the TLS handshake byte stream.
   final int offset;

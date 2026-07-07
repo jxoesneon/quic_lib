@@ -15,6 +15,7 @@ class OriginFrame {
   /// The alternative origins advertised by this frame.
   final List<String> origins;
 
+  /// Creates an ORIGIN frame advertising the given [origins].
   OriginFrame({required this.origins});
 
   /// Serialize payload: sequence of 16-bit uint(length) + origin_bytes.

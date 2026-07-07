@@ -629,9 +629,9 @@ The v1.x maintenance line has shipped through **v1.12.3**, closing the instituti
 | 2 | HTTP/3 server push over network | `registerPushPromise()` tracks push state; actual stream transmission of the push response is scaffolded | Engineering effort |
 | 3 | Complete WebTransport flow-control enforcement | Flow-control capsules parsed/serialized; end-to-end enforcement not yet wired | Engineering effort |
 | 4 | QUIC v2 full feature set | `V2LongHeader` format added; v2-specific ACK format changes and behaviors not implemented | Engineering effort; low priority pending v2 adoption |
-| 5 | Full ASN.1/DER parser | Uses `asn1lib`/`x509` pub.dev packages with a thin internal adapter | Acceptable for v1.x; revisit if a pure-Dart parser is required |
-| 6 | Institutional documentation sign-off | Audit closed at v1.12.0; docs refreshed through v1.12.3 | Final review and tag required |
-| 7 | Missing release tags | Tags `v1.12.0`–`v1.12.3` exist; confirm no intermediate tag gaps | Verification only |
+| 5 | Full ASN.1/DER parser | **CLOSED** — Uses `asn1lib`/`x509` pub.dev packages with a thin internal adapter; formally accepted as sufficient for v1.x | Accepted for v1.x; revisit if a pure-Dart parser is required |
+| 6 | Institutional documentation sign-off | **CLOSED** — Audit closed at v1.12.0; docs refreshed through v1.12.4; CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, ROADMAP.md, and ARCHITECTURE.md all current | None |
+| 7 | Missing release tags | **CLOSED** — All tags `v0.0.0` through `v1.12.4` verified present both locally and on remote; no gaps | None |
 | 8 | Interop test matrix refresh | Last formal interop pass at v1.0.0; loopback e2e added at v1.12.1 | Re-run against current `quic-go`/`aioquic`/`ngtcp2` reference versions |
 
 A final v1.x release is **not blocked on ECN** (see Section 11); ECN is explicitly deferred to v2.0.0. Once items 1–8 above are resolved (or formally accepted as out-of-scope for v1.x), the maintainers cut the final v1.x tag and shift all new feature work to v2.0.0.

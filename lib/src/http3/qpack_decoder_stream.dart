@@ -7,6 +7,7 @@ import 'qpack_integer.dart';
 /// These instructions are sent on the decoder stream (0x03) to acknowledge
 /// header blocks and update the encoder's insert count.
 abstract class DecoderInstruction {
+  /// Base constructor for decoder stream instructions.
   const DecoderInstruction();
 
   /// Encode this instruction into a byte sequence.
@@ -45,8 +46,10 @@ abstract class DecoderInstruction {
 ///
 /// Sent to acknowledge that a header block for [streamId] has been processed.
 class SectionAcknowledgment extends DecoderInstruction {
+  /// The stream whose header block is being acknowledged.
   final int streamId;
 
+  /// Creates a section acknowledgment for [streamId].
   const SectionAcknowledgment({required this.streamId});
 
   @override
@@ -65,8 +68,10 @@ class SectionAcknowledgment extends DecoderInstruction {
 /// Sent to indicate that [streamId] was cancelled before its header block
 /// was fully processed.
 class StreamCancellation extends DecoderInstruction {
+  /// The cancelled stream identifier.
   final int streamId;
 
+  /// Creates a stream cancellation instruction for [streamId].
   const StreamCancellation({required this.streamId});
 
   @override
@@ -85,8 +90,10 @@ class StreamCancellation extends DecoderInstruction {
 /// Sent to inform the encoder that the decoder has received [increment]
 /// dynamic table insertions.
 class InsertCountIncrement extends DecoderInstruction {
+  /// Number of dynamic table insertions the decoder has received.
   final int increment;
 
+  /// Creates an insert count increment instruction for [increment].
   const InsertCountIncrement({required this.increment});
 
   @override

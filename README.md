@@ -70,7 +70,7 @@ Add `quic_lib` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  quic_lib: ^1.12.0
+  quic_lib: ^1.12.3
 ```
 
 Then run `dart pub get`.
@@ -160,7 +160,7 @@ Future<void> main() async {
   final request = Http3Request(
     method: 'GET',
     path: '/',
-    headers: {'host': 'example.com', 'user-agent': 'quic_lib/1.12.0'},
+    headers: {'host': 'example.com', 'user-agent': 'quic_lib/1.12.3'},
   );
   final streamId = await http3.sendRequest(request);
   print('Sent request on stream $streamId');
@@ -243,7 +243,7 @@ Future<void> main() async {
 | Connection migration | ✅ Complete | Path challenge/response, NAT rebinding |
 | Congestion control | ✅ Complete | NewReno, CUBIC (RFC 8312), BBR, Hystart; pacing |
 | Loss detection & recovery | ✅ Complete | RttEstimator, LossDetector, PTO scheduler, persistent congestion |
-| ECN processing | ✅ Complete | ECT marking, AckEcnFrame validation (RFC 9000 §13.4) |
+| ECN processing | ✅ Complete (validation) | AckEcnFrame parsing & ECN count validation (RFC 9000 §13.4); IP-layer ECT codepoint marking deferred to v2.0.0 (Issue #10, blocked on Dart SDK `IP_TOS`/`IPV6_TCLASS`) |
 | HTTP/3 framing (RFC 9114) | ✅ Complete | HEADERS, DATA, SETTINGS, GOAWAY, CANCEL_PUSH, ORIGIN (RFC 9412), PRIORITY_UPDATE (RFC 9218) |
 | QPACK header compression | ✅ Complete | Static table, encoder/decoder, stream instructions (RFC 9204) |
 | WebTransport capsules (RFC 9220) | ✅ Complete | CLOSE, DRAIN, GOAWAY, REGISTER_BIDIRECTIONAL/UNIDIRECTIONAL_STREAM, DATAGRAM |

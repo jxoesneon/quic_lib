@@ -1,9 +1,9 @@
-# quic_lib Roadmap (Historical): v0.0.0 → v1.12.0
+# quic_lib Roadmap (Historical): v0.0.0 → v1.12.3
 
-> **CURRENT STATUS (2026-07-07):** v1.0.0 and all patch releases through **v1.12.0** are **COMPLETE**. This document is a historical record of the engineering journey from specification to institutional audit closure. Active planning for v2.0.0 and beyond is tracked in the issue backlog and [AGENTS.md](AGENTS.md).
+> **CURRENT STATUS (2026-07-07):** v1.0.0 and all patch releases through **v1.12.3** are **COMPLETE**. This document is a historical record of the engineering journey from specification to institutional audit closure, plus the forward-looking criteria for a final v1.x release and the v2.0.0 milestone. Active planning is tracked in the issue backlog and [AGENTS.md](AGENTS.md).
 
-**Version**: 1.12.0
-**Status**: Historical / Finalized
+**Version**: 1.12.3
+**Status**: v1.x maintenance line — patches shipped, final v1.x release pending criteria below
 **Last Updated**: 2026-07-07
 **Constraint**: Pure-Dart implementation per [ADR-001](doc/decisions/ADR-001_Pure_Dart_No_FFI.md). No `dart:ffi`, no native dependencies.
 
@@ -11,7 +11,7 @@
 
 ## 1. Purpose
 
-This document records the completed engineering journey from specification (v0.0.0) through institutional audit closure (v1.12.0). It preserves version bumps, deliverables, acceptance gates, and risk mitigations for historical reference.
+This document records the completed engineering journey from specification (v0.0.0) through institutional audit closure (v1.12.0) and the subsequent maintenance patches (v1.12.1–v1.12.3). It preserves version bumps, deliverables, acceptance gates, and risk mitigations for historical reference, and closes with the criteria for a final v1.x release and the v2.0.0 milestone.
 
 ---
 
@@ -38,7 +38,7 @@ We follow [Semantic Versioning](https://semver.org/) with pre-release identifier
 | Phase 3 | v0.6.0-alpha | libp2p QUIC & DCUtR | **COMPLETE** |
 | Phase 4 | v0.7.0-beta → v0.9.0-beta | Hardening, fuzzing, performance | **COMPLETE** |
 | Phase 5 | v1.0.0-rc.1 → v1.0.0-rc.2 | Release candidates | **COMPLETE** |
-| Phase 6 | v1.0.0 → v1.12.0 | Stable production release & institutional audit closure | **COMPLETE** |
+| Phase 6 | v1.0.0 → v1.12.3 | Stable production release & institutional audit closure | **COMPLETE** |
 
 ### 2.3 Exit Gates (Universal)
 
@@ -451,6 +451,52 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 
 ---
 
+### 3.15 v1.1.0 → v1.12.0 — Maintenance & Institutional Audit Closure
+
+**Status**: DONE
+**Tags**: `v1.1.0` … `v1.12.0`
+
+**Deliverables**:
+- Peer certificate capture and verification (`peerCertificate`, `peerCertificateVerify`).
+- libp2p transport hardening (invalid multiaddr handling, ALPN negotiation, certificate verification).
+- X.509 certificate extraction from TLS handshake messages.
+- Institutional audit closure across all subsystems.
+
+**Acceptance Criteria**:
+- [x] All audit findings resolved or formally accepted.
+- [x] `dart analyze` zero issues across the v1.1.0–v1.12.0 range.
+- [x] Coverage floor (≥ 90%) maintained.
+
+---
+
+### 3.16 v1.12.1 → v1.12.3 — Documentation & Tooling Patches (Shipped)
+
+**Status**: DONE
+**Tags**: `v1.12.1`, `v1.12.2`, `v1.12.3`
+
+These patch releases closed the remaining pub.dev documentation and tooling gaps after the v1.12.0 institutional audit. No public API changes; all are backward-compatible.
+
+**v1.12.1** — End-to-end test coverage and example hardening:
+- [x] Added `test/e2e/rfc9001_handshake_test.dart` (encrypted STREAM frame round-trip over loopback).
+- [x] Added UDP socket rate-limiting and eviction tests.
+- [x] Rewrote echo examples to perform a real encrypted QUIC round-trip.
+- [x] Expanded dartdoc on public frame types and congestion-control classes.
+
+**v1.12.2** — Lint hardening and dartdoc coverage:
+- [x] Treated `unused_import` and `dead_code` as analyzer warnings.
+- [x] Documented HTTP/3 capsules, QPACK instructions, WebTransport sessions, and DCUtR types.
+- [x] Raised pub.dev documentation coverage from 79.1% to 82.6%.
+- [x] Fixed pinned GitHub Actions SHAs in `publish.yml`.
+
+**v1.12.3** — 100% public API documentation:
+- [x] Extracted `UdpRateLimiter` into a dedicated, testable class with an injectable clock.
+- [x] Removed `@visibleForTesting` backdoors from `UdpSocket`.
+- [x] Aligned the echo example with the public `HandshakeRole` API (no `src/` imports).
+- [x] Added dartdoc to all remaining public API elements, reaching 100.0% pub.dev documentation coverage.
+- [x] Enabled the `public_member_api_docs` lint.
+
+---
+
 ## 4. Version Summary Table
 
 | Version | Phase | Duration | Theme | Public API? |
@@ -469,7 +515,7 @@ export 'src/libp2p/multiaddr.dart' show Multiaddr;
 | v1.0.0-rc.1 | 5 | 2–3 wk | RC 1 | Yes (frozen) |
 | v1.0.0-rc.2 | 5 | 2 wk | RC 2 | Yes (frozen) |
 | v1.0.0 | 6 | — | Stable | Yes (production) |
-| v1.1.0–v1.12.0 | 6 | — | Maintenance, audit hardening, and institutional completeness | Yes (production) |
+| v1.1.0–v1.12.3 | 6 | — | Maintenance, audit hardening, institutional completeness, and documentation polish | Yes (production) |
 
 ---
 
@@ -573,10 +619,53 @@ After the API freeze:
 
 ---
 
-## 10. Forward-Looking Work
+## 10. Final v1.x Release Criteria
 
-The v1.x maintenance line is complete at **v1.12.0**. The next major line is **v2.0.0**, which is currently blocked on Dart SDK support for Explicit Congestion Notification (ECN) socket options:
+The v1.x maintenance line has shipped through **v1.12.3**, closing the institutional audit and reaching 100% public API documentation coverage. Before declaring a **final v1.x release** (e.g. `v1.13.0` or a tagged `v1.x-final`), the following remaining gaps must be closed. These are tracked as post-v1.12 work in [ARCHITECTURE.md](ARCHITECTURE.md) and the issue backlog:
 
-- **Issue #10 (ECN)**: ECN requires `IP_TOS` (IPv4) and `IPV6_TCLASS` (IPv6) socket options on `RawDatagramSocket`. These are not yet exposed by the Dart SDK, so ECN cannot be implemented without relaxing the ADR-001 "pure-Dart, no `dart:ffi`" constraint. ECN will be re-evaluated for v2.0.0 once the SDK exposes the necessary socket options or if the project decides to allow a native helper.
+| # | Gap | Current state | Blocker |
+|---|---|---|---|
+| 1 | OCSP/CRL fetching and validation | `RevocationParser` extracts URLs (Phase 1 complete); HTTP fetch and CRL/OCSP response verification not implemented | Engineering effort; `RevocationPolicy.hardFail` must not be used in production until landed |
+| 2 | HTTP/3 server push over network | `registerPushPromise()` tracks push state; actual stream transmission of the push response is scaffolded | Engineering effort |
+| 3 | Complete WebTransport flow-control enforcement | Flow-control capsules parsed/serialized; end-to-end enforcement not yet wired | Engineering effort |
+| 4 | QUIC v2 full feature set | `V2LongHeader` format added; v2-specific ACK format changes and behaviors not implemented | Engineering effort; low priority pending v2 adoption |
+| 5 | Full ASN.1/DER parser | Uses `asn1lib`/`x509` pub.dev packages with a thin internal adapter | Acceptable for v1.x; revisit if a pure-Dart parser is required |
+| 6 | Institutional documentation sign-off | Audit closed at v1.12.0; docs refreshed through v1.12.3 | Final review and tag required |
+| 7 | Missing release tags | Tags `v1.12.0`–`v1.12.3` exist; confirm no intermediate tag gaps | Verification only |
+| 8 | Interop test matrix refresh | Last formal interop pass at v1.0.0; loopback e2e added at v1.12.1 | Re-run against current `quic-go`/`aioquic`/`ngtcp2` reference versions |
+
+A final v1.x release is **not blocked on ECN** (see Section 11); ECN is explicitly deferred to v2.0.0. Once items 1–8 above are resolved (or formally accepted as out-of-scope for v1.x), the maintainers cut the final v1.x tag and shift all new feature work to v2.0.0.
+
+---
+
+## 11. Forward-Looking Work & v2.0.0 Milestone
+
+The v1.x maintenance line is complete at **v1.12.3**. The next major line is **v2.0.0**.
+
+### 11.1 v2.0.0 Milestone — ECN Support (Issue #10)
+
+**Status**: Blocked on Dart SDK capabilities.
+**Constraint**: Pure-Dart per [ADR-001](doc/decisions/ADR-001_Pure_Dart_No_FFI.md).
+
+ECN (Explicit Congestion Notification, RFC 9000 §13.4) requires setting the IP-layer traffic-class/DSCP field on outgoing UDP datagrams so routers can mark congestion. Specifically:
+
+- **IPv4**: `IP_TOS` socket option.
+- **IPv6**: `IPV6_TCLASS` socket option.
+
+Dart's `dart:io` `RawDatagramSocket` does **not** expose either option. The ACK_ECN frame parsing, ECN count validation (RFC 9000 §13.4.2), and congestion-controller CE-mark response (`onECNCEMarked`) are all fully implemented and tested at the QUIC layer; the only missing piece is marking the ECN codepoint (ECT(0)/ECT(1)) on outgoing packets at the IP layer.
+
+**Unblock paths** (any one suffices):
+1. The Dart SDK exposes `IP_TOS`/`IPV6_TCLASS` on `RawDatagramSocket` (tracked upstream).
+2. ADR-001 is revised to permit an optional native helper (`dart:ffi`) for socket option setup only, with the QUIC protocol logic remaining pure-Dart.
+3. A platform plugin (e.g. via `dart:ffi` or a method channel on Flutter) provides the socket option shim behind a feature flag.
+
+Until one of these lands, ECN codepoint marking cannot be shipped and v2.0.0 remains blocked. ECN validation via `AckEcnFrame` will continue to be supported in v1.x for peers that mark ECN independently.
+
+### 11.2 Other v2.0.0 Candidates
+
+Beyond ECN, v2.0.0 may incorporate:
+- QUIC v2 (RFC 9369) full feature set.
+- BBR v2 congestion control with ECN integration.
+- WebTransport end-to-end flow-control enforcement (if not closed in v1.x).
 
 See [AGENTS.md](AGENTS.md) for the current verification commands and operational constraints.

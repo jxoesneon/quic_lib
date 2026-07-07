@@ -113,6 +113,9 @@ class Http3Connection {
   final Map<int, HeadersFrame> _pendingHeaders = {};
   final Map<int, List<DataFrame>> _pendingData = {};
   final Map<int, Http3PushPromiseFrame> _pushPromises = {};
+  final Map<int, List<Http3PushPromiseFrame>> _pendingPushPromises = {};
+  final Map<int, Http3Response> _pushResponses = {};
+  final Map<int, int> _pushStreamIds = {};
   int _maxPushId = -1;
   final List<Uint8List> _pendingQuicPackets = [];
   final List<String> _alternativeOrigins = [];
@@ -483,6 +486,192 @@ class Http3Connection {
   /// Check if a push promise with [pushId] is registered.
   bool hasPushPromise(int pushId) => _pushPromises.containsKey(pushId);
 
+  /// Returns the registered push promise frame for [pushId], or `null` if no
+  /// promise with that push ID has been registered.
+  ///
+  /// A promise is registered either by the server via [sendPushPromise] or by
+  /// the client when it receives a PUSH_PROMISE frame on a request stream.
+  Http3PushPromiseFrame? getPushPromise(int pushId) => _pushPromises[pushId];
+
+  /// Returns the push promises staged for transmission on [streamId].
+  ///
+  /// The server enqueues PUSH_PROMISE frames on the client's request stream via
+  /// [sendPushPromise]. This getter exposes the queued frames so the transport
+  /// layer can flush them in order with the response.
+  List<Http3PushPromiseFrame> getPendingPushPromises(int streamId) =>
+      List.unmodifiable(_pendingPushPromises[streamId] ?? []);
+
+  /// Returns the push response delivered for [pushId], or `null` if no push
+  /// stream carrying that push ID has been received yet.
+  ///
+  /// On the client side, once a push stream is received and its push ID matches
+  /// a registered promise, the decoded [Http3Response] is stored and made
+  /// available through this getter.
+  Http3Response? getPushResponse(int pushId) => _pushResponses[pushId];
+
+  /// Returns the QUIC stream ID allocated for the push stream carrying
+  /// [pushId], or `null` if the server has not yet sent a push response for
+  /// that push ID.
+  ///
+  /// On the server side this is populated by [sendPushResponse].
+  int? getPushStreamId(int pushId) => _pushStreamIds[pushId];
+
+  /// Send a PUSH_PROMISE frame on the client's request stream
+  /// ([requestStreamId]) reserving [pushId] for a server push of
+  /// [promisedRequest].
+  ///
+  /// Per RFC 9114 §4.4, the server sends a PUSH_PROMISE frame on the request
+  /// stream carrying the promised request's encoded header block. The promised
+  /// request headers are QPACK-encoded with this connection's [qpackEncoder].
+  /// The frame is staged in [getPendingPushPromises] for transmission and the
+  /// push is registered so that [hasPushPromise] returns `true` for [pushId].
+  ///
+  /// The caller is responsible for ensuring that [pushId] does not exceed the
+  /// client's advertised MAX_PUSH_ID limit.
+  ///
+  /// Returns the [Http3PushPromiseFrame] that was staged.
+  Http3PushPromiseFrame sendPushPromise(
+    int pushId,
+    Http3Request promisedRequest, {
+    required int requestStreamId,
+  }) {
+    final encodedHeaders = promisedRequest.encodeHeaders(encoder: qpackEncoder);
+    final frame = Http3PushPromiseFrame(
+      pushId: pushId,
+      encodedFieldSection: encodedHeaders,
+    );
+    _pushPromises[pushId] = frame;
+    _pendingPushPromises.putIfAbsent(requestStreamId, () => []).add(frame);
+    _pendingQuicPackets.add(frame.toFrame().serialize());
+    return frame;
+  }
+
+  /// Send a push response for [pushId] by creating a server-initiated push
+  /// stream and transmitting the [response] as HEADERS (and optional DATA)
+  /// frames on it.
+  ///
+  /// Per RFC 9114 §4.4 and §6.2.2, a push stream is a unidirectional stream
+  /// whose first bytes are the stream type varint `0x01` (push) followed by a
+  /// varint-encoded push ID. The push response is then carried as a sequence
+  /// of HTTP/3 frames (HEADERS, then DATA if the response has a body).
+  ///
+  /// A PUSH_PROMISE for [pushId] must have been previously sent via
+  /// [sendPushPromise] (i.e. [hasPushPromise] must return `true`).
+  ///
+  /// Returns the QUIC stream ID allocated for the push stream, or `-1` if the
+  /// underlying transport could not allocate a unidirectional stream (in which
+  /// case the raw push-stream bytes are queued in [pendingQuicPackets]).
+  Future<int> sendPushResponse(int pushId, Http3Response response) async {
+    if (!hasPushPromise(pushId)) {
+      throw StateError(
+        'No push promise registered for pushId $pushId; '
+        'call sendPushPromise first',
+      );
+    }
+
+    // Build the push-stream body: VarInt(pushId) + HEADERS frame [+ DATA frame].
+    final pushIdBytes = VarInt.encode(pushId);
+    final headersFrame = Http3HeadersFrame(
+      encodedFieldSection: response.encodeHeaders(encoder: qpackEncoder),
+    ).toFrame();
+    final builder = BytesBuilder();
+    builder.add(pushIdBytes);
+    builder.add(headersFrame.serialize());
+    if (response.body != null && response.body!.isNotEmpty) {
+      final dataFrame = Http3DataFrame(data: response.body!).toFrame();
+      builder.add(dataFrame.serialize());
+    }
+    final pushStreamBody = builder.toBytes();
+
+    final streamId = await _openUnidirectionalStream(
+      StreamType.push,
+      Uint8List.fromList(pushStreamBody),
+    );
+    if (streamId >= 0) {
+      _pushStreamIds[pushId] = streamId;
+    }
+    return streamId;
+  }
+
+  /// Process incoming data on a server push stream.
+  ///
+  /// Per RFC 9114 §6.2.2, a push stream begins with the stream type varint
+  /// (`0x01`) followed by a varint push ID, then a sequence of HTTP/3 frames
+  /// carrying the push response. This method parses the push ID, matches it to
+  /// a previously registered promise (via [registerPushPromise] or a received
+  /// PUSH_PROMISE frame), and decodes the HEADERS/DATA frames into an
+  /// [Http3Response] made available via [getPushResponse].
+  ///
+  /// If no promise is registered for the parsed push ID, the stream data is
+  /// ignored. The [streamId] is the QUIC stream ID of the incoming push
+  /// stream; [data] is the full stream payload including the leading stream
+  /// type varint.
+  void onPushStreamData(int streamId, Uint8List data) {
+    if (data.isEmpty) return;
+    // Skip the stream-type varint (already classified as a push stream).
+    final typeLength = VarInt.decodeLength(data[0]);
+    if (data.length < typeLength) return;
+    // Read the push ID varint immediately after the stream type.
+    final pushIdOffset = typeLength;
+    if (data.length <= pushIdOffset) return;
+    final pushIdLength = VarInt.decodeLength(data[pushIdOffset]);
+    if (data.length < pushIdOffset + pushIdLength) return;
+    final pushId = VarInt.decode(data.buffer, offset: pushIdOffset);
+
+    var offset = pushIdOffset + pushIdLength;
+    Http3Response? response;
+    Uint8List? body;
+    while (offset < data.length) {
+      try {
+        final (frame, consumed) = Http3Frame.parse(data, offset: offset);
+        switch (frame.type) {
+          case Http3FrameType.headers:
+            final encoded = Uint8List.fromList(frame.payload);
+            qpackDecoder.dynamicTable.resetRequiredInsertCount();
+            response =
+                Http3Response.decodeHeaders(encoded, decoder: qpackDecoder);
+            _pendingDecoderInstructions.add(
+              SectionAcknowledgment(streamId: streamId),
+            );
+            break;
+          case Http3FrameType.data:
+            final dataFrame = DataFrame.fromPayload(frame.payload);
+            if (dataFrame.data.isNotEmpty) {
+              final existing = body ?? Uint8List(0);
+              final combined =
+                  Uint8List(existing.length + dataFrame.data.length);
+              combined.setRange(0, existing.length, existing);
+              combined.setRange(
+                existing.length,
+                combined.length,
+                dataFrame.data,
+              );
+              body = combined;
+            }
+            break;
+          default:
+            // Ignore unrelated frame types on a push stream.
+            break;
+        }
+        offset += consumed;
+      } catch (_) {
+        break;
+      }
+    }
+
+    if (response != null) {
+      final withBody = body != null && body.isNotEmpty
+          ? Http3Response(
+              statusCode: response.statusCode,
+              headers: response.headers,
+              body: body,
+            )
+          : response;
+      _pushResponses[pushId] = withBody;
+      _pushStreamIds[pushId] = streamId;
+    }
+  }
+
   /// Process received frames on a QUIC stream.
   void onStreamFrame(int streamId, Http3Frame frame) {
     switch (frame.type) {
@@ -715,8 +904,12 @@ class Http3Connection {
         _decoderStreamId ??= streamId;
         _handleQpackDecoderStream(data, offset: typeLength);
         return;
-      case StreamType.control:
       case StreamType.push:
+        // Push streams carry a push ID varint after the stream type, followed
+        // by the push response frames. Delegate to the dedicated handler.
+        onPushStreamData(streamId, data);
+        return;
+      case StreamType.control:
         break;
     }
 

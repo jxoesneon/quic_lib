@@ -23,6 +23,26 @@ enum CapsuleType {
   /// GOAWAY capsule.
   goaway(0x1d),
 
+  /// Session-level flow-control limit capsule (RFC 9220 §3).
+  ///
+  /// Payload is a single varint encoding the maximum number of bytes the
+  /// receiver is willing to accept on the session as a whole. Receiving this
+  /// capsule updates the sender's session-level send credit.
+  webtransportMaxData(0x2c),
+
+  /// Stream-level flow-control limit capsule (RFC 9220 §3).
+  ///
+  /// Payload is `VarInt(streamId) + VarInt(maxData)`, advertising the maximum
+  /// number of bytes the receiver is willing to accept on the named stream.
+  webtransportMaxStreamData(0x2d),
+
+  /// Drain-capabilities capsule (RFC 9220 §3).
+  ///
+  /// Sent by a receiver that wants to reduce the sender's session-level credit.
+  /// The payload is a single varint encoding the new (lower) session credit
+  /// limit the sender must not exceed.
+  drainCapabilities(0x2b),
+
   // Extension capsules (GREASE)
   /// Reserved GREASE capsule type.
   grease0(0x1b),

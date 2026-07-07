@@ -254,6 +254,8 @@ export 'src/webtransport/stream_types.dart'
 export 'src/webtransport/webtransport_session.dart' show WebTransportSession;
 export 'src/webtransport/webtransport_session_manager.dart'
     show WebTransportSessionManager;
+export 'src/webtransport/webtransport_flow_controller.dart'
+    show WebTransportFlowController;
 
 // ---------------------------------------------------------------------------
 // libp2p exports

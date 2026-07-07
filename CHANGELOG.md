@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.12.4] - 2026-07-07
+
+### Documentation
+- Refresh `ARCHITECTURE.md` to reflect the v1.12.3 module structure and completed gaps.
+- Update `README.md` installation snippet to `^1.12.3` and correct the ECN feature-table row to reflect the Issue #10 deferral.
+- Refresh `ROADMAP.md` to v1.12.3, formalize the ECN v2.0.0 milestone, and add a "Final v1.x release criteria" section.
+- Add `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md`.
+- Fix `doc/INDEX.md` contributing links.
+- Fix `SECURITY.md` security contact (GitHub private vulnerability reporting + email) and remove stale PGP key reference.
+- Correct stale supply-chain claims in `doc/specs/SECURITY_SPEC.md` (SBOM, CVE monitoring, package signing).
+
+### Tests
+- Add end-to-end HTTP/3 over encrypted QUIC test exercising HEADERS and DATA frame round-trip through `buildEncryptedPacket` / `processEncryptedDatagram`.
+
+---
+
 ## [1.12.3] - 2026-07-07
 
 ### Changed

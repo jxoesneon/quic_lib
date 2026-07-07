@@ -20,6 +20,7 @@ class DCUtRUdpCoordinator {
   StreamSubscription<({Uint8List data, InternetAddress address, int port})>?
       _subscription;
 
+  /// Creates a coordinator that drives DCUtR over [socket] using [stateMachine].
   DCUtRUdpCoordinator(this._socket, this._stateMachine);
 
   /// Starts listening to the underlying [UdpSocket] for DCUtR datagrams.

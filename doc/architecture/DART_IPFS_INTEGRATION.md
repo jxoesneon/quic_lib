@@ -2,7 +2,8 @@
 title: "DART-IPFS Integration Contract"
 category: architecture
 version: "1.0"
-status: "Draft"
+status: "Final"
+date: "2026-06-29"
 subsystem: "Integration Contract"
 ---
 

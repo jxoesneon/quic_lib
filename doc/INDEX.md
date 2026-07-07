@@ -7,19 +7,10 @@
 - [DART-IPFS Integration Contract](architecture/DART_IPFS_INTEGRATION.md)
 - [Data Flow](architecture/DATA_FLOW.md)
 - [Module Overview](architecture/MODULE_OVERVIEW.md)
-- [Roadmap Architecture](architecture/ROADMAP_ARCHITECTURE.md)
 
 ## Research
 
-- [Dart Ecosystem Gap Analysis](research/DART_ECOSYSTEM_GAP.md)
-- [libp2p QUIC Spec Notes](research/LIBP2P_QUIC_SPEC_NOTES.md)
-- [Prior Art Analysis](research/PRIOR_ART_ANALYSIS.md)
-- [RFC 9000 Notes](research/RFC_9000_NOTES.md)
-- [RFC 9001 Notes](research/RFC_9001_NOTES.md)
-- [RFC 9002 Notes](research/RFC_9002_NOTES.md)
-- [RFC 9114 Notes](research/RFC_9114_NOTES.md)
-- [RFC 9204 Notes](research/RFC_9204_NOTES.md)
-- [WebTransport Draft Notes](research/WEBTRANSPORT_DRAFT_NOTES.md)
+- [RFC Notes](research/RFC_NOTES.md)
 
 ## Specifications
 
@@ -54,6 +45,14 @@
 - [ADR-005: Three-Tier Documentation](decisions/ADR-005_Three_Tier_Documentation.md)
 - [ADR-006: Stream Scheduler as Pluggable Interface](decisions/ADR-006_Stream_Scheduler_Pluggable_Interface.md)
 - [ADR-007: Isolate-per-Connection Architecture](decisions/ADR-007_Isolate_per_Connection_Architecture.md)
+
+## Security
+
+- [Security Fixes Summary](../SECURITY_FIXES.md)
+
+## Archive
+
+- [Ciel Council Protocol Completeness Audit, 2026-06-28](archive/CIEL_COUNCIL_PROTOCOL_AUDIT_2026.md)
 
 ## Contributing
 

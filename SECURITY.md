@@ -12,7 +12,16 @@
 Please report security vulnerabilities via the repository's private vulnerability reporting feature on GitHub, or by emailing the maintainers directly.
 
 - **GitHub**: Use the repository's Security > Advisories > Report a vulnerability
-- **Email**: Open an issue for security contact information.
+- **Email**: security@quic-lib.dev (PGP key: https://quic-lib.dev/pgp-security.asc)
+
+## Severity Levels
+
+| Severity | CVSS Score | Description | SLA |
+|----------|------------|-------------|-----|
+| Critical | 9.0-10.0 | Remote code execution, complete confidentiality/integrity loss, or widespread denial of service | 7 days |
+| High | 7.0-8.9 | Significant confidentiality/integrity impact, or limited remote code execution | 14 days |
+| Medium | 4.0-6.9 | Limited confidentiality/integrity impact, or local denial of service | 30 days |
+| Low | 0.1-3.9 | Minor information disclosure, or low-impact denial of service | 60 days |
 
 ## Disclosure Policy
 
@@ -27,7 +36,7 @@ Please report security vulnerabilities via the repository's private vulnerabilit
 2. Fix developed on a private security branch.
 3. Fix backported to the two most recent minor release branches.
 4. Advisory published alongside the release.
-5. SBOM updated and attached to the GitHub Release.
+5. SBOM generation planned for v1.13.0 (currently not implemented).
 
 ## Pure-Dart Security Constraint
 

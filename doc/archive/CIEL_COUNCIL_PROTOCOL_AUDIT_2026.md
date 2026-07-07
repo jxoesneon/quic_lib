@@ -1,3 +1,5 @@
+> **Internal audit snapshot.** This document is a historical snapshot from 2026-06-28 produced by the Ciel Council audit process. It reflects the codebase and coverage estimates at that point in time and may not represent the current project state. For the latest status, see the project README, CHANGELOG, and SECURITY_FIXES.md.
+
 # Ciel Council Protocol Completeness Audit
 
 **Date**: 2026-06-28

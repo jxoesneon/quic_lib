@@ -4,6 +4,7 @@ import 'frame.dart';
 import 'packet_header.dart';
 import 'packet_number.dart';
 import 'quic_bit_greaser.dart';
+import 'v2_header.dart';
 
 /// Builds complete QUIC packets from headers and frames.
 ///
@@ -58,6 +59,13 @@ class PacketBuilder {
         ..add(PaddingFrame(length: _minInitialPacketSize - packet.length));
       return _buildOnce(header, paddedFrames);
     }
+    if (header is V2LongHeader &&
+        header.isInitial &&
+        packet.length < _minInitialPacketSize) {
+      final paddedFrames = List<Frame>.from(frames)
+        ..add(PaddingFrame(length: _minInitialPacketSize - packet.length));
+      return _buildOnce(header, paddedFrames);
+    }
 
     return packet;
   }
@@ -68,6 +76,8 @@ class PacketBuilder {
 
     if (header is LongHeader) {
       return _buildLongHeader(header, frameBytes);
+    } else if (header is V2LongHeader) {
+      return _buildV2LongHeader(header, frameBytes);
     } else if (header is ShortHeader) {
       return _buildShortHeader(header, frameBytes);
     } else if (header is VersionNegotiationPacket) {
@@ -95,6 +105,46 @@ class PacketBuilder {
     // Build header with correct length
     final headerBuilder = BytesBuilder();
     headerBuilder.addByte(0x80 | 0x40 | (header.packetType << 4));
+    headerBuilder.addByte((header.version >> 24) & 0xFF);
+    headerBuilder.addByte((header.version >> 16) & 0xFF);
+    headerBuilder.addByte((header.version >> 8) & 0xFF);
+    headerBuilder.addByte(header.version & 0xFF);
+    headerBuilder.addByte(header.destinationConnectionId.length);
+    headerBuilder.add(header.destinationConnectionId);
+    headerBuilder.addByte(header.sourceConnectionId.length);
+    headerBuilder.add(header.sourceConnectionId);
+
+    if (header.isInitial) {
+      final token = header.token ?? const <int>[];
+      headerBuilder.add(_encodeVarInt(token.length));
+      headerBuilder.add(token);
+    }
+
+    headerBuilder.add(_encodeVarInt(payload.length));
+    headerBuilder.add(payload);
+
+    return Uint8List.fromList(headerBuilder.toBytes());
+  }
+
+  /// Build a v2 long header packet (RFC 9369) with the correct first-byte
+  /// encoding and Length field.
+  static Future<Uint8List> _buildV2LongHeader(
+      V2LongHeader header, Uint8List frameBytes) async {
+    if (header.isRetry) {
+      return header.serialize(); // Retry has no frames
+    }
+
+    final pnLen = _pnLenFromValue(header.packetNumber);
+
+    final payloadBuilder = BytesBuilder();
+    payloadBuilder.add(PacketNumber.encode(header.packetNumber, pnLen));
+    payloadBuilder.add(frameBytes);
+    final payload = Uint8List.fromList(payloadBuilder.toBytes());
+
+    final headerBuilder = BytesBuilder();
+    // v2 first byte: 1 | 1 | Reserved(2) | Type(2) | Version(2)
+    headerBuilder.addByte(
+        0x80 | 0x40 | (header.packetType << 2) | (header.version & 0x03));
     headerBuilder.addByte((header.version >> 24) & 0xFF);
     headerBuilder.addByte((header.version >> 16) & 0xFF);
     headerBuilder.addByte((header.version >> 8) & 0xFF);

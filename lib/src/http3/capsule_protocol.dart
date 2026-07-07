@@ -29,9 +29,13 @@ const int _maxCapsuleDataLength = 1024 * 1024;
 /// ambiguity when both are imported. This will be resolved in v2.0.0 by
 /// renaming the WebTransport class to `WebTransportCapsule`.
 abstract class Capsule {
+  /// Capsule type identifier as a VarInt (e.g., 0x00 for DATAGRAM).
   final int type;
+
+  /// Opaque capsule payload bytes.
   final Uint8List data;
 
+  /// Creates a capsule with the given [type] and [data].
   Capsule({required this.type, required this.data});
 
   /// Serializes this capsule into its on-the-wire representation.
@@ -146,14 +150,22 @@ abstract class Capsule {
 
 /// A DATAGRAM capsule (type 0x00) carrying unreliable datagram data.
 class DatagramCapsule extends Capsule {
+  /// Creates a DATAGRAM capsule carrying [data].
   DatagramCapsule(Uint8List data) : super(type: 0x00, data: data);
 }
 
 /// A CLOSE_WEBTRANSPORT_SESSION capsule (type 0x2843).
 class CloseWebTransportSessionCapsule extends Capsule {
+  /// Application-defined error code reported when closing the session.
   final int errorCode;
+
+  /// Optional human-readable error message, or `null` if none was provided.
   final String? errorMessage;
 
+  /// Creates a CLOSE_WEBTRANSPORT_SESSION capsule.
+  ///
+  /// Either provide raw [data] from the wire, or supply [errorCode] and/or
+  /// [errorMessage] to have the payload encoded automatically.
   CloseWebTransportSessionCapsule({
     Uint8List? data,
     int errorCode = 0,
@@ -199,23 +211,27 @@ class CloseWebTransportSessionCapsule extends Capsule {
 
 /// A DRAIN_WEBTRANSPORT_SESSION capsule (type 0x78ae).
 class DrainWebTransportSessionCapsule extends Capsule {
+  /// Creates a DRAIN_WEBTRANSPORT_SESSION capsule carrying [data].
   DrainWebTransportSessionCapsule(Uint8List data)
       : super(type: 0x78ae, data: data);
 }
 
 /// A GOAWAY capsule (type 0x1d).
 class GoawayCapsule extends Capsule {
+  /// Creates a GOAWAY capsule carrying [data].
   GoawayCapsule(Uint8List data) : super(type: 0x1d, data: data);
 }
 
 /// A REGISTER_BIDIRECTIONAL_STREAM capsule (type 0x41).
 class RegisterBidirectionalStreamCapsule extends Capsule {
+  /// Creates a REGISTER_BIDIRECTIONAL_STREAM capsule carrying [data].
   RegisterBidirectionalStreamCapsule(Uint8List data)
       : super(type: 0x41, data: data);
 }
 
 /// A REGISTER_UNIDIRECTIONAL_STREAM capsule (type 0x42).
 class RegisterUnidirectionalStreamCapsule extends Capsule {
+  /// Creates a REGISTER_UNIDIRECTIONAL_STREAM capsule carrying [data].
   RegisterUnidirectionalStreamCapsule(Uint8List data)
       : super(type: 0x42, data: data);
 }
@@ -224,6 +240,7 @@ class RegisterUnidirectionalStreamCapsule extends Capsule {
 ///
 /// Per draft-ietf-webtrans-http3, unknown capsule types MUST be ignored.
 class UnknownCapsule extends Capsule {
+  /// Creates an unknown capsule with the given [type] and [data].
   UnknownCapsule(int type, Uint8List data) : super(type: type, data: data);
 }
 
@@ -231,12 +248,15 @@ class UnknownCapsule extends Capsule {
 ///
 /// Carries a VarInt count of maximum streams allowed for a session.
 class WtMaxStreamsCapsule extends Capsule {
+  /// `true` if this limit applies to bidirectional streams.
   final bool bidirectional;
 
+  /// Creates a bidirectional WT_MAX_STREAMS capsule carrying [data].
   WtMaxStreamsCapsule.bidi(Uint8List data)
       : bidirectional = true,
         super(type: 0x190B4D3F, data: data);
 
+  /// Creates a unidirectional WT_MAX_STREAMS capsule carrying [data].
   WtMaxStreamsCapsule.uni(Uint8List data)
       : bidirectional = false,
         super(type: 0x190B4D40, data: data);
@@ -249,6 +269,7 @@ class WtMaxStreamsCapsule extends Capsule {
 ///
 /// Carries a VarInt count of maximum bytes allowed for a session.
 class WtMaxDataCapsule extends Capsule {
+  /// Creates a WT_MAX_DATA capsule carrying [data].
   WtMaxDataCapsule(Uint8List data) : super(type: 0x190B4D41, data: data);
 
   /// Maximum data value encoded in the capsule payload.
@@ -259,6 +280,7 @@ class WtMaxDataCapsule extends Capsule {
 ///
 /// Carries a VarInt count of maximum bytes allowed on a stream.
 class WtMaxStreamDataCapsule extends Capsule {
+  /// Creates a WT_MAX_STREAM_DATA capsule carrying [data].
   WtMaxStreamDataCapsule(Uint8List data) : super(type: 0x190B4D42, data: data);
 
   /// Maximum stream data value encoded in the capsule payload.

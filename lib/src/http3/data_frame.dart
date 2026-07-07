@@ -11,6 +11,7 @@ class Http3DataFrame {
   /// The raw data octets carried by this frame.
   final List<int> data;
 
+  /// Creates a DATA frame carrying the given [data].
   Http3DataFrame({required this.data});
 
   /// Build a complete Http3Frame of type DATA.

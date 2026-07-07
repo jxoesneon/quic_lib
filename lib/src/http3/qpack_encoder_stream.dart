@@ -10,6 +10,9 @@ import 'qpack_string.dart';
 /// These instructions are sent on the encoder stream (0x02) to update the
 /// dynamic table.
 abstract class EncoderInstruction {
+  /// Base constructor for encoder stream instructions.
+  const EncoderInstruction();
+
   /// Serialize this instruction to bytes.
   Uint8List serialize();
 
@@ -77,6 +80,8 @@ class InsertWithNameReference extends EncoderInstruction {
   /// The field value to store in the new dynamic table entry.
   final String value;
 
+  /// Creates an instruction that inserts a new dynamic table entry with the
+  /// field name from an existing entry and the literal [value].
   InsertWithNameReference({
     required this.isStatic,
     required this.nameIndex,
@@ -136,6 +141,8 @@ class InsertWithoutNameReference extends EncoderInstruction {
   /// The literal field value.
   final String value;
 
+  /// Creates an instruction that inserts a new dynamic table entry with literal
+  /// [name] and [value].
   InsertWithoutNameReference({
     required this.name,
     required this.value,
@@ -201,6 +208,7 @@ class Duplicate extends EncoderInstruction {
   /// The relative index of the existing entry to duplicate.
   final int index;
 
+  /// Creates a duplicate instruction for the dynamic table entry at [index].
   Duplicate({required this.index});
 
   @override
@@ -230,6 +238,7 @@ class SetDynamicTableCapacity extends EncoderInstruction {
   /// The new dynamic table capacity.
   final int capacity;
 
+  /// Creates an instruction that sets the dynamic table capacity to [capacity].
   SetDynamicTableCapacity({required this.capacity});
 
   @override

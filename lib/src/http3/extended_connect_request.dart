@@ -34,6 +34,7 @@ class ExtendedConnectRequest {
   /// Optional request body.
   final Uint8List? body;
 
+  /// Creates an Extended CONNECT request for [protocol] to [authority][path].
   ExtendedConnectRequest({
     required this.protocol,
     this.scheme = 'https',

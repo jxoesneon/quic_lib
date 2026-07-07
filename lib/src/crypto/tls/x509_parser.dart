@@ -37,6 +37,12 @@ class X509Certificate {
   /// DER-encoded SubjectPublicKeyInfo structure.
   final List<int> subjectPublicKeyInfo;
 
+  /// The certificate's serial number as raw DER INTEGER value bytes (the
+  /// contents of the INTEGER value octets, without tag or length).
+  ///
+  /// Used for CRL revocation lookups and OCSP request construction.
+  final List<int> serialNumber;
+
   /// Parsed X.509 extensions as a map from OID dotted string to the raw
   /// extension value bytes (the OCTET STRING contents).
   final Map<String, List<int>> extensions;
@@ -51,6 +57,7 @@ class X509Certificate {
     required this.notBefore,
     required this.notAfter,
     required this.subjectPublicKeyInfo,
+    this.serialNumber = const [],
     this.extensions = const {},
   });
 }
@@ -283,7 +290,15 @@ X509Certificate parseX509(List<int> derBytes) {
   }
 
   // SerialNumber
-  if (tbsIdx < tbsChildren.length) tbsIdx++;
+  List<int> serialNumberBytes = const <int>[];
+  if (tbsIdx < tbsChildren.length) {
+    final serialNode = tbsChildren[tbsIdx];
+    if (serialNode.tag == 0x02) {
+      serialNumberBytes =
+          bytes.sublist(serialNode.valueStart, serialNode.valueEnd);
+    }
+    tbsIdx++;
+  }
 
   // Signature AlgorithmIdentifier
   if (tbsIdx < tbsChildren.length) tbsIdx++;
@@ -406,6 +421,7 @@ X509Certificate parseX509(List<int> derBytes) {
     notBefore: notBefore,
     notAfter: notAfter,
     subjectPublicKeyInfo: Uint8List.fromList(spkiBytes),
+    serialNumber: Uint8List.fromList(serialNumberBytes),
     extensions: extensions,
   );
 }
@@ -421,6 +437,33 @@ Libp2pExtension? parseLibp2pExtension(X509Certificate cert) {
     return Libp2pExtension.parse(Uint8List.fromList(raw));
   } catch (_) {
     return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SubjectPublicKeyInfo helpers
+// ---------------------------------------------------------------------------
+
+/// Extracts the raw subject public key BIT STRING value from a DER-encoded
+/// SubjectPublicKeyInfo structure.
+///
+/// SubjectPublicKeyInfo ::= SEQUENCE { AlgorithmIdentifier, BIT STRING }.
+/// This returns the contents of the BIT STRING *after* the unused-bits octet,
+/// i.e. the raw public key bytes. Used to compute the OCSP `issuerKeyHash`.
+///
+/// Returns an empty list if [spkiDer] is malformed.
+List<int> extractSubjectPublicKeyBitString(List<int> spkiDer) {
+  try {
+    final bytes = Uint8List.fromList(spkiDer);
+    final seq = _parseDerNode(bytes, 0);
+    final children = _parseChildren(bytes, seq.valueStart, seq.valueEnd);
+    if (children.length < 2) return const [];
+    final bitString = children[1];
+    if (bitString.tag != 0x03 || bitString.length < 1) return const [];
+    // Skip the leading unused-bits octet.
+    return bytes.sublist(bitString.valueStart + 1, bitString.valueEnd);
+  } catch (_) {
+    return const [];
   }
 }
 

@@ -4,6 +4,8 @@ import 'package:quic_lib/src/crypto/cipher_suites.dart';
 import 'package:quic_lib/src/crypto/crypto_backend.dart';
 import 'package:quic_lib/src/crypto/tls/certificate_chain.dart';
 import 'package:quic_lib/src/crypto/tls/certificate_message.dart';
+import 'package:quic_lib/src/crypto/tls/crl_fetcher.dart';
+import 'package:quic_lib/src/crypto/tls/ocsp_fetcher.dart';
 import 'package:quic_lib/src/crypto/tls/revocation_policy.dart';
 import 'package:quic_lib/src/crypto/tls/x509_parser.dart';
 
@@ -14,11 +16,13 @@ import 'package:quic_lib/src/crypto/tls/x509_parser.dart';
 /// * Checking validity dates (NotBefore / NotAfter).
 /// * Name chaining (Subject of cert i == Issuer of cert i-1).
 /// * Signature verification against issuer public keys.
+/// * Revocation checking via OCSP and CRL when [revocationPolicy] is
+///   [RevocationPolicy.softFail] or [RevocationPolicy.hardFail].
 ///
 ///
-/// Phase 1: CRL/OCSP extension URLs are parsed and exposed through
-/// [CertificateInfo.revocationInfo]. Actual revocation checking is planned
-/// for a later release.
+/// Phase 2: OCSP/CRL fetching and validation is performed when the policy is
+/// not [RevocationPolicy.disabled]. See [RevocationPolicy] for the failure
+/// semantics of each mode.
 class _SimplePublicKey implements PublicKey {
   @override
   final List<int> bytes;
@@ -48,20 +52,34 @@ class _SimplePublicKey implements PublicKey {
 class CertificateVerifier {
   final CryptoBackend _backend;
   final RevocationPolicy _revocationPolicy;
+  final OcspFetcher _ocspFetcher;
+  final CrlFetcher _crlFetcher;
 
   /// Creates a [CertificateVerifier] backed by the given [CryptoBackend].
   ///
   /// The crypto backend provides Ed25519, ECDSA P-256, and RSA signature
   /// verification routines required by [verifySignature].
   ///
-  /// [revocationPolicy] controls whether CRL/OCSP extension URLs are parsed
-  /// ([RevocationPolicy.softFail], default) or ignored
-  /// ([RevocationPolicy.disabled]). [RevocationPolicy.hardFail] requires a full
-  /// revocation implementation and is reserved for future releases.
+  /// [revocationPolicy] controls how CRL/OCSP revocation checks are handled:
+  /// * [RevocationPolicy.disabled] (not the default) skips revocation entirely.
+  /// * [RevocationPolicy.softFail] (default) performs OCSP/CRL checks when
+  ///   revocation URLs are present. A definitive `revoked` verdict fails the
+  ///   chain, but a network/parse error or `unknown` verdict does not.
+  /// * [RevocationPolicy.hardFail] performs OCSP/CRL checks and treats any
+  ///   failure to obtain a definitive `good` verdict (network error, parse
+  ///   error, `unknown`, or missing URLs when URLs were expected) as fatal.
+  ///
+  /// [ocspFetcher] and [crlFetcher] allow callers to inject custom fetchers
+  /// (e.g. with a pre-configured [HttpClient] or a mock for testing). When
+  /// omitted, default fetchers are created lazily for each verification.
   CertificateVerifier(
     this._backend, {
     RevocationPolicy revocationPolicy = RevocationPolicy.softFail,
-  }) : _revocationPolicy = revocationPolicy;
+    OcspFetcher? ocspFetcher,
+    CrlFetcher? crlFetcher,
+  })  : _revocationPolicy = revocationPolicy,
+        _ocspFetcher = ocspFetcher ?? OcspFetcher(),
+        _crlFetcher = crlFetcher ?? CrlFetcher();
 
   /// Verifies a certificate chain.
   ///
@@ -93,14 +111,36 @@ class CertificateVerifier {
       return false;
     }
 
-    // Phase 1: surface revocation URLs; hardFail is unsupported and returns
-    // false if the chain contains any revocation extension.
-    if (_revocationPolicy == RevocationPolicy.hardFail) {
-      final hasRevocation = infos.any(
-        (info) => info.revocationInfo.isNotEmpty,
-      );
-      if (hasRevocation) {
-        return false;
+    // Phase 2: perform OCSP/CRL revocation checks when the policy is not
+    // disabled. For each certificate in the chain, attempt OCSP first (using
+    // the next certificate as the issuer for CertID construction) and fall
+    // back to CRL. A definitive `revoked` verdict always fails the chain.
+    // Under hardFail, any inability to obtain a definitive verdict (network
+    // error, parse error, unknown, or missing URLs) is fatal.
+    if (_revocationPolicy != RevocationPolicy.disabled) {
+      for (var i = 0; i < infos.length; i++) {
+        final info = infos[i];
+        if (info.revocationInfo.isEmpty) {
+          if (_revocationPolicy == RevocationPolicy.hardFail) {
+            return false;
+          }
+          continue;
+        }
+
+        // The issuer is the next certificate in the chain (parsed above), or
+        // the trusted root for the last certificate. For the root-adjacent
+        // cert we only have the trusted public key, so we cannot build a
+        // CertID; CRL still works because it only needs the serial number.
+        final issuerInfo = (i + 1 < infos.length) ? infos[i + 1] : null;
+
+        final verdict = await _checkRevocation(info, issuerInfo);
+        if (verdict == _RevocationVerdict.revoked) {
+          return false;
+        }
+        if (verdict == _RevocationVerdict.unknown &&
+            _revocationPolicy == RevocationPolicy.hardFail) {
+          return false;
+        }
       }
     }
 
@@ -171,4 +211,104 @@ class CertificateVerifier {
     }
     return true;
   }
+
+  /// Attempts to determine the revocation status of [info] using OCSP (when an
+  /// issuer [CertificateInfo] is available to build the CertID) and CRL.
+  ///
+  /// Returns [_RevocationVerdict.revoked] if either source definitively marks
+  /// the certificate as revoked. Returns [_RevocationVerdict.good] if OCSP
+  /// reports `good`. Returns [_RevocationVerdict.unknown] if no definitive
+  /// verdict could be obtained (network/parse error, OCSP `unknown`, or no
+  /// URLs reachable).
+  Future<_RevocationVerdict> _checkRevocation(
+    CertificateInfo info,
+    CertificateInfo? issuerInfo,
+  ) async {
+    // Try OCSP first when we have an issuer to build the CertID.
+    if (issuerInfo != null && info.revocationInfo.ocspUrls.isNotEmpty) {
+      final verdict = await _tryOcsp(info, issuerInfo);
+      if (verdict != null) {
+        return verdict;
+      }
+    }
+
+    // Fall back to CRL.
+    if (info.revocationInfo.crlUrls.isNotEmpty) {
+      final crlResult = await _tryCrl(info);
+      if (crlResult == true) return _RevocationVerdict.revoked;
+      if (crlResult == false) return _RevocationVerdict.good;
+      // CRL could not be fetched/parsed — unknown.
+    }
+
+    return _RevocationVerdict.unknown;
+  }
+
+  /// Attempts an OCSP query for [info] using [issuerInfo] as the issuer.
+  ///
+  /// Returns `null` if the query could not be performed or parsed (caller
+  /// should fall back to CRL). Returns a [_RevocationVerdict] otherwise.
+  Future<_RevocationVerdict?> _tryOcsp(
+    CertificateInfo info,
+    CertificateInfo issuerInfo,
+  ) async {
+    try {
+      final issuerX509 = parseX509(issuerInfo.rawBytes);
+      final issuerNameHash = sha1Digest(Uint8List.fromList(issuerX509.issuer));
+      final issuerKeyBits = extractSubjectPublicKeyBitString(
+        issuerX509.subjectPublicKeyInfo,
+      );
+      final issuerKeyHash = sha1Digest(Uint8List.fromList(issuerKeyBits));
+      final request = buildOcspRequest(
+        issuerNameHash: issuerNameHash,
+        issuerKeyHash: issuerKeyHash,
+        serialNumber: Uint8List.fromList(info.serialNumber),
+      );
+      for (final url in info.revocationInfo.ocspUrls) {
+        try {
+          final verdict = await _ocspFetcher.fetch(url, request);
+          switch (verdict.status) {
+            case OcspCertStatus.good:
+              return _RevocationVerdict.good;
+            case OcspCertStatus.revoked:
+              return _RevocationVerdict.revoked;
+            case OcspCertStatus.unknown:
+              continue;
+          }
+        } catch (_) {
+          // Try the next OCSP URL, then fall back to CRL.
+        }
+      }
+    } catch (_) {
+      // CertID construction or issuer parse failure — fall back to CRL.
+    }
+    return null;
+  }
+
+  /// Attempts a CRL fetch for [info] across all distribution-point URLs.
+  ///
+  /// Returns `true` if any CRL lists the certificate's serial as revoked.
+  /// Returns `false` if a CRL was successfully fetched and the serial is not
+  /// listed. Returns `null` if no CRL could be fetched or parsed.
+  Future<bool?> _tryCrl(CertificateInfo info) async {
+    for (final url in info.revocationInfo.crlUrls) {
+      try {
+        return await _crlFetcher.fetch(url, info.serialNumber);
+      } catch (_) {
+        // Try the next CRL URL.
+      }
+    }
+    return null;
+  }
+}
+
+/// Internal tri-state verdict for a single certificate's revocation check.
+enum _RevocationVerdict {
+  /// The certificate is confirmed not revoked.
+  good,
+
+  /// The certificate is confirmed revoked.
+  revoked,
+
+  /// No definitive verdict could be obtained.
+  unknown,
 }

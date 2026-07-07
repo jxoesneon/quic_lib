@@ -356,11 +356,11 @@ The following maps QUIC/HTTP3/WebTransport-specific threats to the STRIDE catego
 ### 2.13 Supply-Chain Security
 
 1. **Dependency Vetting**: All dependencies must be pure-Dart and pinned in pubspec.lock. No binary blobs, no transitive native extensions without audit.
-2. **SBOM Generation**: An SPDX JSON software bill of materials is generated for every stable release and attached to the GitHub Release.
-3. **CVE Monitoring**: Dependabot or OSV-Scanner runs on every PR and weekly on main to detect known vulnerabilities in dependencies.
+2. **SBOM Generation**: Planned — SPDX JSON SBOM generation is not yet implemented in CI (tracked for a future release).
+3. **CVE Monitoring**: Planned — Dependabot/OSV-Scanner integration is not yet configured (tracked for a future release).
 4. **Third-Party Audit**: An external security audit is required before 1.0.0 and annually thereafter for stable releases.
 5. **Build Reproducibility**: CI builds use pinned Dart SDK versions. Docker images (if used) are built from locked source archives with checksum verification.
-6. **Package Signing**: pub.dev releases are signed via the publisher account. SHA-256 checksums of the release archive are published in release notes.
+6. **Package Signing**: pub.dev releases are signed via the publisher account (OIDC id-token). SHA-256 checksum publication in release notes is planned but not yet automated.
 
 ---
 

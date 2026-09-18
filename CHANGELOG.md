@@ -608,7 +608,12 @@ This release closes all eight final v1.x release criteria from ROADMAP.md §10. 
 - 1000+ tests with 96%+ line coverage
 
 <!-- Version comparison links -->
-[Unreleased]: https://github.com/jxoesneon/quic_lib/compare/v1.12.0...HEAD
+[Unreleased]: https://github.com/jxoesneon/quic_lib/compare/v1.13.0...HEAD
+[1.13.0]: https://github.com/jxoesneon/quic_lib/compare/v1.12.4...v1.13.0
+[1.12.4]: https://github.com/jxoesneon/quic_lib/compare/v1.12.3...v1.12.4
+[1.12.3]: https://github.com/jxoesneon/quic_lib/compare/v1.12.2...v1.12.3
+[1.12.2]: https://github.com/jxoesneon/quic_lib/compare/v1.12.1...v1.12.2
+[1.12.1]: https://github.com/jxoesneon/quic_lib/compare/v1.12.0...v1.12.1
 [1.12.0]: https://github.com/jxoesneon/quic_lib/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/jxoesneon/quic_lib/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/jxoesneon/quic_lib/compare/v1.9.0...v1.10.0

@@ -1,11 +1,11 @@
-> **Internal audit snapshot.** This document is a historical snapshot from 2026-06-28 produced by the Protocol Audit audit process. It reflects the codebase and coverage estimates at that point in time and may not represent the current project state. For the latest status, see the project README, CHANGELOG, and SECURITY_FIXES.md.
+> **Internal audit snapshot.** This document is a historical snapshot from 2026-06-28 produced by the protocol completeness audit process. It reflects the codebase and coverage estimates at that point in time and may not represent the current project state. For the latest status, see the project README, CHANGELOG, and SECURITY_FIXES.md.
 
-# Protocol Audit Protocol Completeness Audit
+# Protocol Completeness Audit
 
 **Date**: 2026-06-28
-**Auditors**: Protocol Architecture Team (Safety, Coherence, Evolution, Capability, Efficiency)
+**Auditors**: Protocol Architecture & Security Team
 **Scope**: RFC compliance, errata, newer extensions, and libp2p spec alignment
-**Methodology**: Deep online research + parallel codebase audit via subagent swarm
+**Methodology**: RFC specification review + comprehensive parallel codebase audit
 
 ---
 
@@ -243,7 +243,7 @@
 
 ---
 
-## 9. Protocol Audit Recommendations
+## 9. Audit Recommendations
 
 ### Phase 1: Critical Fixes (Immediate — 1-2 weeks)
 
@@ -293,4 +293,4 @@
 
 ---
 
-*Audit completed by the Protocol Audit of Five. Recommendations prioritized by Safety, Coherence, Evolution, Capability, and Efficiency.*
+*Audit completed by the Protocol Architecture & Security Team. Recommendations prioritized by Safety, Coherence, Architecture, Capability, and Performance.*

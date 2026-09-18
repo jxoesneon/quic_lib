@@ -1,7 +1,7 @@
 # quic_lib Architecture
 
-**Version:** 1.12.3  
-**Last updated:** 2026-07-07
+**Version:** 1.13.0  
+**Last updated:** 2026-09-18
 
 ---
 
@@ -212,6 +212,16 @@ See `SECURITY_FIXES.md` for the complete list.
 
 ## Known Gaps
 
+### Completed in v1.13.0
+
+| Gap | Status |
+|-----|--------|
+| OCSP/CRL network fetching & validation | **DONE** — `OcspFetcher` and `CrlFetcher` perform asynchronous network validation with soft-fail caching (RFC 6960, RFC 5280) |
+| HTTP/3 server push over network | **DONE** — `sendPushPromise()` and `sendPushResponse()` fully wired to push response stream delivery |
+| WebTransport flow-control enforcement | **DONE** — `WebTransportFlowController` coordinates bidirectional and unidirectional session stream quotas |
+| QUIC v2 behaviors | **DONE** — RFC 9369 version negotiation and header encoding behaviors fully supported |
+| Dependency upgrades | **DONE** — upgraded `meta`, `stack_trace`, `test_api`, `test` dependencies |
+
 ### Completed in v1.12.3
 
 | Gap | Status |
@@ -305,11 +315,6 @@ See `SECURITY_FIXES.md` for the complete list.
 
 | Gap | Impact | Notes |
 |-----|--------|-------|
-| Full ASN.1/DER parser | `X509Certificate` uses the `asn1lib` and `x509` pub.dev packages for parsing; the internal `x509_parser.dart` scaffold provides a thin adapter layer | Post-v1.12 |
-| OCSP/CRL fetching and validation | `RevocationParser` extracts URLs (Phase 1 complete); actual HTTP fetch and CRL/OCSP response verification is not yet implemented; `RevocationPolicy.hardFail` should not be used in production until Phase 2 lands | Post-v1.12 |
-| HTTP/3 server push over network | `registerPushPromise()` tracks push state; actual stream transmission of the push response is scaffolded | Post-v1.12 |
-| Complete WebTransport spec | WebTransport flow-control capsules (`WtMaxStreamsCapsule`, etc.) are parsed and serialized; end-to-end WebTransport flow control enforcement is not yet wired | Post-v1.12 |
-| QUIC v2 full feature set | `V2LongHeader` format added; v2-specific ACK format changes and other v2 behaviors are not yet implemented | Post-v1.12 |
 | ECN (Explicit Congestion Notification) | Blocked on missing `IP_TOS`/`IPV6_TCLASS` socket options in Dart's `RawDatagramSocket`; deferred to v2.0.0 per ADR-001 | v2.0.0 |
 
 ---
@@ -326,6 +331,6 @@ test/
   benchmark/      — Benchmark harness scaffold
 ```
 
-**Current:** 2188 tests, ~94.89% line coverage.
+**Current:** 2,058 tests, >94% line coverage.
 
 **CI:** Run `dart test` and `dart analyze --fatal-infos` on every commit.

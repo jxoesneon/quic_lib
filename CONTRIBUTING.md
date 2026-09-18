@@ -51,7 +51,7 @@ Pull requests must pass `dart analyze`, `dart format --set-exit-if-changed .`, a
 - Add doc comments for new public APIs (`public_member_api_docs` is enforced).
 - Keep the public API surface small and intentional.
 - Add or update tests for new behavior and bug fixes. Aim to maintain the existing coverage level (80%+ line coverage target).
-- Do not add native dependencies or `dart:ffi` in the core library without an ADR and Council review (see ADR-001).
+- Do not add native dependencies or `dart:ffi` in the core library without an ADR and architectural review (see ADR-001).
 - Do not bump `pubspec.yaml` version or edit `CHANGELOG.md` in the same PR as code changes; those are handled during release.
 
 ## Documentation changes

@@ -272,7 +272,7 @@
 
 ---
 
-## Optional Scaffolds (Post-Council)
+## Optional Scaffolds (Post-Audit)
 
 ### O1. Http3Connection Scaffold
 **File:** `lib/src/http3/http3_connection.dart` (new)

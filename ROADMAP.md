@@ -1,9 +1,9 @@
-# quic_lib Roadmap (Historical): v0.0.0 → v1.12.3
+# quic_lib Roadmap (Historical): v0.0.0 → v1.13.0
 
-> **CURRENT STATUS (2026-07-07):** v1.0.0 and all patch releases through **v1.12.3** are **COMPLETE**. This document is a historical record of the engineering journey from specification to institutional audit closure, plus the forward-looking criteria for a final v1.x release and the v2.0.0 milestone. Active planning is tracked in the issue backlog and [AGENTS.md](AGENTS.md).
+> **CURRENT STATUS (2026-07-07):** v1.0.0 and all releases through **v1.13.0** are **COMPLETE**. This document is a historical record of the engineering journey from specification to institutional audit closure, final v1.x criteria fulfillment, and the forward-looking v2.0.0 milestone. Active planning is tracked in the issue backlog and [AGENTS.md](AGENTS.md).
 
-**Version**: 1.12.3
-**Status**: v1.x maintenance line — patches shipped, final v1.x release pending criteria below
+**Version**: 1.13.0
+**Status**: v1.x maintenance line complete — v1.13.0 final v1.x release shipped
 **Last Updated**: 2026-07-07
 **Constraint**: Pure-Dart implementation per [ADR-001](doc/decisions/ADR-001_Pure_Dart_No_FFI.md). No `dart:ffi`, no native dependencies.
 
@@ -11,7 +11,7 @@
 
 ## 1. Purpose
 
-This document records the completed engineering journey from specification (v0.0.0) through institutional audit closure (v1.12.0) and the subsequent maintenance patches (v1.12.1–v1.12.3). It preserves version bumps, deliverables, acceptance gates, and risk mitigations for historical reference, and closes with the criteria for a final v1.x release and the v2.0.0 milestone.
+This document records the completed engineering journey from specification (v0.0.0) through institutional audit closure (v1.12.0) and all v1.x releases through the final v1.13.0. It preserves version bumps, deliverables, acceptance gates, and risk mitigations for historical reference, and closes with the criteria for a final v1.x release and the v2.0.0 milestone.
 
 ---
 
@@ -38,7 +38,7 @@ We follow [Semantic Versioning](https://semver.org/) with pre-release identifier
 | Phase 3 | v0.6.0-alpha | libp2p QUIC & DCUtR | **COMPLETE** |
 | Phase 4 | v0.7.0-beta → v0.9.0-beta | Hardening, fuzzing, performance | **COMPLETE** |
 | Phase 5 | v1.0.0-rc.1 → v1.0.0-rc.2 | Release candidates | **COMPLETE** |
-| Phase 6 | v1.0.0 → v1.12.3 | Stable production release & institutional audit closure | **COMPLETE** |
+| Phase 6 | v1.0.0 → v1.13.0 | Stable production release & final v1.x delivery | **COMPLETE** |
 
 ### 2.3 Exit Gates (Universal)
 
@@ -497,6 +497,27 @@ These patch releases closed the remaining pub.dev documentation and tooling gaps
 
 ---
 
+### 3.17 v1.12.4 → v1.13.0 — Final v1.x Release (Shipped)
+
+**Status**: DONE  
+**Tags**: `v1.12.4`, `v1.13.0`
+
+These releases closed all criteria required to conclude the v1.x line:
+
+**v1.12.4** — Institutional documentation & CI refresh:
+- [x] Documentation integrity pass across institutional specifications.
+- [x] CI action SHA pinning and artifact action upgrade.
+
+**v1.13.0** — Final v1.x feature completeness:
+- [x] OCSP/CRL network fetching and validation (`OcspFetcher`, `CrlFetcher`).
+- [x] HTTP/3 server push over the network (`sendPushPromise`, `sendPushResponse`).
+- [x] WebTransport flow-control enforcement (`WebTransportFlowController`).
+- [x] QUIC v2 RFC 9369 behaviors and header format.
+- [x] Interoperability test matrix scaffold (`test/interop/`).
+- [x] Dependency upgrades (`meta`, `stack_trace`, `test_api`, `test`).
+
+---
+
 ## 4. Version Summary Table
 
 | Version | Phase | Duration | Theme | Public API? |
@@ -515,7 +536,7 @@ These patch releases closed the remaining pub.dev documentation and tooling gaps
 | v1.0.0-rc.1 | 5 | 2–3 wk | RC 1 | Yes (frozen) |
 | v1.0.0-rc.2 | 5 | 2 wk | RC 2 | Yes (frozen) |
 | v1.0.0 | 6 | — | Stable | Yes (production) |
-| v1.1.0–v1.12.3 | 6 | — | Maintenance, audit hardening, institutional completeness, and documentation polish | Yes (production) |
+| v1.1.0–v1.13.0 | 6 | — | Maintenance, audit hardening, institutional completeness, and final v1.x delivery | Yes (production) |
 
 ---
 
@@ -640,7 +661,7 @@ All items 1–8 are resolved. **v1.13.0 is the final v1.x release.** All new fea
 
 ## 11. Forward-Looking Work & v2.0.0 Milestone
 
-The v1.x maintenance line is complete at **v1.12.3**. The next major line is **v2.0.0**.
+The v1.x maintenance line is complete at **v1.13.0**. The next major line is **v2.0.0**.
 
 ### 11.1 v2.0.0 Milestone — ECN Support (Issue #10)
 

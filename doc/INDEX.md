@@ -46,13 +46,18 @@
 - [ADR-006: Stream Scheduler as Pluggable Interface](decisions/ADR-006_Stream_Scheduler_Pluggable_Interface.md)
 - [ADR-007: Isolate-per-Connection Architecture](decisions/ADR-007_Isolate_per_Connection_Architecture.md)
 
+- [Documentation Standards](DOC_STANDARDS.md)
+- [PointyCastle 4 Migration](POINTYCASTLE_4_MIGRATION.md)
+- [Web & WASM Architecture](WEB_AND_WASM.md)
+
 ## Security
 
 - [Security Fixes Summary](../SECURITY_FIXES.md)
 
 ## Archive
 
-- [Protocol Audit Protocol Completeness Audit, 2026-06-28](archive/PROTOCOL_COMPLETENESS_AUDIT_2026.md)
+- [Protocol Completeness Audit, 2026-06-28](archive/PROTOCOL_COMPLETENESS_AUDIT_2026.md)
+- [Security Audits Archive](archive/security_audits/)
 
 ## Contributing
 

@@ -213,7 +213,7 @@ Phase 6: dart_ipfs Integration
 
 ## Used By
 
-- [ROADMAP_ARCHITECTURE.md](../architecture/ROADMAP_ARCHITECTURE.md) — References ROADMAP for high-level timeline and milestones.
+- [../../ARCHITECTURE.md](../../ARCHITECTURE.md) — References ROADMAP for high-level timeline and milestones.
 - [VERSIONING_POLICY.md](VERSIONING_POLICY.md) — References ROADMAP for phased implementation timeline.
 ## 4. References
 ### 4.1 References

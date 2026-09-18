@@ -56,7 +56,7 @@ A pure-Dart implementation of QUIC, HTTP/3, WebTransport, and libp2p QUIC transp
 | macOS    | ✅ Full | Native UDP sockets, isolates, full QUIC stack |
 | Windows  | ✅ Full | Native UDP sockets, isolates, full QUIC stack |
 
-Requires Dart SDK `^3.0.0`.
+Requires Dart SDK `>=3.5.0 <4.0.0`.
 
 > **Why no Web / WASM?**
 >
@@ -70,7 +70,7 @@ Add `quic_lib` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  quic_lib: ^1.12.3
+  quic_lib: ^1.13.0
 ```
 
 Then run `dart pub get`.
@@ -160,7 +160,7 @@ Future<void> main() async {
   final request = Http3Request(
     method: 'GET',
     path: '/',
-    headers: {'host': 'example.com', 'user-agent': 'quic_lib/1.12.3'},
+    headers: {'host': 'example.com', 'user-agent': 'quic_lib/1.13.0'},
   );
   final streamId = await http3.sendRequest(request);
   print('Sent request on stream $streamId');
@@ -284,7 +284,7 @@ dart test --coverage=coverage
 dart run coverage:format_coverage --in=coverage --out=coverage/lcov.info --lcov
 ```
 
-**1,960+ passing tests** cover QUIC wire format, crypto, connection management, recovery, HTTP/3, WebTransport, and libp2p transport.
+**2,050+ passing tests** cover QUIC wire format, crypto, connection management, recovery, HTTP/3, WebTransport, and libp2p transport.
 
 ## Contributing
 

@@ -38,7 +38,7 @@ Please include a description of the issue, steps to reproduce, and any known imp
 2. Fix developed on a private security branch.
 3. Fix backported to the two most recent minor release branches.
 4. Advisory published alongside the release.
-5. SBOM generation planned for v1.13.0 (currently not implemented).
+5. SBOM generation planned for v2.0.0 (currently not implemented).
 
 ## Pure-Dart Security Constraint
 
